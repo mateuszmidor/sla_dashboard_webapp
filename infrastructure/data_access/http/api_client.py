@@ -1,6 +1,4 @@
-from generated.synthetics_http_client.synthetics import ApiClient
-from generated.synthetics_http_client.synthetics import Configuration
-from generated.synthetics_http_client.synthetics import ApiException
+from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_admin_service_api import SyntheticsAdminServiceApi
 from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api import SyntheticsDataServiceApi
 

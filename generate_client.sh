@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 
-# Generate golang client sdk from OpenAPI 3.0.0 spec
+# Generate Python client SDK from OpenAPI 3.0.0 spec
+
+
+function run() {
+    checkPrerequsites
+
+    # GENERATE SYNTHETICS
+    synthetics_package="generated.synthetics_http_client.synthetics"
+    synthetics_spec="synthetics.openapi.yaml"
+
+    synthetics_client_output_dir="" # empty value -> will reflect synthetics_package
+
+    generate_golang_client_from_openapi3_spec "$synthetics_spec" "$synthetics_package" "$synthetics_client_output_dir"
+    change_ownership_to_current_user "generated"
+}
 
 
 function stage() {
@@ -50,13 +64,4 @@ function change_ownership_to_current_user() {
     echo "Done"
 }
 
-checkPrerequsites
-
-# GENERATE SYNTHETICS
-synthetics_package="generated.synthetics_http_client.synthetics"
-synthetics_spec="synthetics.openapi.yaml"
-
-synthetics_client_output_dir="" # empty value -> will reflect synthetics_package
-
-generate_golang_client_from_openapi3_spec "$synthetics_spec" "$synthetics_package" "$synthetics_client_output_dir"
-change_ownership_to_current_user "generated"
+run

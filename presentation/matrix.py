@@ -1,5 +1,6 @@
-from typing import List, Dict
-from domain.model import MeshResults, MeshColumn
+from typing import Dict, List
+
+from domain.model import MeshColumn, MeshResults
 
 
 class Matrix:
