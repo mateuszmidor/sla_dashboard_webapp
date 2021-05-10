@@ -6,11 +6,12 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 from domain.model import MeshResults
+from domain.config import Config
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
 
-def make_page_layout(mesh: MeshResults) -> html.Div:
-    matrix = make_mesh_test_matrix_layout(mesh)
+def make_page_layout(mesh: MeshResults, config: Config) -> html.Div:
+    matrix = make_mesh_test_matrix_layout(mesh, config)
     return html.Div(
         children=[
             html.H1(children="Demo WebApp main page", style={"textAlign": "center", "marginBottom": 50}),
@@ -19,7 +20,10 @@ def make_page_layout(mesh: MeshResults) -> html.Div:
                 + " where lower latency limit was set to 300ms and higher limit was set to 400ms."
             ),
             html.H2(children="Demo Latency Matrix", style={"textAlign": "center", "marginTop": 100}),
-            html.Div(make_mesh_test_matrix_layout(mesh), style={"marginLeft": 200, "marginRight": 200}),
+            html.Div(
+                make_mesh_test_matrix_layout(mesh, config),
+                style={"marginLeft": 200, "marginRight": 200},
+            ),
         ],
         style={"marginBottom": 50, "marginTop": 50, "marginLeft": 50, "marginRight": 50},
     )

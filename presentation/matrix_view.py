@@ -7,19 +7,16 @@ import dash_table
 from dash.dependencies import Input, Output
 
 from domain.model import MeshResults
+from domain.config import Config
 from presentation.matrix import Matrix
 
 
-UP_LIM = 400000
-DOWN_LIM = 300000
-
-
-def make_mesh_test_matrix_layout(mesh: MeshResults) -> dash_table.DataTable:
+def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dash_table.DataTable:
     column_zero_header = {"name": "", "id": "agent_alias"}  # left-top table cell
     columns = [column_zero_header] + [{"name": row.alias, "id": row.alias} for row in mesh.rows]
     matrix = Matrix(mesh)
     data = make_data(mesh, matrix)
-    styles = make_colors(mesh)
+    styles = make_colors(mesh, config.latency_deteriorated_ms, config.latency_failed_ms)
     return dash_table.DataTable(
         id="table",
         columns=columns,
@@ -40,11 +37,11 @@ def make_data(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
     return data
 
 
-def make_colors(mesh: MeshResults):
+def make_colors(mesh: MeshResults, latency_deteriorated_ms: int, latency_failed_ms: int):
     styles = []
     for index, row in enumerate(mesh.rows):
         for column in row.columns:
-            if column.latency_microsec.value > UP_LIM:
+            if column.latency_microsec.value > latency_failed_ms * 1000:
                 styles.append(
                     {
                         "if": {
@@ -54,7 +51,7 @@ def make_colors(mesh: MeshResults):
                         "backgroundColor": "red",
                     }
                 )
-            elif column.latency_microsec.value > DOWN_LIM:
+            elif column.latency_microsec.value > latency_deteriorated_ms * 1000:
                 styles.append(
                     {
                         "if": {
