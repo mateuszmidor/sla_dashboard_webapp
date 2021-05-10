@@ -21,12 +21,12 @@ def make_mesh_test_matrix_layout(mesh: MeshResults) -> dash_table.DataTable:
     data = make_data(mesh, matrix)
     styles = make_colors(mesh)
     return dash_table.DataTable(
-            id="table",
-            columns=columns,
-            style_cell={'textAlign': 'center'},
-            data=data,
-            style_data_conditional=styles,
-        )
+        id="table",
+        columns=columns,
+        style_cell={"textAlign": "center"},
+        data=data,
+        style_data_conditional=styles,
+    )
 
 
 def make_data(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
@@ -39,33 +39,40 @@ def make_data(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
         data.append(row_data)
     return data
 
+
 def make_colors(mesh: MeshResults):
     styles = []
     for index, row in enumerate(mesh.rows):
         for column in row.columns:
             if column.latency_microsec.value > UP_LIM:
-                styles.append({
-                    'if': {
-                        'column_id': column.alias,
-                        'row_index': index,
-                    },
-                    'backgroundColor': 'red'
-                })
+                styles.append(
+                    {
+                        "if": {
+                            "column_id": column.alias,
+                            "row_index": index,
+                        },
+                        "backgroundColor": "red",
+                    }
+                )
             elif column.latency_microsec.value > DOWN_LIM:
-                styles.append({
-                    'if': {
-                        'column_id': column.alias,
-                        'row_index': index,
-                    },
-                    'backgroundColor': 'orange'
-                })
+                styles.append(
+                    {
+                        "if": {
+                            "column_id": column.alias,
+                            "row_index": index,
+                        },
+                        "backgroundColor": "orange",
+                    }
+                )
             else:
-                styles.append({
-                    'if': {
-                        'column_id': column.alias,
-                        'row_index': index,
-                    },
-                    'backgroundColor': 'green'
-                })
-    
+                styles.append(
+                    {
+                        "if": {
+                            "column_id": column.alias,
+                            "row_index": index,
+                        },
+                        "backgroundColor": "green",
+                    }
+                )
+
     return styles

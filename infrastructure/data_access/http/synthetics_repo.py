@@ -5,7 +5,9 @@ from typing import List
 from domain.model import MeshColumn, MeshResults, MeshRow, Metric
 from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api import (
-    SyntheticsDataServiceApi, V202101beta1GetHealthForTestsRequest)
+    SyntheticsDataServiceApi,
+    V202101beta1GetHealthForTestsRequest,
+)
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_column import V202101beta1MeshColumn
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_response import V202101beta1MeshResponse
 from infrastructure.data_access.http.api_client import KentikAPI
@@ -47,25 +49,26 @@ def transform_to_internal_mesh(input: V202101beta1MeshResponse) -> MeshResults:
         mesh.append_row(row)
     return mesh
 
+
 def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColumn]) -> List[MeshColumn]:
     columns = []
-    for input_column in input_columns: 
+    for input_column in input_columns:
         column = MeshColumn(
             name=input_column.name,
             alias=input_column.alias,
             target=input_column.target,
             jitter=Metric(
-                    health=input_column.metrics.jitter.health,
-                    value=int(input_column.metrics.jitter.value),
-                ),
+                health=input_column.metrics.jitter.health,
+                value=int(input_column.metrics.jitter.value),
+            ),
             latency_microsec=Metric(
-                    health=input_column.metrics.latency.health,
-                    value=int(input_column.metrics.latency.value),
-                ),
+                health=input_column.metrics.latency.health,
+                value=int(input_column.metrics.latency.value),
+            ),
             packet_loss=Metric(
-                    health=input_column.metrics.packet_loss.health,
-                    value=int(input_column.metrics.packet_loss.value),
-                ),
+                health=input_column.metrics.packet_loss.health,
+                value=int(input_column.metrics.packet_loss.value),
+            ),
         )
         columns.append(column)
     return columns
