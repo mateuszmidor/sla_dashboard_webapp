@@ -11,14 +11,10 @@ from presentation.matrix_view import make_mesh_test_matrix_layout
 
 
 def make_page_layout(mesh: MeshResults, config: Config) -> html.Div:
-    matrix = make_mesh_test_matrix_layout(mesh, config)
     return html.Div(
         children=[
             html.H1(children="Demo WebApp main page", style={"textAlign": "center", "marginBottom": 50}),
-            html.Div(
-                "This is early prototype of SLA Web Application containing latency matrix,"
-                + " where lower latency limit was set to 300ms and higher limit was set to 400ms."
-            ),
+            html.Div(html.Center("This is early prototype of SLA Web Application containing latency matrix")),
             html.H2(children="Demo Latency Matrix", style={"textAlign": "center", "marginTop": 100}),
             html.Div(
                 make_mesh_test_matrix_layout(mesh, config),
