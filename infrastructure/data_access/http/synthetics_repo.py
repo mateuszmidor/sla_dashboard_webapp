@@ -3,11 +3,17 @@ from pprint import pprint
 from typing import List
 
 from domain.model import MeshColumn, MeshResults, MeshRow, Metric
+
+# pylint: disable=E0611
 from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api import (
-    SyntheticsDataServiceApi, V202101beta1GetHealthForTestsRequest)
+    SyntheticsDataServiceApi,
+    V202101beta1GetHealthForTestsRequest,
+)
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_column import V202101beta1MeshColumn
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_response import V202101beta1MeshResponse
+
+# pylint: enable=E0611
 from infrastructure.data_access.http.api_client import KentikAPI
 
 
@@ -15,7 +21,7 @@ class SyntheticsRepo:
     def __init__(self, email, token: str) -> None:
         self._api_client = KentikAPI(email=email, token=token)
 
-    def get_mesh_test_results(self, test_id: str) -> MeshResults:
+    def get_mesh_test_results(self, test_id: str):  # -> MeshResults:  # uncomment ret type after completing below TODO
         try:
             start = time_utc(time_travel_minutes=-5)
             end = time_utc(time_travel_minutes=0)
@@ -47,25 +53,26 @@ def transform_to_internal_mesh(input: V202101beta1MeshResponse) -> MeshResults:
         mesh.append_row(row)
     return mesh
 
+
 def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColumn]) -> List[MeshColumn]:
     columns = []
-    for input_column in input_columns: 
+    for input_column in input_columns:
         column = MeshColumn(
             name=input_column.name,
             alias=input_column.alias,
             target=input_column.target,
             jitter=Metric(
-                    health=input_column.metrics.jitter.health,
-                    value=int(input_column.metrics.jitter.value),
-                ),
+                health=input_column.metrics.jitter.health,
+                value=int(input_column.metrics.jitter.value),
+            ),
             latency_microsec=Metric(
-                    health=input_column.metrics.latency.health,
-                    value=int(input_column.metrics.latency.value),
-                ),
+                health=input_column.metrics.latency.health,
+                value=int(input_column.metrics.latency.value),
+            ),
             packet_loss=Metric(
-                    health=input_column.metrics.packet_loss.health,
-                    value=int(input_column.metrics.packet_loss.value),
-                ),
+                health=input_column.metrics.packet_loss.health,
+                value=int(input_column.metrics.packet_loss.value),
+            ),
         )
         columns.append(column)
     return columns

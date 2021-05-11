@@ -1,6 +1,9 @@
+# pylint: disable=E0611
 from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_admin_service_api import SyntheticsAdminServiceApi
 from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api import SyntheticsDataServiceApi
+
+# pylint: enable=E0611
 
 
 class KentikAPI:
