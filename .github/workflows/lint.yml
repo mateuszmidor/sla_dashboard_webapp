@@ -1,0 +1,24 @@
+name: Lint
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  super-linter:
+    name: Run Super-Linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Run Super-Linter
+        uses: github/super-linter@v3.17.0
+        env:
+          VALIDATE_OPENAPI: false
+          VALIDATE_PYTHON_FLAKE8: false
+          LINTER_RULES_PATH: /
+          PYTHON_BLACK_CONFIG_FILE: pyproject.toml
+          PYTHON_ISORT_CONFIG_FILE: pyproject.toml
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
