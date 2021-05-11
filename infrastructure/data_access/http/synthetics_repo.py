@@ -3,6 +3,8 @@ from pprint import pprint
 from typing import List
 
 from domain.model import MeshColumn, MeshResults, MeshRow, Metric
+
+# pylint: disable=E0611
 from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api import (
     SyntheticsDataServiceApi,
@@ -10,6 +12,8 @@ from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api
 )
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_column import V202101beta1MeshColumn
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_response import V202101beta1MeshResponse
+
+# pylint: enable=E0611
 from infrastructure.data_access.http.api_client import KentikAPI
 
 
@@ -17,7 +21,7 @@ class SyntheticsRepo:
     def __init__(self, email, token: str) -> None:
         self._api_client = KentikAPI(email=email, token=token)
 
-    def get_mesh_test_results(self, test_id: str) -> MeshResults:
+    def get_mesh_test_results(self, test_id: str):  # -> MeshResults:  # uncomment ret type after completing below TODO
         try:
             start = time_utc(time_travel_minutes=-5)
             end = time_utc(time_travel_minutes=0)

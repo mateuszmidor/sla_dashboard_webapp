@@ -4,3 +4,5 @@ target-version = ['py37']
 
 [tool.isort]
 profile = "black"
+known_local_folder = ["domain", "generated", "infrastructure", "presentation"]
+line_length = 120
