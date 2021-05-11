@@ -29,7 +29,7 @@ class MeshRow:
 
 
 class MeshResults:
-    """ Internal representation of Mesh Test results; independent of source data structure like http or grpc synthetics client """
+    """Internal representation of Mesh Test results; independent of source data structure like http or grpc synthetics client"""
 
     def __init__(self) -> None:
         self.rows: List[MeshRow] = []
