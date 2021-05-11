@@ -18,6 +18,7 @@ jobs:
         env:
           VALIDATE_OPENAPI: false
           VALIDATE_PYTHON_FLAKE8: false
-          PYTHON_BLACK_CONFIG_FILE: linters_config.toml
-          PYTHON_ISORT_CONFIG_FILE: linters_config.toml
+          LINTER_RULES_PATH: /
+          PYTHON_BLACK_CONFIG_FILE: pyproject.toml
+          PYTHON_ISORT_CONFIG_FILE: pyproject.toml
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
