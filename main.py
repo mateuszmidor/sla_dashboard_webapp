@@ -4,9 +4,8 @@ from typing import Tuple
 
 import dash
 
-from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from infrastructure.config.config_toml import ConfigTOML
-from presentation.matrix_view import make_mesh_test_matrix_layout
+from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from presentation.main_view import make_page_layout
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
