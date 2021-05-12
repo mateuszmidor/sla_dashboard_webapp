@@ -5,8 +5,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-from domain.model import MeshResults
 from domain.config import Config
+from domain.model import MeshResults
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
 

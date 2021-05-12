@@ -66,4 +66,6 @@ target/
 .ipynb_checkpoints
 
 .openapi-generator-ignore
+.openapi-generator/
 
+generated/
