@@ -6,8 +6,8 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
 
-from domain.model import MeshResults
 from domain.config import Config
+from domain.model import MeshResults
 from presentation.matrix import Matrix
 
 
