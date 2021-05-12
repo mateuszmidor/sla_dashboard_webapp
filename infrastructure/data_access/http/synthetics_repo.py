@@ -18,21 +18,27 @@ from infrastructure.data_access.http.api_client import KentikAPI
 
 
 class SyntheticsRepo:
+    """ SyntheticsRepo implements domain.Repo protocol """
+
     def __init__(self, email, token: str) -> None:
         self._api_client = KentikAPI(email=email, token=token)
 
-    def get_mesh_test_results(self, test_id: str):  # -> MeshResults:  # uncomment ret type after completing below TODO
+    def get_mesh_test_results(self, test_id: str, results_lookback_minutes: int) -> MeshResults:
         try:
-            start = time_utc(time_travel_minutes=-5)
+            start = time_utc(time_travel_minutes=-results_lookback_minutes)
             end = time_utc(time_travel_minutes=0)
-            request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
 
+            request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
             response = self._api_client.synthetics.get_health_for_tests(request)
 
-            # TODO: error handling when no health items received
-            return transform_to_internal_mesh(response.health[0].mesh)
+            num_results = len(response.health)
+            if num_results == 0:
+                raise Exception("get_health_for_tests returned 0 items")
+
+            most_recent_result = response.health[num_results - 1].mesh
+            return transform_to_internal_mesh(most_recent_result)
         except ApiException as e:
-            print(f"Exception when calling SyntheticsDataServiceApi->get_health_for_tests: {e}\n")
+            raise e
 
 
 def time_utc(time_travel_minutes: int) -> datetime:
