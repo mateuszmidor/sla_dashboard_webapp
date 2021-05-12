@@ -11,7 +11,8 @@ class ConfigTOML:
         self._test_id = str(config["DEFAULT"]["test_id"])
         self._latency_deteriorated_ms = int(config["DEFAULT"]["latency_deteriorated_ms"])  # lower bound
         self._latency_failed_ms = int(config["DEFAULT"]["latency_failed_ms"])  # lower bound
-        self._data_update_seconds = int(config["DEFAULT"]["data_update_seconds"])
+        self._data_update_period_seconds = int(config["DEFAULT"]["data_update_period_seconds"])
+        self._data_update_lookback_minutes = int(config["DEFAULT"]["data_update_lookback_minutes"])
 
     @property
     def test_id(self) -> str:
@@ -26,5 +27,9 @@ class ConfigTOML:
         return self._latency_failed_ms
 
     @property
-    def data_update_seconds(self) -> int:
-        return self._data_update_seconds
+    def data_update_period_seconds(self) -> int:
+        return self._data_update_period_seconds
+
+    @property
+    def data_update_lookback_minutes(self) -> int:
+        return self._data_update_lookback_minutes
