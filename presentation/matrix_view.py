@@ -6,7 +6,8 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
 
-from domain.config import Config
+from domain.config.config import Config
+from domain.config.thresholds import Thresholds
 from domain.model import MeshResults
 from presentation.matrix import Matrix
 
@@ -16,7 +17,7 @@ def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dash_tabl
     columns = [column_zero_header] + [{"name": row.alias, "id": row.alias} for row in mesh.rows]
     matrix = Matrix(mesh)
     data = make_data(mesh, matrix)
-    styles = make_colors(mesh, config.latency_deteriorated_ms, config.latency_failed_ms)
+    styles = make_colors(mesh, config.latency)
     return dash_table.DataTable(
         id="table",
         columns=columns,
@@ -37,11 +38,12 @@ def make_data(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
     return data
 
 
-def make_colors(mesh: MeshResults, latency_deteriorated_ms: int, latency_failed_ms: int):
+def make_colors(mesh: MeshResults, latency_thresholds: Thresholds):
     styles = []
     for index, row in enumerate(mesh.rows):
         for column in row.columns:
-            if column.latency_microsec.value > latency_failed_ms * 1000:
+            # TODO: use latency_thresholds specific to given from-to agent pairs. In separate Pull Request
+            if column.latency_microsec.value > latency_thresholds.failed(0, 0):  # latency_thresholds in usec
                 styles.append(
                     {
                         "if": {
@@ -51,7 +53,8 @@ def make_colors(mesh: MeshResults, latency_deteriorated_ms: int, latency_failed_
                         "backgroundColor": "red",
                     }
                 )
-            elif column.latency_microsec.value > latency_deteriorated_ms * 1000:
+            # TODO: use latency_thresholds specific to given from-to agent pairs. In separate Pull Request
+            elif column.latency_microsec.value > latency_thresholds.deteriorated(0, 0):  # latency_thresholds in usec
                 styles.append(
                     {
                         "if": {

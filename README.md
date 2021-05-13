@@ -21,4 +21,4 @@ Run the web server with: `python  main.py`
 
 ## Application configuration
 
-Configuration is stored in config file [config.toml](./config.toml)
+Configuration is stored in config file [config.yaml](./config.yaml)

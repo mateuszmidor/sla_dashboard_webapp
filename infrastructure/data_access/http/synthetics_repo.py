@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
-from pprint import pprint
 from typing import List
 
 from domain.model import MeshColumn, MeshResults, MeshRow, Metric
 
+# the below "diable=E0611" is needed as we don't include the generated code into git repo and thus CI linter complains
 # pylint: disable=E0611
 from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api import (
@@ -23,10 +23,10 @@ class SyntheticsRepo:
     def __init__(self, email, token: str) -> None:
         self._api_client = KentikAPI(email=email, token=token)
 
-    def get_mesh_test_results(self, test_id: str, results_lookback_minutes: int) -> MeshResults:
+    def get_mesh_test_results(self, test_id: str, results_lookback_seconds: int) -> MeshResults:
         try:
-            start = time_utc(time_travel_minutes=-results_lookback_minutes)
-            end = time_utc(time_travel_minutes=0)
+            start = time_utc(time_travel_seconds=-results_lookback_seconds)
+            end = time_utc(time_travel_seconds=0)
 
             request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
             response = self._api_client.synthetics.get_health_for_tests(request)
@@ -41,8 +41,8 @@ class SyntheticsRepo:
             raise e
 
 
-def time_utc(time_travel_minutes: int) -> datetime:
-    return (datetime.utcnow() + timedelta(minutes=time_travel_minutes)).replace(tzinfo=timezone.utc)
+def time_utc(time_travel_seconds: int) -> datetime:
+    return (datetime.utcnow() + timedelta(seconds=time_travel_seconds)).replace(tzinfo=timezone.utc)
 
 
 def transform_to_internal_mesh(input: V202101beta1MeshResponse) -> MeshResults:
