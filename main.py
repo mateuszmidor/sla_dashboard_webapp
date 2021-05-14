@@ -45,7 +45,7 @@ class WebApp:
                 self._cached_repo.update(data_lookback_seconds)
                 logger.info(f"Update repo successful. Next update in {update_period_seconds} seconds")
             except Exception as err:
-                logger.error(f"Update repo failed: {str(err)}. Next attempt in {update_period_seconds} seconds")
+                logger.exception(f"Update repo failed: {str(err)}. Next attempt in {update_period_seconds} seconds")
 
             time.sleep(update_period_seconds)
 
