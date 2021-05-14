@@ -31,12 +31,15 @@ class ConfigYAML:
         return self._packet_loss
 
     def __init__(self, filename: str) -> None:
-        with open(filename, "r") as file:
-            config = yaml.load(file, yaml.FullLoader)
+        try:
+            with open(filename, "r") as file:
+                config = yaml.load(file, yaml.FullLoader)
 
-        self._test_id = str(config["test_id"])
-        self._data_update_seconds = int(config["data_update_period_seconds"])
-        self._data_update_lookback_seconds = int(config["data_update_lookback_seconds"])
-        self._latency = Thresholds(config["thresholds"]["latency"])
-        self._jitter = Thresholds(config["thresholds"]["jitter"])
-        self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
+            self._test_id = str(config["test_id"])
+            self._data_update_seconds = int(config["data_update_period_seconds"])
+            self._data_update_lookback_seconds = int(config["data_update_lookback_seconds"])
+            self._latency = Thresholds(config["thresholds"]["latency"])
+            self._jitter = Thresholds(config["thresholds"]["jitter"])
+            self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
+        except Exception as err:
+            raise Exception(f"Configuration error") from err

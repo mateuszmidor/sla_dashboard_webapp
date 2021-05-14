@@ -34,8 +34,8 @@ thresholds:
       - from: 60
         to: 70
         deteriorated: 30
-        failed: 70 
-  packet_loss: # thresholds in (?)
+        failed: 70
+  packet_loss: # thresholds in percents (0-100)
     defaults:
       deteriorated: 5 # packet_loss low threshold; if above, then display connection as deteriorated
       failed: 20 # packet_loss high threshold; if above, then display connection as failed

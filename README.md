@@ -22,3 +22,8 @@ Run the web server with: `python  main.py`
 ## Application configuration
 
 Configuration is stored in config file [config.yaml](./config.yaml)
+
+## TODO
+
+- change Dash config "debug" -> False
+- change default Flask development http server to production ready server

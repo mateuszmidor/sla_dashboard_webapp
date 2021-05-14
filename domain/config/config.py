@@ -33,5 +33,5 @@ class Config(Protocol):
 
     @property
     def packet_loss(self) -> Thresholds:
-        """ Packet loss thresholds, in (?) """
+        """ Packet loss thresholds, in percents (0-100) """
         pass

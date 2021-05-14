@@ -66,6 +66,7 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
         column = MeshColumn(
             name=input_column.name,
             alias=input_column.alias,
+            id=input_column.id,
             target=input_column.target,
             jitter=Metric(
                 health=input_column.metrics.jitter.health,

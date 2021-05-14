@@ -58,7 +58,7 @@ class Thresholds:
                 if "failed" in override:
                     self._override_failed(from_agent, to_agent, int(override["failed"]))
         except KeyError as err:
-            raise Exception(f"Incomplete configuration: {err}")
+            raise Exception(f"Incomplete thresholds definition") from err
 
     def _override_deteriorated(self, from_agent: int, to_agent: int, value: int) -> None:
         override = self._get_or_create_override(from_agent, to_agent)

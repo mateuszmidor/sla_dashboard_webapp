@@ -18,9 +18,13 @@ logger = logging.getLogger(__name__)
 
 class WebApp:
     def __init__(self, email, token: str) -> None:
-        repo = SyntheticsRepo(email, token)
-        self._config = ConfigYAML("config.yaml")
-        self._cached_repo = CachedRepo(repo, self._config.test_id)
+        try:
+            repo = SyntheticsRepo(email, token)
+            self._config = ConfigYAML("config.yaml")
+            self._cached_repo = CachedRepo(repo, self._config.test_id)
+        except Exception as err:
+            logger.exception(f"WebApp initialization failure: {err}")
+            sys.exit(1)
 
     def run(self) -> None:
         self._run_update_repo_loop()

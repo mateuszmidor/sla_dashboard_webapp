@@ -6,7 +6,7 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
 
-from domain.config.config import Config
+from domain.config import Config
 from domain.config.thresholds import Thresholds
 from domain.model import MeshResults
 from presentation.matrix import Matrix
@@ -42,8 +42,10 @@ def make_colors(mesh: MeshResults, latency_thresholds: Thresholds):
     styles = []
     for index, row in enumerate(mesh.rows):
         for column in row.columns:
-            # TODO: use latency_thresholds specific to given from-to agent pairs. In separate Pull Request
-            if column.latency_microsec.value > latency_thresholds.failed(0, 0):  # latency_thresholds in usec
+            threshold_failed_microsec = latency_thresholds.failed(int(row.id), int(column.id))
+            threshold_deteriorated_microsec = latency_thresholds.deteriorated(int(row.id), int(column.id))
+
+            if column.latency_microsec.value > threshold_failed_microsec:
                 styles.append(
                     {
                         "if": {
@@ -53,8 +55,7 @@ def make_colors(mesh: MeshResults, latency_thresholds: Thresholds):
                         "backgroundColor": "red",
                     }
                 )
-            # TODO: use latency_thresholds specific to given from-to agent pairs. In separate Pull Request
-            elif column.latency_microsec.value > latency_thresholds.deteriorated(0, 0):  # latency_thresholds in usec
+            elif column.latency_microsec.value > threshold_deteriorated_microsec:
                 styles.append(
                     {
                         "if": {
