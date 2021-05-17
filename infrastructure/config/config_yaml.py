@@ -33,7 +33,7 @@ class ConfigYAML:
     def __init__(self, filename: str) -> None:
         try:
             with open(filename, "r") as file:
-                config = yaml.load(file, yaml.FullLoader)
+                config = yaml.load(file, yaml.SafeLoader)
 
             self._test_id = str(config["test_id"])
             self._data_update_seconds = int(config["data_update_period_seconds"])

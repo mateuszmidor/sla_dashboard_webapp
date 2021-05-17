@@ -1,10 +1,20 @@
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from infrastructure.config.threshold_override import ThresholdOverride
+
+@dataclass
+class ThresholdOverride:
+    """ Threshold overrides can be optionally specified; if not specified - default values shall be used """
+
+    deteriorated: Optional[int] = None
+    failed: Optional[int] = None
 
 
 class Thresholds:
-    """ Thresholds implements domain.config.thresholds.Thresholds protocol """
+    """
+    Thresholds allow to read integer threshold values for given agent pair based on configuration.
+    It implements domain.config.thresholds.Thresholds protocol
+    """
 
     def deteriorated(self, from_agent_id: int, to_agent_id: int) -> int:
         override = self._get_override_or_none(from_agent_id, to_agent_id)
