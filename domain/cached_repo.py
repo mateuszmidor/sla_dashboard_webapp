@@ -34,7 +34,8 @@ class CachedRepo:
             raise Exception("Error updating repository data") from err
 
     def data_timestamp(self) -> datetime:
-        return self._update_timestamp
+        with self._repo_access_lock:
+            return deepcopy(self._update_timestamp)
 
     def get_mesh_test_results(self) -> MeshResults:
         with self._repo_access_lock:
