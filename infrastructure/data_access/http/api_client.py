@@ -1,3 +1,4 @@
+# the below "disable=E0611" is needed as we don't commit the generated code into git repo and thus CI linter complains
 # pylint: disable=E0611
 from generated.synthetics_http_client.synthetics import ApiClient, ApiException, Configuration
 from generated.synthetics_http_client.synthetics.api.synthetics_admin_service_api import SyntheticsAdminServiceApi

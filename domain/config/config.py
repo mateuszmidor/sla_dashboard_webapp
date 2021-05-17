@@ -1,13 +1,14 @@
 from typing import Protocol
 
 from domain.config.thresholds import Thresholds
+from domain.types import TestID
 
 
 class Config(Protocol):
     """ Config provides persistent app configuration """
 
     @property
-    def test_id(self) -> str:
+    def test_id(self) -> TestID:
         """ ID of the test to display data matrix for """
         pass
 

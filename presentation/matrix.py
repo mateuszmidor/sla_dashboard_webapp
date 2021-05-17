@@ -13,12 +13,12 @@ class Matrix:
     def __init__(self, mesh: MeshResults) -> None:
         agents: List[str] = []
         for row in mesh.rows:
-            agents.append(row.alias)
+            agents.append(row.agent_alias)
         self.agents = agents
 
         cells: Dict[str, Dict[str, MeshColumn]] = {}
         for row in mesh.rows:
-            cells[row.alias] = {}
+            cells[row.agent_alias] = {}
             for col in row.columns:
-                cells[row.alias][col.alias] = col
+                cells[row.agent_alias][col.agent_alias] = col
         self.cells = cells

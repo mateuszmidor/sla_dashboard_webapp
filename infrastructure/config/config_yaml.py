@@ -1,5 +1,6 @@
 import yaml
 
+from domain.types import TestID
 from infrastructure.config.thresholds import Thresholds
 
 
@@ -7,7 +8,7 @@ class ConfigYAML:
     """ ConfigYAML implements domain.config.config.Config protocol """
 
     @property
-    def test_id(self) -> str:
+    def test_id(self) -> TestID:
         return self._test_id
 
     @property
@@ -35,11 +36,11 @@ class ConfigYAML:
             with open(filename, "r") as file:
                 config = yaml.load(file, yaml.SafeLoader)
 
-            self._test_id = str(config["test_id"])
+            self._test_id = TestID(config["test_id"])
             self._data_update_seconds = int(config["data_update_period_seconds"])
             self._data_update_lookback_seconds = int(config["data_update_lookback_seconds"])
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
         except Exception as err:
-            raise Exception(f"Configuration error") from err
+            raise Exception("Configuration error") from err

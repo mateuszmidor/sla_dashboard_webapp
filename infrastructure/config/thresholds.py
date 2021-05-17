@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from domain.types import AgentID, Threshold
+
 
 @dataclass
 class ThresholdOverride:
@@ -16,14 +18,14 @@ class Thresholds:
     It implements domain.config.thresholds.Thresholds protocol
     """
 
-    def deteriorated(self, from_agent_id: int, to_agent_id: int) -> int:
-        override = self._get_override_or_none(from_agent_id, to_agent_id)
+    def deteriorated(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
+        override = self._get_override_or_none(from_agent, to_agent)
         if override is None or override.deteriorated is None:
             return self._default_deteriorated
         return override.deteriorated
 
-    def failed(self, from_agent_id: int, to_agent_id: int) -> int:
-        override = self._get_override_or_none(from_agent_id, to_agent_id)
+    def failed(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
+        override = self._get_override_or_none(from_agent, to_agent)
         if override is None or override.failed is None:
             return self._default_failed
         return override.failed
@@ -52,33 +54,33 @@ class Thresholds:
         """
         try:
             # read defaults config (required)
-            self._default_deteriorated = int(config["defaults"]["deteriorated"])
-            self._default_failed = int(config["defaults"]["failed"])
+            self._default_deteriorated = Threshold(config["defaults"]["deteriorated"])
+            self._default_failed = Threshold(config["defaults"]["failed"])
 
             # read overrides config (optional)
-            self._overrides: Dict[int, Dict[int, ThresholdOverride]] = dict()
+            self._overrides: Dict[AgentID, Dict[AgentID, ThresholdOverride]] = dict()
             if "overrides" not in config:
                 return
 
             for override in config["overrides"]:
-                from_agent = int(override["from"])
-                to_agent = int(override["to"])
+                from_agent = AgentID(override["from"])
+                to_agent = AgentID(override["to"])
                 if "deteriorated" in override:
-                    self._override_deteriorated(from_agent, to_agent, int(override["deteriorated"]))
+                    self._override_deteriorated(from_agent, to_agent, Threshold(override["deteriorated"]))
                 if "failed" in override:
-                    self._override_failed(from_agent, to_agent, int(override["failed"]))
+                    self._override_failed(from_agent, to_agent, Threshold(override["failed"]))
         except KeyError as err:
-            raise Exception(f"Incomplete thresholds definition") from err
+            raise Exception("Incomplete thresholds definition") from err
 
-    def _override_deteriorated(self, from_agent: int, to_agent: int, value: int) -> None:
+    def _override_deteriorated(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
         override = self._get_or_create_override(from_agent, to_agent)
         override.deteriorated = value
 
-    def _override_failed(self, from_agent: int, to_agent: int, value: int) -> None:
+    def _override_failed(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
         override = self._get_or_create_override(from_agent, to_agent)
         override.failed = value
 
-    def _get_or_create_override(self, from_agent: int, to_agent: int) -> ThresholdOverride:
+    def _get_or_create_override(self, from_agent: AgentID, to_agent: AgentID) -> ThresholdOverride:
         overrides = self._overrides
         if from_agent not in overrides:
             overrides[from_agent] = dict()
@@ -86,7 +88,7 @@ class Thresholds:
             overrides[from_agent][to_agent] = ThresholdOverride()
         return overrides[from_agent][to_agent]
 
-    def _get_override_or_none(self, from_agent: int, to_agent: int) -> Optional[ThresholdOverride]:
+    def _get_override_or_none(self, from_agent: AgentID, to_agent: AgentID) -> Optional[ThresholdOverride]:
         overrides = self._overrides
         if from_agent not in overrides:
             return None
