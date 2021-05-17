@@ -4,18 +4,17 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
-from dash.dependencies import Input, Output
 import numpy as np
+from dash.dependencies import Input, Output
 
 from domain.config import Config
 from domain.config.thresholds import Thresholds
 from domain.model import MeshResults
 from presentation.matrix import Matrix
 
-
-RED = 'rgb(255,0,0)'
-ORANGE = 'rgb(255,165,0)'
-GREEN = 'rgb(0,255,0)'
+RED = "rgb(255,0,0)"
+ORANGE = "rgb(255,165,0)"
+GREEN = "rgb(0,255,0)"
 
 
 def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph:
@@ -32,18 +31,20 @@ def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph
         showlegend=False,
     )
 
-    return dcc.Graph(figure={'data': data, 'layout': layout}, style={"width": 750, "height": 750})
+    return dcc.Graph(figure={"data": data, "layout": layout}, style={"width": 750, "height": 750})
 
 
 def make_data(mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, latency_failed_ms: int) -> List[Dict]:
     x = matrix.agents
-    y = [ i for i in reversed(matrix.agents)]    
+    y = [i for i in reversed(matrix.agents)]
     z = []
 
     for row in reversed(mesh.rows):
         z_col = []
         for col in row.columns:
-            color = get_color(matrix.cells[row.alias][col.alias].latency_microsec.value, latency_deteriorated_ms, latency_failed_ms)
+            color = get_color(
+                matrix.cells[row.alias][col.alias].latency_microsec.value, latency_deteriorated_ms, latency_failed_ms
+            )
             z_col.append(color)
         z.append(z_col)
     for i in range(len(mesh.rows)):
@@ -59,7 +60,7 @@ def make_data(mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, l
             z=z,
             text=make_hover_text(mesh, matrix),
             type="heatmap",
-            hoverinfo='text',
+            hoverinfo="text",
             opacity=1,
             name="",
             showscale=False,
@@ -99,14 +100,14 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
         text.append(text_col)
     for i in range(len(mesh.rows)):
         text[-(i + 1)].insert(i, "")
-    
+
     return text
 
 
-def get_color(val, latency_deteriorated_ms: int, latency_failed_ms: int):
-    if val < latency_deteriorated_ms:
+def get_color(val: int, latency_deteriorated_ms: int, latency_failed_ms: int):
+    if val < latency_deteriorated_ms * 1000:
         return 0
-    if val < latency_failed_ms:
+    if val < latency_failed_ms * 1000:
         return 0.5
     else:
         return 1.0
