@@ -1,0 +1,50 @@
+# ID of the test to display the data matrix for
+test_id: 3541
+
+# time period between test results cache updates
+data_update_period_seconds: 10
+
+# time window to fetch the test results for
+data_update_lookback_seconds: 300
+
+# metric thresholds
+thresholds:
+  latency: # thresholds in microseconds
+    defaults:
+      deteriorated: 200000 # latency low threshold; if above, then display connection as deteriorated
+      failed: 400000 # latency high threshold; if above, then display connection as failed
+    overrides:
+      - from: 10 # agent_id
+        to: 11 # agent_id
+        deteriorated: 10000
+        failed: 20000
+      - from: 60
+        to: 70
+        deteriorated: 1000000
+        failed: 2000000 
+  jitter: # thresholds in microseconds
+    defaults:
+      deteriorated: 300 # jitter low threshold; if above, then display connection as deteriorated
+      failed: 900 # jitter high threshold; if above, then display connection as failed
+    overrides:
+      - from: 10 # agent_id
+        to: 11 # agent_id
+        deteriorated: 10
+        failed: 20
+      - from: 60
+        to: 70
+        deteriorated: 30
+        failed: 70
+  packet_loss: # thresholds in percents (0-100)
+    defaults:
+      deteriorated: 5 # packet_loss low threshold; if above, then display connection as deteriorated
+      failed: 20 # packet_loss high threshold; if above, then display connection as failed
+    overrides:
+      - from: 10 # agent_id
+        to: 11 # agent_id
+        deteriorated: 10
+        failed: 40
+      - from: 60
+        to: 70
+        deteriorated: 3
+        failed: 8 

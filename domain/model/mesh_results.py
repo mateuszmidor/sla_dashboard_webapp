@@ -12,6 +12,7 @@ class Metric:
 class MeshColumn:
     name: str
     alias: str
+    id: str
     target: str  # ip address
     jitter: Metric
     latency_microsec: Metric

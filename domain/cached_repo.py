@@ -21,11 +21,11 @@ class CachedRepo:
         self._update_timestamp = CachedRepo.NEVER_UPDATED
         self._repo_access_lock = threading.Lock()
 
-    def update(self, lookback_minutes: int) -> None:
+    def update(self, lookback_seconds: int) -> None:
         """ update is intended to be called periodically from an update thread """
 
         try:
-            results = self._source_repo.get_mesh_test_results(self._test_id, lookback_minutes)
+            results = self._source_repo.get_mesh_test_results(self._test_id, lookback_seconds)
             with self._repo_access_lock:
                 self._test_results = results
             self._update_timestamp = datetime.now()
