@@ -1,10 +1,10 @@
+import itertools
 from typing import Dict, List
 
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
-import numpy as np
 from dash.dependencies import Input, Output
 
 from domain.config import Config
@@ -35,40 +35,40 @@ def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph
 
 
 def make_data(mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, latency_failed_ms: int) -> List[Dict]:
-    x = matrix.agents
-    y = [i for i in reversed(matrix.agents)]
-    z = []
-
-    for row in reversed(mesh.rows):
-        z_col = []
-        for col in row.columns:
-            color = get_color(
-                matrix.cells[row.alias][col.alias].latency_microsec.value, latency_deteriorated_ms, latency_failed_ms
-            )
-            z_col.append(color)
-        z.append(z_col)
-    for i in range(len(mesh.rows)):
-        z[-(i + 1)].insert(i, None)
-    z = np.array(z)
-
-    colorscale = get_colorscale(z)
-
-    data = [
+    colors = make_colors(mesh, matrix, latency_deteriorated_ms, latency_failed_ms)
+    return [
         dict(
-            x=x,
-            y=y,
-            z=z,
+            x=matrix.agents,
+            y=[i for i in reversed(matrix.agents)],
+            z=colors,
             text=make_hover_text(mesh, matrix),
             type="heatmap",
             hoverinfo="text",
             opacity=1,
             name="",
             showscale=False,
-            colorscale=colorscale,
+            colorscale=get_colorscale(colors),
         )
     ]
 
-    return data
+
+def make_colors(
+    mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, latency_failed_ms: int
+) -> List[List[float]]:
+    colors = []
+    for row in reversed(mesh.rows):
+        colors_col = []
+        for col in row.columns:
+            color = get_color(
+                matrix.cells[row.alias][col.alias].latency_microsec.value, latency_deteriorated_ms, latency_failed_ms
+            )
+            colors_col.append(color)
+        colors.append(colors_col)
+
+    for i in range(len(mesh.rows)):
+        colors[-(i + 1)].insert(i, None)
+
+    return colors
 
 
 def make_annotations(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
@@ -78,7 +78,7 @@ def make_annotations(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
             annotations.append(
                 dict(
                     showarrow=False,
-                    text=f"<b>{(matrix.cells[row.alias][col.alias].latency_microsec.value * 1e-3):.2f} ms<b>",
+                    text=f"<b>{(matrix.cells[row.alias][col.alias].latency_microsec.value * 1e-3):.2f} ms</b>",
                     xref="x",
                     yref="y",
                     x=col.alias,
@@ -96,7 +96,7 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
             latency_ms = matrix.cells[row.alias][col.alias].latency_microsec.value * 1e-3
             jitter = matrix.cells[row.alias][col.alias].jitter.value
             loss = matrix.cells[row.alias][col.alias].packet_loss.value
-            text_col.append(f"Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter}, <br>Loss: {loss}")
+            text_col.append(f"Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter * 1e-3} ms, <br>Loss: {loss}%")
         text.append(text_col)
     for i in range(len(mesh.rows)):
         text[-(i + 1)].insert(i, "")
@@ -104,7 +104,7 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
     return text
 
 
-def get_color(val: int, latency_deteriorated_ms: int, latency_failed_ms: int):
+def get_color(val: int, latency_deteriorated_ms: int, latency_failed_ms: int) -> float:
     if val < latency_deteriorated_ms * 1000:
         return 0
     if val < latency_failed_ms * 1000:
@@ -113,16 +113,16 @@ def get_color(val: int, latency_deteriorated_ms: int, latency_failed_ms: int):
         return 1.0
 
 
-def get_colorscale(z: np.array) -> List[List]:
-    if np.all(z == 0.0):
+def get_colorscale(z: List[List[float]]) -> List[List]:
+    if all([i == 0.0 for i in itertools.chain(*z)]):
         return [[0.0, GREEN], [1.0, GREEN]]
-    if np.all(z == 0.5):
+    if all([i == 0.5 for i in itertools.chain(*z)]):
         return [[0.0, ORANGE], [1.0, ORANGE]]
-    if np.all(z == 1.0):
+    if all([i == 1.0 for i in itertools.chain(*z)]):
         return [[0.0, RED], [1.0, RED]]
-    if not np.any(z == 0.0):
+    if not any([i == 0.0 for i in itertools.chain(*z)]):
         return [[0.0, ORANGE], [1.0, RED]]
-    if not np.any(z == 1.0):
+    if not any([i == 1.0 for i in itertools.chain(*z)]):
         return [[0.0, GREEN], [1.0, ORANGE]]
     else:
         return [[0.0, GREEN], [0.5, ORANGE], [1.0, RED]]
