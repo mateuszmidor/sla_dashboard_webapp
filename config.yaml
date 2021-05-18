@@ -1,7 +1,7 @@
 # ID of the test to display the data matrix for
 test_id: 3541
 
-# time period between test results cache updates
+# minimal time period between test results cache updates
 data_update_period_seconds: 60
 
 # time window to fetch the test results for

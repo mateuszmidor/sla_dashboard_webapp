@@ -13,7 +13,8 @@ from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from presentation.main_view import make_page_layout
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
-logging.basicConfig(level=logging.DEBUG)
+FORMAT = "%(asctime)-15s  %(message)s"
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
