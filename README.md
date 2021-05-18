@@ -15,6 +15,11 @@ python main.py
 
 Configuration is stored in config file [config.yaml](./config.yaml)
 
+## API request quota utilisation
+
+Each instance of WebApp maintains it's own data cache.  
+Running multiple instances of WebApp, for example as WSGI server workers, is safe, but may increase the API request quota impact.
+
 ## Development
 
 1. Prepare virtual environment with `virtualenv venv`
