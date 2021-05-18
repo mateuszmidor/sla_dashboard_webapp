@@ -96,7 +96,7 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
             latency_ms = matrix.cells[row.alias][col.alias].latency_microsec.value * 1e-3
             jitter = matrix.cells[row.alias][col.alias].jitter.value
             loss = matrix.cells[row.alias][col.alias].packet_loss.value
-            text_col.append(f"Latency: {latency_ms:.2f} ms, \nJiter: {jitter}, \nLoss: {loss}")
+            text_col.append(f"Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter}, <br>Loss: {loss}")
         text.append(text_col)
     for i in range(len(mesh.rows)):
         text[-(i + 1)].insert(i, "")
