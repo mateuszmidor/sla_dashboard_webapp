@@ -19,7 +19,7 @@ from infrastructure.data_access.http.api_client import KentikAPI
 
 
 class SyntheticsRepo:
-    """ SyntheticsRepo implements domain.repo.Repo protocol """
+    """SyntheticsRepo implements domain.Repo protocol"""
 
     def __init__(self, email, token: str) -> None:
         self._api_client = KentikAPI(email=email, token=token)
