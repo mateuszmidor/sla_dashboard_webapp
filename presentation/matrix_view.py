@@ -61,7 +61,7 @@ def make_colors(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> Lis
             colors_col.append(color)
         colors.append(colors_col)
 
-    for i in range(len(mesh.rows)):
+    for i in range(len(mesh.rows)):  # add Nones at diagonal to avoid colorising it
         colors[-(i + 1)].insert(i, None)  # type: ignore
 
     return colors
@@ -89,10 +89,13 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
     for row in reversed(mesh.rows):
         text_col = []
         for col in row.columns:
+
             latency_ms = matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3
             jitter = matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value
             loss = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
-            text_col.append(f"Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter * 1e-3:.2f} ms, <br>Loss: {loss:.1f}%")
+            text_col.append(
+                f"{row.agent_alias} -> {col.agent_alias} <br>Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter * 1e-3:.2f} ms, <br>Loss: {loss:.1f}%"
+            )
         text.append(text_col)
     for i in range(len(mesh.rows)):
         text[-(i + 1)].insert(i, "")
