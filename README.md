@@ -1,13 +1,14 @@
 # SLA Dashboard web application
 Example web application visualizing SLA adherence based on Kentik synthetic mesh test data
 
-## Run the app
+## Run the dashboard app
 
 
 Run the web server with:
 ```bash
 export KTAPI_AUTH_EMAIL=<your kentik api email>
 export KTAPI_AUTH_TOKEN=<your kentik api token>
+pip install -r requirements.txt
 python main.py
 ```
 
