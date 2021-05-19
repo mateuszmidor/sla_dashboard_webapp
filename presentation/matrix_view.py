@@ -1,11 +1,7 @@
 import itertools
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-import dash
 import dash_core_components as dcc
-import dash_html_components as html
-import dash_table
-from dash.dependencies import Input, Output
 
 from domain.config import Config
 from domain.config.thresholds import Thresholds
@@ -19,7 +15,7 @@ GREEN = "rgb(0,255,0)"
 
 def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph:
     matrix = Matrix(mesh)
-    data = make_data(mesh, matrix, config.latency_deteriorated_ms, config.latency_failed_ms)
+    data = make_data(mesh, matrix, config.latency)
     annotations = make_annotations(mesh, matrix)
     layout = dict(
         margin=dict(l=150, b=50, t=100, r=50),
@@ -34,8 +30,8 @@ def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph
     return dcc.Graph(figure={"data": data, "layout": layout}, style={"width": 750, "height": 750})
 
 
-def make_data(mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, latency_failed_ms: int) -> List[Dict]:
-    colors = make_colors(mesh, matrix, latency_deteriorated_ms, latency_failed_ms)
+def make_data(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> List[Dict]:
+    colors = make_colors(mesh, matrix, tresholds)
     return [
         dict(
             x=matrix.agents,
@@ -52,21 +48,21 @@ def make_data(mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, l
     ]
 
 
-def make_colors(
-    mesh: MeshResults, matrix: Matrix, latency_deteriorated_ms: int, latency_failed_ms: int
-) -> List[List[float]]:
+def make_colors(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> List[List]:
     colors = []
     for row in reversed(mesh.rows):
         colors_col = []
         for col in row.columns:
+            deteriorated = tresholds.deteriorated(row.agent_id, col.agent_id)
+            failed = tresholds.failed(row.agent_id, col.agent_id)
             color = get_color(
-                matrix.cells[row.alias][col.alias].latency_microsec.value, latency_deteriorated_ms, latency_failed_ms
+                matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value, deteriorated, failed
             )
             colors_col.append(color)
         colors.append(colors_col)
 
     for i in range(len(mesh.rows)):
-        colors[-(i + 1)].insert(i, None)
+        colors[-(i + 1)].insert(i, None)  # type: ignore
 
     return colors
 
@@ -78,11 +74,11 @@ def make_annotations(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
             annotations.append(
                 dict(
                     showarrow=False,
-                    text=f"<b>{(matrix.cells[row.alias][col.alias].latency_microsec.value * 1e-3):.2f} ms</b>",
+                    text=f"<b>{(matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3):.2f} ms</b>",
                     xref="x",
                     yref="y",
-                    x=col.alias,
-                    y=row.alias,
+                    x=col.agent_alias,
+                    y=row.agent_alias,
                 )
             )
     return annotations
@@ -93,10 +89,10 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
     for row in reversed(mesh.rows):
         text_col = []
         for col in row.columns:
-            latency_ms = matrix.cells[row.alias][col.alias].latency_microsec.value * 1e-3
-            jitter = matrix.cells[row.alias][col.alias].jitter.value
-            loss = matrix.cells[row.alias][col.alias].packet_loss.value
-            text_col.append(f"Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter * 1e-3} ms, <br>Loss: {loss}%")
+            latency_ms = matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3
+            jitter = matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value
+            loss = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
+            text_col.append(f"Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter * 1e-3:.2f} ms, <br>Loss: {loss:.1f}%")
         text.append(text_col)
     for i in range(len(mesh.rows)):
         text[-(i + 1)].insert(i, "")
@@ -104,16 +100,16 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
     return text
 
 
-def get_color(val: int, latency_deteriorated_ms: int, latency_failed_ms: int) -> float:
-    if val < latency_deteriorated_ms * 1000:
+def get_color(val: int, latency_deteriorated_us: int, latency_failed_us: int) -> float:
+    if val < latency_deteriorated_us:
         return 0
-    if val < latency_failed_ms * 1000:
+    if val < latency_failed_us:
         return 0.5
     else:
         return 1.0
 
 
-def get_colorscale(z: List[List[float]]) -> List[List]:
+def get_colorscale(z: List[List]) -> List[List]:
     if all([i == 0.0 for i in itertools.chain(*z)]):
         return [[0.0, GREEN], [1.0, GREEN]]
     if all([i == 0.5 for i in itertools.chain(*z)]):
