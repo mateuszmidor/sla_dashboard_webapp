@@ -18,7 +18,7 @@ Shell:
 export KTAPI_AUTH_EMAIL=<your kentik api email>
 export KTAPI_AUTH_TOKEN=<your kentik api token>
 pip install -r requirements.txt
-gunicorn --workers=1 'main:run()'
+gunicorn --config=gunicorn.conf.py 'main:run()'
 ```
 
 ## Application configuration
