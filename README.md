@@ -1,19 +1,25 @@
 # SLA Dashboard web application
 Example web application visualizing SLA adherence based on Kentik synthetic mesh test data
 
-## Run the app
+## Run the dashboard app
 
 
 Run the web server with:
 ```bash
 export KTAPI_AUTH_EMAIL=<your kentik api email>
 export KTAPI_AUTH_TOKEN=<your kentik api token>
+pip install -r requirements.txt
 python main.py
 ```
 
 ## Application configuration
 
 Configuration is stored in config file [config.yaml](./config.yaml)
+
+## API request quota utilisation
+
+Each instance of WebApp maintains it's own data cache.  
+Running multiple instances of WebApp, for example as WSGI server workers, is safe, but may increase the API request quota impact.
 
 ## Development
 

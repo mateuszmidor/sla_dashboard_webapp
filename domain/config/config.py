@@ -14,7 +14,7 @@ class Config(Protocol):
 
     @property
     def data_update_period_seconds(self) -> int:
-        """ How often to fetch fresh test results from the server """
+        """ Minimal time period between test results cache updates """
         pass
 
     @property
