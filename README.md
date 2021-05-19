@@ -1,15 +1,24 @@
 # SLA Dashboard web application
 Example web application visualizing SLA adherence based on Kentik synthetic mesh test data
 
-## Run the dashboard app
+## Run the dashboard app (development server, debug mode ON)
 
-
-Run the web server with:
+Shell:
 ```bash
 export KTAPI_AUTH_EMAIL=<your kentik api email>
 export KTAPI_AUTH_TOKEN=<your kentik api token>
 pip install -r requirements.txt
 python main.py
+```
+
+## Run the dashboard app (production server, debug mode OFF)
+
+Shell:
+```bash
+export KTAPI_AUTH_EMAIL=<your kentik api email>
+export KTAPI_AUTH_TOKEN=<your kentik api token>
+pip install -r requirements.txt
+gunicorn --config=gunicorn.conf.py 'main:run()'
 ```
 
 ## Application configuration
@@ -34,8 +43,3 @@ Running multiple instances of WebApp, for example as WSGI server workers, is saf
 1. Get swagger specification for synthetics from <https://github.com/kentik/api-schema-public/tree/master/gen/openapiv2/kentik/synthetics/v202101beta1>
 1. Convert swagger spec to openapi 3 spec using <https://mermade.org.uk/openapi-converter>
 1. Save the openapi 3 spec as `synthetics.openapi.yaml` in project root directory
-
-## TODO
-
-- change Dash config "debug" -> False
-- change default Flask development http server to production ready server
