@@ -1,7 +1,5 @@
 import itertools
-from typing import Dict, List, Optional
-
-import dash_core_components as dcc
+from typing import Dict, List
 
 from domain.config import Config
 from domain.config.thresholds import Thresholds
@@ -13,10 +11,16 @@ ORANGE = "rgb(255,165,0)"
 GREEN = "rgb(0,255,0)"
 
 
-def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph:
+def make_mesh_test_matrix_layout(mesh: MeshResults, metric: str, config: Config) -> Dict:
     matrix = Matrix(mesh)
-    data = make_data(mesh, matrix, config.latency)
-    annotations = make_annotations(mesh, matrix)
+    if metric == "latency":
+        tresholds = config.latency
+    elif metric == "jitter":
+        tresholds = config.jitter
+    else:
+        tresholds = config.packet_loss
+    data = make_data(mesh, metric, matrix, tresholds)
+    annotations = make_annotations(mesh, metric, matrix)
     layout = dict(
         margin=dict(l=150, b=50, t=100, r=50),
         modebar={"orientation": "v"},
@@ -27,11 +31,11 @@ def make_mesh_test_matrix_layout(mesh: MeshResults, config: Config) -> dcc.Graph
         showlegend=False,
     )
 
-    return dcc.Graph(figure={"data": data, "layout": layout}, style={"width": 750, "height": 750})
+    return {"data": data, "layout": layout}
 
 
-def make_data(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> List[Dict]:
-    colors = make_colors(mesh, matrix, tresholds)
+def make_data(mesh: MeshResults, metric: str, matrix: Matrix, tresholds: Thresholds) -> List[Dict]:
+    colors = make_colors(mesh, metric, matrix, tresholds)
     return [
         dict(
             x=matrix.agents,
@@ -48,16 +52,20 @@ def make_data(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> List[
     ]
 
 
-def make_colors(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> List[List]:
+def make_colors(mesh: MeshResults, metric: str, matrix: Matrix, tresholds: Thresholds) -> List[List]:
     colors = []
     for row in reversed(mesh.rows):
         colors_col = []
         for col in row.columns:
             deteriorated = tresholds.deteriorated(row.agent_id, col.agent_id)
             failed = tresholds.failed(row.agent_id, col.agent_id)
-            color = get_color(
-                matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value, deteriorated, failed
-            )
+            if metric == "latency":
+                value = matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value
+            elif metric == "jitter":
+                value = matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value
+            else:
+                value = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
+            color = get_color(value, deteriorated, failed)
             colors_col.append(color)
         colors.append(colors_col)
 
@@ -67,14 +75,20 @@ def make_colors(mesh: MeshResults, matrix: Matrix, tresholds: Thresholds) -> Lis
     return colors
 
 
-def make_annotations(mesh: MeshResults, matrix: Matrix) -> List[Dict]:
+def make_annotations(mesh: MeshResults, metric: str, matrix: Matrix) -> List[Dict]:
     annotations = []
     for row in reversed(mesh.rows):
         for col in row.columns:
+            if metric == "latency":
+                text = f"<b>{(matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3):.2f} ms</b>"
+            elif metric == "jitter":
+                text = f"<b>{matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value:.2f} ms</b>"
+            else:
+                text = f"<b>{matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value:.1f} ms</b>"
             annotations.append(
                 dict(
                     showarrow=False,
-                    text=f"<b>{(matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3):.2f} ms</b>",
+                    text=text,
                     xref="x",
                     yref="y",
                     x=col.agent_alias,

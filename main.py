@@ -6,8 +6,10 @@ from typing import Tuple
 import dash
 import dash_html_components as html
 import flask
+from dash.dependencies import Input, Output
 
 from domain.cached_repo_request_driven import CachedRepoRequestDriven
+from domain.model import MeshResults
 from infrastructure.config import ConfigYAML
 from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from presentation.main_view import make_page_layout
@@ -49,6 +51,18 @@ class WebApp:
         config = self._config
         return make_page_layout(mesh_test_results, results_timestamp, config)
 
+    @property
+    def mesh(self) -> MeshResults:
+        return self._cached_repo.get_mesh_test_results()
+
+    @property
+    def config(self) -> ConfigYAML:
+        return self._config
+
+    @property
+    def callback(self):
+        return self._app.callback
+
 
 def get_auth_email_token() -> Tuple[str, str]:
     try:
@@ -71,4 +85,9 @@ def run() -> flask.Flask:
 if __name__ == "__main__":
     email, token = get_auth_email_token()
     app = WebApp(email, token)
+
+    @app.callback(Output("matrix", "figure"), [Input("metric-selector", "value")])
+    def update_matrix(value):
+        return make_mesh_test_matrix_layout(app.mesh, value, app.config)
+
     app.run_development_server()
