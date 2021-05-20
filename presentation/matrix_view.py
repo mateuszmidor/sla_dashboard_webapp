@@ -82,9 +82,9 @@ def make_annotations(mesh: MeshResults, metric: str, matrix: Matrix) -> List[Dic
             if metric == "latency":
                 text = f"<b>{(matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3):.2f} ms</b>"
             elif metric == "jitter":
-                text = f"<b>{matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value:.2f} ms</b>"
+                text = f"<b>{(matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value * 1e-3):.2f} ms</b>"
             else:
-                text = f"<b>{matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value:.1f} ms</b>"
+                text = f"<b>{matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value:.1f}%</b>"
             annotations.append(
                 dict(
                     showarrow=False,
@@ -105,10 +105,10 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
         for col in row.columns:
 
             latency_ms = matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3
-            jitter = matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value
+            jitter = matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value * 1e-3
             loss = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
             text_col.append(
-                f"{row.agent_alias} -> {col.agent_alias} <br>Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter * 1e-3:.2f} ms, <br>Loss: {loss:.1f}%"
+                f"{row.agent_alias} -> {col.agent_alias} <br>Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter:.2f} ms, <br>Loss: {loss:.1f}%"
             )
         text.append(text_col)
     for i in range(len(mesh.rows)):

@@ -35,6 +35,11 @@ class WebApp:
             app = dash.Dash(__name__)
             app.layout = self._make_layout  # assign a method to recreate layout on every page refresh
             self._app = app
+
+            @app.callback(Output("matrix", "figure"), [Input("metric-selector", "value")])
+            def update_matrix(value):
+                return make_mesh_test_matrix_layout(self.mesh, value, self.config)
+
         except Exception as err:
             logger.exception("WebApp initialization failure")
             sys.exit(1)
@@ -85,9 +90,5 @@ def run() -> flask.Flask:
 if __name__ == "__main__":
     email, token = get_auth_email_token()
     app = WebApp(email, token)
-
-    @app.callback(Output("matrix", "figure"), [Input("metric-selector", "value")])
-    def update_matrix(value):
-        return make_mesh_test_matrix_layout(app.mesh, value, app.config)
 
     app.run_development_server()
