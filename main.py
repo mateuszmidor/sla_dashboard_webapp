@@ -14,14 +14,15 @@ from presentation.main_view import make_page_layout
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
 FORMAT = "[%(asctime)-15s] [%(process)d] [%(levelname)s]  %(message)s"
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
 class WebApp:
-    def __init__(self, email, token: str) -> None:
+    def __init__(self) -> None:
         try:
             config = ConfigYAML("config.yaml")
+            email, token = WebApp._get_auth_email_token()
             repo = SyntheticsRepo(email, token)
             self._cached_repo = CachedRepoRequestDriven(
                 repo,
@@ -49,26 +50,23 @@ class WebApp:
         config = self._config
         return make_page_layout(mesh_test_results, results_timestamp, config)
 
-
-def get_auth_email_token() -> Tuple[str, str]:
-    try:
-        email = os.environ["KTAPI_AUTH_EMAIL"]
-        token = os.environ["KTAPI_AUTH_TOKEN"]
-        return email, token
-    except KeyError:
-        logger.error("You have to specify KTAPI_AUTH_EMAIL and KTAPI_AUTH_TOKEN environment variables first")
-        sys.exit(1)
+    @staticmethod
+    def _get_auth_email_token() -> Tuple[str, str]:
+        try:
+            email = os.environ["KTAPI_AUTH_EMAIL"]
+            token = os.environ["KTAPI_AUTH_TOKEN"]
+            return email, token
+        except KeyError:
+            raise Exception("You have to specify KTAPI_AUTH_EMAIL and KTAPI_AUTH_TOKEN environment variables first")
 
 
 # Run production server: gunicorn --workers=1 'main:run()'
 def run() -> flask.Flask:
-    email, token = get_auth_email_token()
-    app = WebApp(email, token)
+    app = WebApp()
     return app.get_production_server()
 
 
 # Run development server: python main.py
 if __name__ == "__main__":
-    email, token = get_auth_email_token()
-    app = WebApp(email, token)
+    app = WebApp()
     app.run_development_server()

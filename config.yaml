@@ -1,4 +1,4 @@
-# ID of the test to display the data matrix for
+# ID of the test to display the data matrix for. Assigned by Kentik
 test_id: 3541
 
 # minimal time period between test results cache updates
@@ -11,40 +11,40 @@ data_update_lookback_seconds: 300
 thresholds:
   latency: # thresholds in microseconds
     defaults:
-      deteriorated: 200000 # latency low threshold; if above, then display connection as deteriorated
-      failed: 400000 # latency high threshold; if above, then display connection as failed
+      warning: 200000 # latency low threshold; if above, then display connection as warning
+      error: 400000 # latency high threshold; if above, then display connection as error
     overrides:
-      - from: 10 # agent_id
-        to: 11 # agent_id
-        deteriorated: 10000
-        failed: 20000
+      - from: 10 # agent_id. Assigned by Kentik
+        to: 11 # agent_id. Assigned by Kentik
+        warning: 10000
+        error: 20000
       - from: 60
         to: 70
-        deteriorated: 1000000
-        failed: 2000000 
+        warning: 1000000
+        error: 2000000 
   jitter: # thresholds in microseconds
     defaults:
-      deteriorated: 300 # jitter low threshold; if above, then display connection as deteriorated
-      failed: 900 # jitter high threshold; if above, then display connection as failed
+      warning: 300 # jitter low threshold; if above, then display connection as warning
+      error: 900 # jitter high threshold; if above, then display connection as error
     overrides:
-      - from: 10 # agent_id
-        to: 11 # agent_id
-        deteriorated: 10
-        failed: 20
+      - from: 10 # agent_id. Assigned by Kentik
+        to: 11 # agent_id. Assigned by Kentik
+        warning: 10
+        error: 20
       - from: 60
         to: 70
-        deteriorated: 30
-        failed: 70
+        warning: 30
+        error: 70
   packet_loss: # thresholds in percents (0-100)
     defaults:
-      deteriorated: 5 # packet_loss low threshold; if above, then display connection as deteriorated
-      failed: 20 # packet_loss high threshold; if above, then display connection as failed
+      warning: 5 # packet_loss low threshold; if above, then display connection as warning
+      error: 20 # packet_loss high threshold; if above, then display connection as error
     overrides:
-      - from: 10 # agent_id
-        to: 11 # agent_id
-        deteriorated: 10
-        failed: 40
+      - from: 10 # agent_id. Assigned by Kentik
+        to: 11 # agent_id. Assigned by Kentik
+        warning: 10
+        error: 40
       - from: 60
         to: 70
-        deteriorated: 3
-        failed: 8 
+        warning: 3
+        error: 8
