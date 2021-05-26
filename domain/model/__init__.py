@@ -1,1 +1,1 @@
-from .mesh_results import MeshColumn, MeshResults, MeshRow, Metric
+from .mesh_results import HealthItem, MeshColumn, MeshResults, MeshRow, Metric

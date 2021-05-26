@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from domain.model import MeshColumn, MeshResults, MeshRow, Metric
+from domain.model import HealthItem, MeshColumn, MeshResults, MeshRow, Metric
 from domain.types import AgentID, TestID
 
 # the below "disable=E0611" is needed as we don't commit the generated code into git repo and thus CI linter complains
@@ -12,6 +12,7 @@ from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api
     V202101beta1GetHealthForTestsRequest,
 )
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_column import V202101beta1MeshColumn
+from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_metrics import V202101beta1MeshMetrics
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_response import V202101beta1MeshResponse
 
 # pylint: enable=E0611
@@ -42,9 +43,9 @@ class SyntheticsRepo:
             raise Exception(f"Failed to fetch results for test id: {test_id}") from err
 
 
-def transform_to_internal_mesh(input: V202101beta1MeshResponse) -> MeshResults:
+def transform_to_internal_mesh(input_rows: V202101beta1MeshResponse) -> MeshResults:
     mesh = MeshResults()
-    for input_row in input:
+    for input_row in input_rows:
         row = MeshRow(
             agent_name=input_row.name,
             agent_alias=input_row.alias,
@@ -77,6 +78,20 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
                 health=input_column.metrics.packet_loss.health,
                 value=int(input_column.metrics.packet_loss.value),
             ),
+            health=transform_to_internal_health_items(input_column.health),
         )
         columns.append(column)
     return columns
+
+
+def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetrics]) -> List[HealthItem]:
+    health: List[HealthItem] = []
+    for h in input_health:
+        item = HealthItem(
+            jitter_microsec=int(h.jitter.value),
+            latency_microsec=int(h.latency.value),
+            packet_loss_percent=int(h.packet_loss.value),
+            time=h.time,
+        )
+        health.append(item)
+    return health

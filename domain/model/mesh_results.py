@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List
 
 from domain.types import AgentID
@@ -13,6 +14,16 @@ class Metric:
 
 
 @dataclass
+class HealthItem:
+    """Represents single from->to connection health timeseries entry"""
+
+    jitter_microsec: int
+    latency_microsec: int
+    packet_loss_percent: int
+    time: datetime
+
+
+@dataclass
 class MeshColumn:
     """ Represents connection "to" endpoint """
 
@@ -23,6 +34,7 @@ class MeshColumn:
     jitter_microsec: Metric
     latency_microsec: Metric
     packet_loss_percent: Metric
+    health: List[HealthItem]
 
 
 @dataclass

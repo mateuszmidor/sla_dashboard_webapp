@@ -5,7 +5,7 @@ test_id: 3541
 data_update_period_seconds: 60
 
 # time window to fetch the test results for
-data_update_lookback_seconds: 300
+data_update_lookback_seconds: 3600
 
 # metric thresholds
 thresholds:
