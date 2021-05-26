@@ -8,8 +8,8 @@ from domain.types import AgentID, Threshold
 class ThresholdOverride:
     """ Threshold overrides can be optionally specified; if not specified - default values shall be used """
 
-    deteriorated: Optional[int] = None
-    failed: Optional[int] = None
+    warning: Optional[int] = None
+    error: Optional[int] = None
 
 
 class Thresholds:
@@ -18,44 +18,44 @@ class Thresholds:
     It implements domain.config.thresholds.Thresholds protocol
     """
 
-    def deteriorated(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
+    def warning(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
         override = self._get_override_or_none(from_agent, to_agent)
-        if override is None or override.deteriorated is None:
-            return self._default_deteriorated
-        return override.deteriorated
+        if override is None or override.warning is None:
+            return self._default_warning
+        return override.warning
 
-    def failed(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
+    def error(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
         override = self._get_override_or_none(from_agent, to_agent)
-        if override is None or override.failed is None:
-            return self._default_failed
-        return override.failed
+        if override is None or override.error is None:
+            return self._default_error
+        return override.error
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """
         Example of config dict structure for thresholds:
         "defaults":{
-            "deteriorated":200,
-            "failed":400
+            "warning":200,
+            "error":400
         },
         "overrides":[
             {
             "from":10,
             "to":11,
-            "deteriorated":10,
-            "failed":20
+            "warning":10,
+            "error":20
             },
             {
             "from":60,
             "to":70,
-            "deteriorated":1000,
-            "failed":2000
+            "warning":1000,
+            "error":2000
             }
         ]
         """
         try:
             # read defaults config (required)
-            self._default_deteriorated = Threshold(config["defaults"]["deteriorated"])
-            self._default_failed = Threshold(config["defaults"]["failed"])
+            self._default_warning = Threshold(config["defaults"]["warning"])
+            self._default_error = Threshold(config["defaults"]["error"])
 
             # read overrides config (optional)
             self._overrides: Dict[AgentID, Dict[AgentID, ThresholdOverride]] = dict()
@@ -65,20 +65,20 @@ class Thresholds:
             for override in config["overrides"]:
                 from_agent = AgentID(override["from"])
                 to_agent = AgentID(override["to"])
-                if "deteriorated" in override:
-                    self._override_deteriorated(from_agent, to_agent, Threshold(override["deteriorated"]))
-                if "failed" in override:
-                    self._override_failed(from_agent, to_agent, Threshold(override["failed"]))
+                if "warning" in override:
+                    self._override_warning(from_agent, to_agent, Threshold(override["warning"]))
+                if "error" in override:
+                    self._override_error(from_agent, to_agent, Threshold(override["error"]))
         except KeyError as err:
             raise Exception("Incomplete thresholds definition") from err
 
-    def _override_deteriorated(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
+    def _override_warning(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
         override = self._get_or_create_override(from_agent, to_agent)
-        override.deteriorated = value
+        override.warning = value
 
-    def _override_failed(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
+    def _override_error(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
         override = self._get_or_create_override(from_agent, to_agent)
-        override.failed = value
+        override.error = value
 
     def _get_or_create_override(self, from_agent: AgentID, to_agent: AgentID) -> ThresholdOverride:
         overrides = self._overrides

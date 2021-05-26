@@ -61,10 +61,10 @@ def make_colors(mesh: MeshResults, metric: str, matrix: Matrix, tresholds: Thres
     for row in reversed(mesh.rows):
         colors_col = []
         for col in row.columns:
-            deteriorated = tresholds.deteriorated(row.agent_id, col.agent_id)
-            failed = tresholds.failed(row.agent_id, col.agent_id)
+            warning = tresholds.warning(row.agent_id, col.agent_id)
+            error = tresholds.error(row.agent_id, col.agent_id)
             value = get_metric_value(metric, matrix.cells[row.agent_alias][col.agent_alias])
-            color = get_color(value, deteriorated, failed)
+            color = get_color(value, warning, error)
             colors_col.append(color)
         colors.append(colors_col)
 
@@ -129,10 +129,10 @@ def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
     return text
 
 
-def get_color(val: int, latency_deteriorated_us: int, latency_failed_us: int) -> float:
-    if val < latency_deteriorated_us:
+def get_color(val: int, latency_warning_us: int, latency_error_us: int) -> float:
+    if val < latency_warning_us:
         return 0
-    if val < latency_failed_us:
+    if val < latency_error_us:
         return 0.5
     else:
         return 1.0
