@@ -6,8 +6,10 @@ from typing import Tuple
 import dash
 import dash_html_components as html
 import flask
+from dash.dependencies import Input, Output
 
 from domain.cached_repo_request_driven import CachedRepoRequestDriven
+from domain.model import MeshResults
 from infrastructure.config import ConfigYAML
 from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from presentation.main_view import make_page_layout
@@ -34,6 +36,11 @@ class WebApp:
             app = dash.Dash(__name__)
             app.layout = self._make_layout  # assign a method to recreate layout on every page refresh
             self._app = app
+
+            @app.callback(Output("matrix", "figure"), [Input("metric-selector", "value")])
+            def update_matrix(value):
+                return make_mesh_test_matrix_layout(self.mesh, value, self.config)
+
         except Exception as err:
             logger.exception("WebApp initialization failure")
             sys.exit(1)
@@ -49,6 +56,18 @@ class WebApp:
         results_timestamp = self._cached_repo.data_timestamp()
         config = self._config
         return make_page_layout(mesh_test_results, results_timestamp, config)
+
+    @property
+    def mesh(self) -> MeshResults:
+        return self._cached_repo.get_mesh_test_results()
+
+    @property
+    def config(self) -> ConfigYAML:
+        return self._config
+
+    @property
+    def callback(self):
+        return self._app.callback
 
     @staticmethod
     def _get_auth_email_token() -> Tuple[str, str]:
