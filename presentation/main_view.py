@@ -10,7 +10,7 @@ from domain.model import MeshResults
 
 def make_page_layout(mesh: MeshResults, results_timestamp: datetime, config: Config) -> html.Div:
     timestamp = results_timestamp.strftime("%H:%M:%S")
-    header = "Synthetics SLA Dashboard WebApp"
+    header = "SLA Dashboard"
     return html.Div(
         children=[
             html.H1(children=header, style={"textAlign": "center", "marginBottom": 50}),
