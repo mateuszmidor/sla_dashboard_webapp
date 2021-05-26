@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class WebApp:
     def __init__(self) -> None:
         try:
-            config = ConfigYAML("config.yaml")
+            config = ConfigYAML("data/config.yaml")
             email, token = WebApp._get_auth_email_token()
             repo = SyntheticsRepo(email, token)
             self._cached_repo = CachedRepoRequestDriven(
