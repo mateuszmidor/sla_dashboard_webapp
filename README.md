@@ -25,13 +25,20 @@ gunicorn --config=data/gunicorn.conf.py 'main:run()'
 
 Shell:
 ```bash
-./docker_build.sh
+docker build . -t sla_dashboard
 ```
 
 ## Docker run image
 Shell:
 ```bash
-./docker_run.sh
+docker run \
+    --name sla_dashboard \
+    --rm \
+    -e KTAPI_AUTH_EMAIL=<kentik account email> \
+    -e KTAPI_AUTH_TOKEN=<kentik account token> \
+    -v "$(pwd)/data:/app/data" \
+    -p 127.0.0.1:8050:8050 \
+    sla_dashboard:latest
 ```
 **Note:** running the app as docker container requires `data/` folder with `config.yaml` and `gunicorn.conf.py`
 
