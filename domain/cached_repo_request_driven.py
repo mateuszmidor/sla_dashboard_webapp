@@ -25,7 +25,6 @@ class CachedRepoRequestDriven:
         monitored_test_id: TestID,
         max_data_age_seconds: int,
         lookback_seconds: int,
-        timeout: Optional[Tuple[float, float]] = None,
     ) -> None:
         self._source_repo = source_repo
         self._test_id = monitored_test_id
@@ -34,7 +33,6 @@ class CachedRepoRequestDriven:
         self._cache_test_results = MeshResults()
         self._cache_timestamp = CachedRepoRequestDriven.NEVER_UPDATED
         self._cache_access_lock = threading.Lock()
-        self._timeout = timeout
 
     def data_timestamp(self) -> datetime:
         with self._cache_access_lock:
@@ -51,7 +49,7 @@ class CachedRepoRequestDriven:
 
         logger.debug("Updating data cache start...")
         try:
-            results = self._source_repo.get_mesh_test_results(self._test_id, self._lookback_seconds, self._timeout)
+            results = self._source_repo.get_mesh_test_results(self._test_id, self._lookback_seconds)
             with self._cache_access_lock:
                 self._cache_test_results = results
                 self._cache_timestamp = datetime.now()

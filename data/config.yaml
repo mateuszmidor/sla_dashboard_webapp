@@ -8,6 +8,7 @@ data_update_period_seconds: 60
 data_update_lookback_seconds: 300
 
 # timeout for fetching synthetics tests results
+# numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both
 timeout: [10.0, 10.0]
 
 # metric thresholds

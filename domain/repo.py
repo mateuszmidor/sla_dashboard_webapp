@@ -7,7 +7,5 @@ from domain.types import TestID
 class Repo(Protocol):
     """ Repo provides data access to Kentik Synthetic Tests """
 
-    def get_mesh_test_results(
-        self, test_id: TestID, results_lookback_minutes: int, timeout: Optional[Tuple[float, float]] = None
-    ) -> MeshResults:
+    def get_mesh_test_results(self, test_id: TestID, results_lookback_minutes: int) -> MeshResults:
         pass
