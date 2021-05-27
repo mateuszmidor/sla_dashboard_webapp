@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import yaml
 
 from domain.types import TestID
@@ -31,6 +33,10 @@ class ConfigYAML:
     def packet_loss(self) -> Thresholds:
         return self._packet_loss
 
+    @property
+    def timeout(self) -> Tuple[float, float]:
+        return self._timeout  # type: ignore
+
     def __init__(self, filename: str) -> None:
         try:
             with open(filename, "r") as file:
@@ -42,5 +48,6 @@ class ConfigYAML:
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
+            self._timeout = tuple(config["timeout"])
         except Exception as err:
             raise Exception("Configuration error") from err

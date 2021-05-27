@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import List, Optional, Tuple
 
 from domain.model import MeshColumn, MeshResults, MeshRow, Metric
 from domain.types import AgentID, TestID
@@ -24,13 +24,15 @@ class SyntheticsRepo:
     def __init__(self, email, token: str) -> None:
         self._api_client = KentikAPI(email=email, token=token)
 
-    def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
+    def get_mesh_test_results(
+        self, test_id: TestID, results_lookback_seconds: int, timeout: Optional[Tuple[float, float]] = None
+    ) -> MeshResults:
         try:
             end = datetime.now(timezone.utc)
             start = end - timedelta(seconds=results_lookback_seconds)
 
             request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
-            response = self._api_client.synthetics.get_health_for_tests(request)
+            response = self._api_client.synthetics.get_health_for_tests(request, _request_timeout=timeout)
 
             num_results = len(response.health)
             if num_results == 0:

@@ -16,7 +16,7 @@ from presentation.main_view import make_page_layout
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
 FORMAT = "[%(asctime)-15s] [%(process)d] [%(levelname)s]  %(message)s"
-logging.basicConfig(level=logging.INFO, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +31,7 @@ class WebApp:
                 config.test_id,
                 config.data_update_period_seconds,
                 config.data_update_lookback_seconds,
+                config.timeout,
             )
             self._config = config
             app = dash.Dash(__name__)

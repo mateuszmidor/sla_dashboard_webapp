@@ -2,6 +2,7 @@ import logging
 import threading
 from copy import deepcopy
 from datetime import datetime, timedelta
+from typing import Optional, Tuple
 
 from domain.model.mesh_results import MeshResults
 from domain.repo import Repo
@@ -24,6 +25,7 @@ class CachedRepoRequestDriven:
         monitored_test_id: TestID,
         max_data_age_seconds: int,
         lookback_seconds: int,
+        timeout: Optional[Tuple[float, float]] = None,
     ) -> None:
         self._source_repo = source_repo
         self._test_id = monitored_test_id
@@ -32,6 +34,7 @@ class CachedRepoRequestDriven:
         self._cache_test_results = MeshResults()
         self._cache_timestamp = CachedRepoRequestDriven.NEVER_UPDATED
         self._cache_access_lock = threading.Lock()
+        self._timeout = timeout
 
     def data_timestamp(self) -> datetime:
         with self._cache_access_lock:
@@ -48,13 +51,13 @@ class CachedRepoRequestDriven:
 
         logger.debug("Updating data cache start...")
         try:
-            results = self._source_repo.get_mesh_test_results(self._test_id, self._lookback_seconds)
+            results = self._source_repo.get_mesh_test_results(self._test_id, self._lookback_seconds, self._timeout)
             with self._cache_access_lock:
                 self._cache_test_results = results
                 self._cache_timestamp = datetime.now()
+            logger.debug("Updating data cache successful")
         except Exception as err:
             logger.exception("Updating data cache error")
-        logger.debug("Updating data cache successful")
 
     def _cached_data_fresh_enough(self) -> bool:
         return datetime.now() - timedelta(seconds=self._max_data_age_seconds) <= self.data_timestamp()
