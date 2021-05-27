@@ -18,12 +18,26 @@ Shell:
 export KTAPI_AUTH_EMAIL=<your kentik api email>
 export KTAPI_AUTH_TOKEN=<your kentik api token>
 pip install -r requirements.txt
-gunicorn --config=gunicorn.conf.py 'main:run()'
+gunicorn --config=data/gunicorn.conf.py 'main:run()'
 ```
+
+## Docker build image
+
+Shell:
+```bash
+./docker_build.sh
+```
+
+## Docker run image
+Shell:
+```bash
+./docker_run.sh
+```
+**Note:** running the app as docker container requires `data/` folder with `config.yaml` and `gunicorn.conf.py`
 
 ## Application configuration
 
-Configuration is stored in config file [config.yaml](./config.yaml)
+Configuration is stored in config file [config.yaml](./data/config.yaml)
 
 ## API request quota utilisation
 

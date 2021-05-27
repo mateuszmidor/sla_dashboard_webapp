@@ -2,5 +2,5 @@
 
 workers = 1
 worker_connections = 100
-bind = "127.0.0.1:8008"
+bind = ":8050"
 timeout = 30

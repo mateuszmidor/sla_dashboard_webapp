@@ -37,7 +37,7 @@ def get_auth_email_token() -> Tuple[str, str]:
 class WebApp:
     def __init__(self) -> None:
         try:
-            config = ConfigYAML("config.yaml")
+            config = ConfigYAML("data/config.yaml")
             email, token = get_auth_email_token()
             repo = SyntheticsRepo(email, token)
             self._cached_repo = CachedRepoRequestDriven(
@@ -65,7 +65,7 @@ class WebApp:
                 return MatrixView.make_matrix_data(self.mesh, metric, self.config)
 
             # matrix view - handle cell click
-            @app.callback(Output(IndexView.REDIRECT, "children"), Input("matrix", "clickData"))
+            @app.callback(Output(IndexView.REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
             def open_chart(clickData: Optional[Dict[str, Any]]):
                 if clickData is not None:
                     return self._handle_cell_click(clickData["points"][0]["x"], clickData["points"][0]["y"])
