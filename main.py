@@ -15,8 +15,14 @@ from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from presentation.main_view import make_page_layout
 from presentation.matrix_view import make_mesh_test_matrix_layout
 
+try:
+    config = ConfigYAML("data/config.yaml")
+except Exception as err:
+    print("Unable to read config file")
+    sys.exit(1)
+
 FORMAT = "[%(asctime)-15s] [%(process)d] [%(levelname)s]  %(message)s"
-logging.basicConfig(level=logging.INFO, format=FORMAT)
+logging.basicConfig(level=config.logging_level, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
