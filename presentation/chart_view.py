@@ -1,5 +1,4 @@
 import urllib.parse as urlparse
-from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 from urllib.parse import parse_qs, unquote
 
@@ -7,26 +6,25 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 
-from domain.agents import Agents
 from domain.metric import Metric
 from domain.model import MeshResults
 from domain.model.mesh_results import HealthItem, MeshResults
-from domain.types import AgentID
-from presentation.health import Health
+from domain.types import AgentID, MetricValue
+from presentation.connection_health_data import ConnectionHealthData
+from presentation.localtime import utc_to_localtime
 
 
 class ChartView:
     @staticmethod
     def make_layout(from_agent, to_agent: AgentID, metric: Metric, results: MeshResults) -> html.Div:
         # make chart title
-        agents = Agents(results)
-        from_alias = agents.get_alias(from_agent)
-        to_alias = agents.get_alias(to_agent)
+        from_alias = results.agents.get_alias(from_agent)
+        to_alias = results.agents.get_alias(to_agent)
         title = f"{metric.value}: {from_alias} -> {to_alias}"
 
         # make chart data
-        health = Health(from_agent, to_agent, results)
-        xdata = [ChartView._utc_to_localtime(item.time) for item in health.items]
+        health = ConnectionHealthData(from_agent, to_agent, results)
+        xdata = [utc_to_localtime(item.time) for item in health.items]
         ydata = ChartView._get_ydata(metric, health)
         fig = go.Figure(data=[go.Scatter(x=xdata, y=ydata)])
 
@@ -39,11 +37,11 @@ class ChartView:
         )
 
     @staticmethod
-    def _get_ydata(metric: Metric, health: Health) -> List[float]:
+    def _get_ydata(metric: Metric, health: ConnectionHealthData) -> List[MetricValue]:
         if metric == Metric.LATENCY:
-            return [item.latency_microsec / 1000 for item in health.items]
+            return [item.latency_millisec for item in health.items]
         elif metric == Metric.JITTER:
-            return [item.jitter_microsec / 1000 for item in health.items]
+            return [item.jitter_millisec for item in health.items]
         else:
             return [item.packet_loss_percent for item in health.items]
 
@@ -56,8 +54,3 @@ class ChartView:
         path = unquote(path)
         params = urlparse.parse_qs(urlparse.urlparse(path).query)
         return params["from"][0], params["to"][0], Metric(params["metric"][0])
-
-    @staticmethod
-    def _utc_to_localtime(time: datetime) -> datetime:
-        LOCAL_TIMEZONE = datetime.now(timezone.utc).astimezone().tzinfo
-        return time.astimezone(LOCAL_TIMEZONE)

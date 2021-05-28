@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 from domain.model import HealthItem, MeshColumn, MeshResults, MeshRow, Metric
-from domain.types import AgentID, TestID
+from domain.types import AgentID, MetricValue, TestID
 
 # the below "disable=E0611" is needed as we don't commit the generated code into git repo and thus CI linter complains
 # pylint: disable=E0611
@@ -66,17 +66,17 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
             agent_alias=input_column.alias,
             agent_id=AgentID(input_column.id),
             target_ip=input_column.target,
-            jitter_microsec=Metric(
+            jitter_millisec=Metric(
                 health=input_column.metrics.jitter.health,
-                value=int(input_column.metrics.jitter.value),
+                value=scale_us_to_ms(input_column.metrics.jitter.value),
             ),
-            latency_microsec=Metric(
+            latency_millisec=Metric(
                 health=input_column.metrics.latency.health,
-                value=int(input_column.metrics.latency.value),
+                value=scale_us_to_ms(input_column.metrics.latency.value),
             ),
             packet_loss_percent=Metric(
                 health=input_column.metrics.packet_loss.health,
-                value=int(input_column.metrics.packet_loss.value),
+                value=MetricValue(input_column.metrics.packet_loss.value),
             ),
             health=transform_to_internal_health_items(input_column.health),
         )
@@ -88,10 +88,14 @@ def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetric
     health: List[HealthItem] = []
     for h in input_health:
         item = HealthItem(
-            jitter_microsec=int(h.jitter.value),
-            latency_microsec=int(h.latency.value),
-            packet_loss_percent=int(h.packet_loss.value),
+            jitter_millisec=scale_us_to_ms(h.jitter.value),
+            latency_millisec=scale_us_to_ms(h.latency.value),
+            packet_loss_percent=MetricValue(h.packet_loss.value),
             time=h.time,
         )
         health.append(item)
     return health
+
+
+def scale_us_to_ms(val: str) -> MetricValue:
+    return MetricValue(float(val) / 1000.0)

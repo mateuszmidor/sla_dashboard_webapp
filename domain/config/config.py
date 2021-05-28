@@ -24,12 +24,12 @@ class Config(Protocol):
 
     @property
     def latency(self) -> Thresholds:
-        """ Latency thresholds, in microseconds """
+        """ Latency thresholds, in milliseconds """
         pass
 
     @property
     def jitter(self) -> Thresholds:
-        """ Jitter thresholds, in microseconds """
+        """ Jitter thresholds, in milliseconds """
         pass
 
     @property

@@ -11,6 +11,7 @@ from domain.config.thresholds import Thresholds
 from domain.metric import Metric
 from domain.model import MeshResults
 from domain.model.mesh_results import MeshColumn
+from domain.types import MetricValue, Threshold
 from presentation.matrix import Matrix
 
 
@@ -114,11 +115,11 @@ class MatrixView:
         return colors
 
     @staticmethod
-    def get_metric_value(metric: Metric, cell: MeshColumn) -> int:
+    def get_metric_value(metric: Metric, cell: MeshColumn) -> MetricValue:
         if metric == Metric.LATENCY:
-            return cell.latency_microsec.value
+            return cell.latency_millisec.value
         elif metric == Metric.JITTER:
-            return cell.jitter_microsec.value
+            return cell.jitter_millisec.value
         else:
             return cell.packet_loss_percent.value
 
@@ -143,9 +144,9 @@ class MatrixView:
     @staticmethod
     def get_text(metric: Metric, cell: MeshColumn) -> str:
         if metric == Metric.LATENCY:
-            return f"<b>{(cell.latency_microsec.value * 1e-3):.2f} ms</b>"
+            return f"<b>{(cell.latency_millisec.value):.2f} ms</b>"
         elif metric == Metric.JITTER:
-            return f"<b>{(cell.jitter_microsec.value * 1e-3):.2f} ms</b>"
+            return f"<b>{(cell.jitter_millisec.value):.2f} ms</b>"
         else:
             return f"<b>{cell.packet_loss_percent.value:.1f}%</b>"
 
@@ -156,8 +157,8 @@ class MatrixView:
             text_col = []
             for col in row.columns:
 
-                latency_ms = matrix.cells[row.agent_alias][col.agent_alias].latency_microsec.value * 1e-3
-                jitter_ms = matrix.cells[row.agent_alias][col.agent_alias].jitter_microsec.value * 1e-3
+                latency_ms = matrix.cells[row.agent_alias][col.agent_alias].latency_millisec.value
+                jitter_ms = matrix.cells[row.agent_alias][col.agent_alias].jitter_millisec.value
                 loss = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
                 text_col.append(
                     f"{row.agent_alias} -> {col.agent_alias} <br>Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter_ms:.2f} ms, <br>Loss: {loss:.1f}%"
@@ -169,10 +170,10 @@ class MatrixView:
         return text
 
     @staticmethod
-    def get_color(val: int, latency_warning_us: int, latency_error_us: int) -> float:
-        if val < latency_warning_us:
+    def get_color(val: float, warning_threshold: Threshold, error_threshold: Threshold) -> float:
+        if val < warning_threshold:
             return 0
-        if val < latency_error_us:
+        if val < error_threshold:
             return 0.5
         else:
             return 1.0

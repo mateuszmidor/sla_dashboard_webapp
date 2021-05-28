@@ -4,11 +4,11 @@ from domain.model import HealthItem, MeshResults
 from domain.types import AgentID
 
 
-class Health:
-    """Represents health items for given from->to connection"""
+class ConnectionHealthData:
+    """Represents connection health observations for given from->to connection"""
 
     def __init__(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> None:
-        self.items = Health._extract_health(mesh, from_agent, to_agent)
+        self.items = ConnectionHealthData._extract_health(mesh, from_agent, to_agent)
 
     @staticmethod
     def _extract_health(input: MeshResults, from_agent, to_agent: AgentID) -> List[HealthItem]:
