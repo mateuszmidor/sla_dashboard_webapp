@@ -1,7 +1,7 @@
 import logging
 import threading
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from domain.model.mesh_results import MeshResults
 from domain.repo import Repo
@@ -16,7 +16,7 @@ class CachedRepoRequestDriven:
     when the data is requested and cache is older than 'max_data_age_seconds'
     """
 
-    TIMESTAMP_NEVER_UPDATED = datetime(1970, 1, 1)
+    TIMESTAMP_NEVER_UPDATED = datetime(1970, 1, 1).replace(tzinfo=timezone.utc)
 
     def __init__(
         self,
@@ -53,4 +53,4 @@ class CachedRepoRequestDriven:
     def _cached_data_fresh_enough(self) -> bool:
         max_age = timedelta(seconds=self._max_data_age_seconds)
         with self._cache_access_lock:
-            return datetime.utcnow() - self._cache_test_results.utc_timestamp <= max_age
+            return datetime.now(timezone.utc) - self._cache_test_results.utc_timestamp <= max_age

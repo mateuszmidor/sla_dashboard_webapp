@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from datetime import datetime
-from typing import List
+from datetime import datetime, timezone
+from typing import List, Optional
 
 from domain.types import AgentID, MetricValue
 
@@ -69,8 +69,11 @@ class Agents:
 class MeshResults:
     """Internal representation of Mesh Test results; independent of source data structure like http or grpc synthetics client"""
 
-    def __init__(self, timestamp: datetime = datetime.utcnow()) -> None:
-        self.utc_timestamp = timestamp
+    def __init__(self, utc_timestamp: Optional[datetime] = None) -> None:
+        if utc_timestamp is None:
+            utc_timestamp = datetime.now(timezone.utc)
+
+        self.utc_timestamp = utc_timestamp
         self.rows: List[MeshRow] = []
         self.agents = Agents(self.rows)
 
