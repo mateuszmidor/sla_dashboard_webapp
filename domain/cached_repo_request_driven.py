@@ -16,7 +16,7 @@ class CachedRepoRequestDriven:
     when the data is requested and cache is older than 'max_data_age_seconds'
     """
 
-    NEVER_UPDATED = datetime(1970, 1, 1)
+    TIMESTAMP_NEVER_UPDATED = datetime(1970, 1, 1)
 
     def __init__(
         self,
@@ -29,13 +29,8 @@ class CachedRepoRequestDriven:
         self._test_id = monitored_test_id
         self._max_data_age_seconds = max_data_age_seconds
         self._lookback_seconds = lookback_seconds
-        self._cache_test_results = MeshResults()
-        self._cache_timestamp = CachedRepoRequestDriven.NEVER_UPDATED
+        self._cache_test_results = MeshResults(self.TIMESTAMP_NEVER_UPDATED)
         self._cache_access_lock = threading.Lock()
-
-    def data_timestamp(self) -> datetime:
-        with self._cache_access_lock:
-            return deepcopy(self._cache_timestamp)
 
     def get_mesh_test_results(self) -> MeshResults:
         self._update_cache_if_needed()
@@ -51,10 +46,11 @@ class CachedRepoRequestDriven:
             results = self._source_repo.get_mesh_test_results(self._test_id, self._lookback_seconds)
             with self._cache_access_lock:
                 self._cache_test_results = results
-                self._cache_timestamp = datetime.now()
         except Exception as err:
             logger.exception("Updating data cache error")
         logger.debug("Updating data cache successful")
 
     def _cached_data_fresh_enough(self) -> bool:
-        return datetime.now() - timedelta(seconds=self._max_data_age_seconds) <= self.data_timestamp()
+        max_age = timedelta(seconds=self._max_data_age_seconds)
+        with self._cache_access_lock:
+            return datetime.utcnow() - self._cache_test_results.utc_timestamp <= max_age

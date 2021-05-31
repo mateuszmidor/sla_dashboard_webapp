@@ -96,9 +96,8 @@ class WebApp:
 
     def _make_matrix_layout(self) -> html.Div:
         mesh_test_results = self._cached_repo.get_mesh_test_results()
-        results_timestamp = self._cached_repo.data_timestamp()
         metric = self._current_metric
-        return MatrixView.make_layout(mesh_test_results, results_timestamp, metric)
+        return MatrixView.make_layout(mesh_test_results, metric)
 
     def _make_chart_layout(self, path: str) -> html.Div:
         from_agent, to_agent, metric = ChartView.decode_path(path)

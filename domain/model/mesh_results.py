@@ -69,7 +69,8 @@ class Agents:
 class MeshResults:
     """Internal representation of Mesh Test results; independent of source data structure like http or grpc synthetics client"""
 
-    def __init__(self) -> None:
+    def __init__(self, timestamp: datetime = datetime.utcnow()) -> None:
+        self.utc_timestamp = timestamp
         self.rows: List[MeshRow] = []
         self.agents = Agents(self.rows)
 

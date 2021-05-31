@@ -12,6 +12,7 @@ from domain.metric import Metric
 from domain.model import MeshResults
 from domain.model.mesh_results import MeshColumn
 from domain.types import MetricValue, Threshold
+from presentation.localtime import utc_to_localtime
 from presentation.matrix import Matrix
 
 
@@ -20,8 +21,9 @@ class MatrixView:
     METRIC_SELECTOR = "metric-selector"
 
     @staticmethod
-    def make_layout(mesh: MeshResults, results_timestamp: datetime, metric: Metric) -> html.Div:
-        timestamp = results_timestamp.strftime("%H:%M:%S")
+    def make_layout(mesh: MeshResults, metric: Metric) -> html.Div:
+        localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
+        timestamp = localtime_timestamp.strftime("%H:%M:%S")
         header = "SLA Dashboard"
         return html.Div(
             children=[
