@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import List, Optional, Tuple
 
 from domain.model import MeshColumn, MeshResults, MeshRow, Metric
 from domain.types import AgentID, TestID
@@ -21,8 +21,9 @@ from infrastructure.data_access.http.api_client import KentikAPI
 class SyntheticsRepo:
     """SyntheticsRepo implements domain.Repo protocol"""
 
-    def __init__(self, email, token: str) -> None:
+    def __init__(self, email, token: str, timeout: Optional[Tuple[float, float]] = (30.0, 30.0)) -> None:
         self._api_client = KentikAPI(email=email, token=token)
+        self._timeout = timeout
 
     def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
         try:
@@ -30,7 +31,7 @@ class SyntheticsRepo:
             start = end - timedelta(seconds=results_lookback_seconds)
 
             request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
-            response = self._api_client.synthetics.get_health_for_tests(request)
+            response = self._api_client.synthetics.get_health_for_tests(request, _request_timeout=self._timeout)
 
             num_results = len(response.health)
             if num_results == 0:

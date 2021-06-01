@@ -2,6 +2,7 @@ import logging
 import threading
 from copy import deepcopy
 from datetime import datetime, timedelta
+from typing import Optional, Tuple
 
 from domain.model.mesh_results import MeshResults
 from domain.repo import Repo
@@ -52,9 +53,9 @@ class CachedRepoRequestDriven:
             with self._cache_access_lock:
                 self._cache_test_results = results
                 self._cache_timestamp = datetime.now()
+            logger.debug("Updating data cache successful")
         except Exception as err:
             logger.exception("Updating data cache error")
-        logger.debug("Updating data cache successful")
 
     def _cached_data_fresh_enough(self) -> bool:
         return datetime.now() - timedelta(seconds=self._max_data_age_seconds) <= self.data_timestamp()
