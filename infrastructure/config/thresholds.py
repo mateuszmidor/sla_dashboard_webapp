@@ -8,8 +8,8 @@ from domain.types import AgentID, Threshold
 class ThresholdOverride:
     """ Threshold overrides can be optionally specified; if not specified - default values shall be used """
 
-    warning: Optional[int] = None
-    error: Optional[int] = None
+    warning: Optional[Threshold] = None
+    error: Optional[Threshold] = None
 
 
 class Thresholds:
@@ -34,21 +34,21 @@ class Thresholds:
         """
         Example of config dict structure for thresholds:
         "defaults":{
-            "warning":200,
-            "error":400
+            "warning":200.0,
+            "error":400.0
         },
         "overrides":[
             {
             "from":10,
             "to":11,
-            "warning":10,
-            "error":20
+            "warning":10.0,
+            "error":20.0
             },
             {
             "from":60,
             "to":70,
-            "warning":1000,
-            "error":2000
+            "warning":1000.0,
+            "error":2000.0
             }
         ]
         """

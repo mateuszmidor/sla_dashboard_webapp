@@ -1,3 +1,11 @@
 AgentID = str
+""" Assigned by Kentik """
+
 TestID = str
-Threshold = int
+""" Assigned by Kentik """
+
+Threshold = float
+""" latency and jitter in milliseconds, packet_loss in percent (0-100) """
+
+MetricValue = float
+""" latency and jitter in milliseconds, packet_loss in percent (0-100) """

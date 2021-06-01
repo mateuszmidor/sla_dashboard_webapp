@@ -5,7 +5,7 @@ test_id: 3541
 data_update_period_seconds: 60
 
 # time window to fetch the test results for
-data_update_lookback_seconds: 300
+data_update_lookback_seconds: 3600
 
 # timeout for fetching synthetics tests results
 # numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both
@@ -16,32 +16,32 @@ logging_level: INFO
 
 # metric thresholds
 thresholds:
-  latency: # thresholds in microseconds
+  latency: # thresholds in milliseconds
     defaults:
-      warning: 200000 # latency low threshold; if above, then display connection as warning
-      error: 400000 # latency high threshold; if above, then display connection as error
+      warning: 200.0 # latency low threshold; if above, then display connection as warning
+      error: 400.0 # latency high threshold; if above, then display connection as error
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
-        warning: 10000
-        error: 20000
+        warning: 10.0
+        error: 20.0
       - from: 60
         to: 70
-        warning: 1000000
-        error: 2000000 
-  jitter: # thresholds in microseconds
+        warning: 1000.0
+        error: 2000.0
+  jitter: # thresholds in milliseconds
     defaults:
-      warning: 300 # jitter low threshold; if above, then display connection as warning
-      error: 900 # jitter high threshold; if above, then display connection as error
+      warning: 0.3 # jitter low threshold; if above, then display connection as warning
+      error: 0.9 # jitter high threshold; if above, then display connection as error
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
-        warning: 10
-        error: 20
+        warning: 0.01
+        error: 0.02
       - from: 60
         to: 70
-        warning: 30
-        error: 70
+        warning: 0.03
+        error: 0.07
   packet_loss: # thresholds in percents (0-100)
     defaults:
       warning: 5 # packet_loss low threshold; if above, then display connection as warning

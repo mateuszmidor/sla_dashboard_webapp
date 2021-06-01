@@ -11,10 +11,7 @@ class Matrix:
     """
 
     def __init__(self, mesh: MeshResults) -> None:
-        agents: List[str] = []
-        for row in mesh.rows:
-            agents.append(row.agent_alias)
-        self.agents = agents
+        self.agents = [row.agent_alias for row in mesh.rows]
 
         cells: Dict[str, Dict[str, MeshColumn]] = {}
         for row in mesh.rows:
