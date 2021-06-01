@@ -1,6 +1,10 @@
+import logging
+from typing import Tuple
+
 import yaml
 
 from domain.types import TestID
+from infrastructure import config
 from infrastructure.config.thresholds import Thresholds
 
 
@@ -31,6 +35,14 @@ class ConfigYAML:
     def packet_loss(self) -> Thresholds:
         return self._packet_loss
 
+    @property
+    def timeout(self) -> Tuple[float, float]:
+        return self._timeout  # type: ignore
+
+    @property
+    def logging_level(self) -> int:
+        return self._logging_level
+
     def __init__(self, filename: str) -> None:
         try:
             with open(filename, "r") as file:
@@ -42,5 +54,24 @@ class ConfigYAML:
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
+            self._timeout = tuple(config["timeout"])
+            self._logging_level = self._parse_logging_level(config)
         except Exception as err:
             raise Exception("Configuration error") from err
+
+    def _parse_logging_level(self, config) -> int:
+        try:
+            if config["logging_level"] == "FATAL" or config["logging_level"] == "CRITICAL":
+                return logging.CRITICAL
+            if config["logging_level"] == "ERROR":
+                return logging.ERROR
+            if config["logging_level"] == "WARN" or config["logging_level"] == "WARNING":
+                return logging.WARNING
+            if config["logging_level"] == "INFO":
+                return logging.INFO
+            if config["logging_level"] == "DEBUG":
+                return logging.DEBUG
+            else:
+                raise ValueError(f"{config['logging_level']} is not defined")
+        except KeyError:
+            return logging.INFO

@@ -21,7 +21,6 @@ from presentation.index_view import IndexView
 from presentation.matrix_view import MatrixView
 
 FORMAT = "[%(asctime)-15s] [%(process)d] [%(levelname)s]  %(message)s"
-logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
@@ -29,8 +28,9 @@ class WebApp:
     def __init__(self) -> None:
         try:
             config = ConfigYAML("data/config.yaml")
+            logging.basicConfig(level=config.logging_level, format=FORMAT)
             email, token = get_auth_email_token()
-            repo = SyntheticsRepo(email, token)
+            repo = SyntheticsRepo(email, token, config.timeout)
             self._cached_repo = CachedRepoRequestDriven(
                 repo,
                 config.test_id,

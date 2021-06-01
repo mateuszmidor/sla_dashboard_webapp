@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Optional, Protocol, Tuple
 
 from domain.model.mesh_results import MeshResults
 from domain.types import TestID

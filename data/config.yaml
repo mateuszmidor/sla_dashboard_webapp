@@ -7,6 +7,13 @@ data_update_period_seconds: 60
 # time window to fetch the test results for
 data_update_lookback_seconds: 3600
 
+# timeout for fetching synthetics tests results
+# numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both
+timeout: [10.0, 10.0]
+
+# sets the logging level ppossible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
+logging_level: INFO
+
 # metric thresholds
 thresholds:
   latency: # thresholds in milliseconds
