@@ -8,7 +8,7 @@ import dash_html_components as html
 
 from domain.config import Config
 from domain.config.thresholds import Thresholds
-from domain.metric import Metric
+from domain.metric_type import MetricType
 from domain.model import MeshResults
 from domain.model.mesh_results import MeshColumn
 from domain.types import MetricValue, Threshold
@@ -20,10 +20,10 @@ class MatrixView:
     MATRIX = "matrix"
     METRIC_SELECTOR = "metric-selector"
 
-    @staticmethod
-    def make_layout(mesh: MeshResults, metric: Metric) -> html.Div:
+    @classmethod
+    def make_layout(cls, mesh: MeshResults, metric: MetricType) -> html.Div:
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
-        timestamp = localtime_timestamp.strftime("%H:%M:%S")
+        timestamp = localtime_timestamp.strftime("%x %X")
         header = "SLA Dashboard"
         return html.Div(
             children=[
@@ -34,11 +34,11 @@ class MatrixView:
                 ),
                 html.Center("Select primary metric: "),
                 dcc.Dropdown(
-                    id=MatrixView.METRIC_SELECTOR,
+                    id=cls.METRIC_SELECTOR,
                     options=[
-                        {"label": "Latency [ms]", "value": Metric.LATENCY.value},
-                        {"label": "Jitter [ms]", "value": Metric.JITTER.value},
-                        {"label": "Packet loss [%]", "value": Metric.PACKET_LOSS.value},
+                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
+                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
+                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
                     ],
                     value=metric.value,
                     clearable=False,
@@ -46,7 +46,7 @@ class MatrixView:
                 ),
                 html.Div(
                     html.Center(
-                        dcc.Graph(id=MatrixView.MATRIX, style={"width": 750, "height": 750}),
+                        dcc.Graph(id=cls.MATRIX, style={"width": 750, "height": 750}),
                         style={"marginLeft": 200, "marginRight": 200},
                     ),
                 ),
@@ -54,11 +54,11 @@ class MatrixView:
             style={"marginBottom": 50, "marginTop": 50, "marginLeft": 50, "marginRight": 50},
         )
 
-    @staticmethod
-    def make_matrix_data(mesh: MeshResults, metric: Metric, config: Config) -> Dict:
+    @classmethod
+    def make_matrix_data(cls, mesh: MeshResults, metric: MetricType, config: Config) -> Dict:
         matrix = Matrix(mesh)
-        data = MatrixView.make_data(mesh, metric, matrix, MatrixView.get_tresholds(metric, config))
-        annotations = MatrixView.make_annotations(mesh, metric, matrix)
+        data = cls.make_data(mesh, metric, matrix, cls.get_thresholds(metric, config))
+        annotations = cls.make_annotations(mesh, metric, matrix)
         layout = dict(
             margin=dict(l=150, b=50, t=100, r=50),
             modebar={"orientation": "v"},
@@ -72,42 +72,42 @@ class MatrixView:
         return {"data": data, "layout": layout}
 
     @staticmethod
-    def get_tresholds(metric: Metric, config: Config) -> Thresholds:
-        if metric == Metric.LATENCY:
+    def get_thresholds(metric: MetricType, config: Config) -> Thresholds:
+        if metric == MetricType.LATENCY:
             return config.latency
-        elif metric == Metric.JITTER:
+        elif metric == MetricType.JITTER:
             return config.jitter
         else:
             return config.packet_loss
 
-    @staticmethod
-    def make_data(mesh: MeshResults, metric: Metric, matrix: Matrix, tresholds: Thresholds) -> List[Dict]:
-        colors = MatrixView.make_colors(mesh, metric, matrix, tresholds)
+    @classmethod
+    def make_data(cls, mesh: MeshResults, metric: MetricType, matrix: Matrix, tresholds: Thresholds) -> List[Dict]:
+        colors = cls.make_colors(mesh, metric, matrix, tresholds)
         return [
             dict(
                 x=matrix.agents,
                 y=[i for i in reversed(matrix.agents)],
                 z=colors,
-                text=MatrixView.make_hover_text(mesh, matrix),
+                text=cls.make_hover_text(mesh, matrix),
                 type="heatmap",
                 hoverinfo="text",
                 opacity=1,
                 name="",
                 showscale=False,
-                colorscale=MatrixView.get_colorscale(colors),
+                colorscale=cls.get_colorscale(colors),
             )
         ]
 
-    @staticmethod
-    def make_colors(mesh: MeshResults, metric: Metric, matrix: Matrix, tresholds: Thresholds) -> List[List]:
+    @classmethod
+    def make_colors(cls, mesh: MeshResults, metric: MetricType, matrix: Matrix, tresholds: Thresholds) -> List[List]:
         colors = []
         for row in reversed(mesh.rows):
             colors_col = []
             for col in row.columns:
                 warning = tresholds.warning(row.agent_id, col.agent_id)
                 error = tresholds.error(row.agent_id, col.agent_id)
-                value = MatrixView.get_metric_value(metric, matrix.cells[row.agent_alias][col.agent_alias])
-                color = MatrixView.get_color(value, warning, error)
+                value = cls.get_metric_value(metric, matrix.cells[row.agent_alias][col.agent_alias])
+                color = cls.get_color(value, warning, error)
                 colors_col.append(color)
             colors.append(colors_col)
 
@@ -117,20 +117,20 @@ class MatrixView:
         return colors
 
     @staticmethod
-    def get_metric_value(metric: Metric, cell: MeshColumn) -> MetricValue:
-        if metric == Metric.LATENCY:
+    def get_metric_value(metric: MetricType, cell: MeshColumn) -> MetricValue:
+        if metric == MetricType.LATENCY:
             return cell.latency_millisec.value
-        elif metric == Metric.JITTER:
+        elif metric == MetricType.JITTER:
             return cell.jitter_millisec.value
         else:
             return cell.packet_loss_percent.value
 
-    @staticmethod
-    def make_annotations(mesh: MeshResults, metric: Metric, matrix: Matrix) -> List[Dict]:
+    @classmethod
+    def make_annotations(cls, mesh: MeshResults, metric: MetricType, matrix: Matrix) -> List[Dict]:
         annotations = []
         for row in reversed(mesh.rows):
             for col in row.columns:
-                text = MatrixView.get_text(metric, matrix.cells[row.agent_alias][col.agent_alias])
+                text = cls.get_text(metric, matrix.cells[row.agent_alias][col.agent_alias])
                 annotations.append(
                     dict(
                         showarrow=False,
@@ -144,10 +144,10 @@ class MatrixView:
         return annotations
 
     @staticmethod
-    def get_text(metric: Metric, cell: MeshColumn) -> str:
-        if metric == Metric.LATENCY:
+    def get_text(metric: MetricType, cell: MeshColumn) -> str:
+        if metric == MetricType.LATENCY:
             return f"<b>{(cell.latency_millisec.value):.2f} ms</b>"
-        elif metric == Metric.JITTER:
+        elif metric == MetricType.JITTER:
             return f"<b>{(cell.jitter_millisec.value):.2f} ms</b>"
         else:
             return f"<b>{cell.packet_loss_percent.value:.1f}%</b>"
@@ -163,7 +163,10 @@ class MatrixView:
                 jitter_ms = matrix.cells[row.agent_alias][col.agent_alias].jitter_millisec.value
                 loss = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
                 text_col.append(
-                    f"{row.agent_alias} -> {col.agent_alias} <br>Latency: {latency_ms:.2f} ms, <br>Jitter: {jitter_ms:.2f} ms, <br>Loss: {loss:.1f}%"
+                    f"{row.agent_alias} -> {col.agent_alias} <br>"
+                    + f"Latency: {latency_ms:.2f} ms <br>"
+                    + f"Jitter: {jitter_ms:.2f} ms <br>"
+                    + f"Loss: {loss:.1f}%"
                 )
             text.append(text_col)
         for i in range(len(mesh.rows)):

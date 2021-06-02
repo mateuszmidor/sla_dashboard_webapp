@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from typing import Any, Dict, Optional, Tuple
+from urllib.parse import unquote
 
 import dash
 import dash_core_components as dcc
@@ -10,7 +11,7 @@ import flask
 from dash.dependencies import Input, Output
 
 from domain.cached_repo_request_driven import CachedRepoRequestDriven
-from domain.metric import Metric
+from domain.metric_type import MetricType
 from domain.model import MeshResults
 from domain.types import AgentID
 from infrastructure.config import ConfigYAML
@@ -41,17 +42,17 @@ class WebApp:
             app = dash.Dash(__name__, suppress_callback_exceptions=True)
             app.layout = IndexView.make_layout()
             self._app = app
-            self._current_metric = Metric.LATENCY
+            self._current_metric = MetricType.LATENCY
 
             # all views - handle path change
             @app.callback(Output(IndexView.PAGE_CONTENT, "children"), [Input(IndexView.URL, "pathname")])
             def display_page(pathname: str):
-                return self._get_page_content(pathname)
+                return self._get_page_content(unquote(pathname))
 
             # matrix view - handle metric select
             @app.callback(Output(MatrixView.MATRIX, "figure"), [Input(MatrixView.METRIC_SELECTOR, "value")])
             def update_matrix(value: str):
-                metric = Metric(value)
+                metric = MetricType(value)
                 self._current_metric = metric
                 return MatrixView.make_matrix_data(self.mesh, metric, self.config)
 
@@ -75,7 +76,7 @@ class WebApp:
         try:
             if pathname == "/":
                 return self._make_matrix_layout()
-            elif pathname.startswith("/chart"):
+            elif pathname == "/chart" or pathname.startswith("/chart?"):
                 return self._make_chart_layout(pathname)
             else:
                 return HTTPErrorView.make_layout(404)
@@ -105,7 +106,7 @@ class WebApp:
         return ChartView.make_layout(from_agent, to_agent, metric, results)
 
     @staticmethod
-    def _redirect_to_chart_view(from_agent, to_agent: AgentID, metric: Metric) -> dcc.Location:
+    def _redirect_to_chart_view(from_agent, to_agent: AgentID, metric: MetricType) -> dcc.Location:
         path = ChartView.encode_path(from_agent, to_agent, metric)
         return dcc.Location(pathname=path, id="")
 

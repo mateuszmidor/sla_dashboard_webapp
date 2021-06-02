@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
+from domain.metric_type import MetricType
 from domain.types import AgentID, MetricValue
 
 
@@ -76,6 +77,30 @@ class MeshResults:
         self.utc_timestamp = utc_timestamp
         self.rows: List[MeshRow] = []
         self.agents = Agents(self.rows)
+
+    def filter(self, from_agent, to_agent: AgentID, metric: MetricType) -> List[Tuple[datetime, MetricValue]]:
+        items = self._extract_health(from_agent, to_agent)
+
+        if metric == MetricType.LATENCY:
+            return [(i.time, i.latency_millisec) for i in items]
+        if metric == MetricType.JITTER:
+            return [(i.time, i.jitter_millisec) for i in items]
+        if metric == MetricType.PACKET_LOSS:
+            return [(i.time, i.packet_loss_percent) for i in items]
+
+        return []
+
+    def _extract_health(self, from_agent, to_agent: AgentID) -> List[HealthItem]:
+        """ Find health time series for givent from_agent->to_agent connection """
+
+        for input_row in self.rows:
+            if input_row.agent_id != from_agent:
+                continue
+            for input_col in input_row.columns:
+                if input_col.agent_id == to_agent:
+                    return input_col.health
+
+        return []
 
     def append_row(self, row: MeshRow) -> None:
         self.rows.append(row)
