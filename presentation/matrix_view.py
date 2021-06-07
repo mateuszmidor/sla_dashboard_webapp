@@ -1,19 +1,18 @@
 import itertools
 from datetime import datetime
-from os import stat
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import dash_core_components as dcc
 import dash_html_components as html
 
 from domain.config import Config
 from domain.config.thresholds import Thresholds
+from domain.geo import calc_distance_in_kilometers
 from domain.metric_type import MetricType
 from domain.model import MeshResults
 from domain.model.mesh_results import MeshColumn
 from domain.types import MetricValue, Threshold
 from presentation.localtime import utc_to_localtime
-from presentation.matrix import Matrix
 
 
 class MatrixView:
@@ -46,7 +45,7 @@ class MatrixView:
                 ),
                 html.Div(
                     html.Center(
-                        dcc.Graph(id=cls.MATRIX, style={"width": 750, "height": 750}),
+                        dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
                         style={"marginLeft": 200, "marginRight": 200},
                     ),
                 ),
@@ -56,9 +55,8 @@ class MatrixView:
 
     @classmethod
     def make_matrix_data(cls, mesh: MeshResults, metric: MetricType, config: Config) -> Dict:
-        matrix = Matrix(mesh)
-        data = cls.make_data(mesh, metric, matrix, cls.get_thresholds(metric, config))
-        annotations = cls.make_annotations(mesh, metric, matrix)
+        data = cls.make_data(mesh, metric, cls.get_thresholds(metric, config))
+        annotations = cls.make_annotations(mesh, metric)
         layout = dict(
             margin=dict(l=150, b=50, t=100, r=50),
             modebar={"orientation": "v"},
@@ -81,14 +79,16 @@ class MatrixView:
             return config.packet_loss
 
     @classmethod
-    def make_data(cls, mesh: MeshResults, metric: MetricType, matrix: Matrix, tresholds: Thresholds) -> List[Dict]:
-        colors = cls.make_colors(mesh, metric, matrix, tresholds)
+    def make_data(cls, mesh: MeshResults, metric: MetricType, tresholds: Thresholds) -> List[Dict]:
+        colors = cls.make_colors(mesh, metric, tresholds)
+        labels = [mesh.agents.get_by_id(row.agent_id).alias for row in mesh.rows]
+        reversed_labels = list(reversed(labels))
         return [
             dict(
-                x=matrix.agents,
-                y=[i for i in reversed(matrix.agents)],
+                x=labels,
+                y=reversed_labels,
                 z=colors,
-                text=cls.make_hover_text(mesh, matrix),
+                text=cls.make_hover_text(mesh),
                 type="heatmap",
                 hoverinfo="text",
                 opacity=1,
@@ -99,20 +99,21 @@ class MatrixView:
         ]
 
     @classmethod
-    def make_colors(cls, mesh: MeshResults, metric: MetricType, matrix: Matrix, tresholds: Thresholds) -> List[List]:
-        colors = []
+    def make_colors(cls, mesh: MeshResults, metric: MetricType, tresholds: Thresholds) -> List[List]:
+        Col = List[Optional[float]]
+        colors: List[Col] = []
         for row in reversed(mesh.rows):
-            colors_col = []
+            colors_col: Col = []
             for col in row.columns:
                 warning = tresholds.warning(row.agent_id, col.agent_id)
                 error = tresholds.error(row.agent_id, col.agent_id)
-                value = cls.get_metric_value(metric, matrix.cells[row.agent_alias][col.agent_alias])
+                value = cls.get_metric_value(metric, mesh.connection(row.agent_id, col.agent_id))
                 color = cls.get_color(value, warning, error)
                 colors_col.append(color)
             colors.append(colors_col)
 
         for i in range(len(mesh.rows)):  # add Nones at diagonal to avoid colorising it
-            colors[-(i + 1)].insert(i, None)  # type: ignore
+            colors[-(i + 1)].insert(i, None)
 
         return colors
 
@@ -126,19 +127,21 @@ class MatrixView:
             return cell.packet_loss_percent.value
 
     @classmethod
-    def make_annotations(cls, mesh: MeshResults, metric: MetricType, matrix: Matrix) -> List[Dict]:
+    def make_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
         annotations = []
         for row in reversed(mesh.rows):
             for col in row.columns:
-                text = cls.get_text(metric, matrix.cells[row.agent_alias][col.agent_alias])
+                from_agent = mesh.agents.get_by_id(row.agent_id)
+                to_agent = mesh.agents.get_by_id(col.agent_id)
+                text = cls.get_text(metric, mesh.connection(from_agent.id, to_agent.id))
                 annotations.append(
                     dict(
                         showarrow=False,
                         text=text,
                         xref="x",
                         yref="y",
-                        x=col.agent_alias,
-                        y=row.agent_alias,
+                        x=to_agent.alias,
+                        y=from_agent.alias,
                     )
                 )
         return annotations
@@ -153,17 +156,21 @@ class MatrixView:
             return f"<b>{cell.packet_loss_percent.value:.1f}%</b>"
 
     @staticmethod
-    def make_hover_text(mesh: MeshResults, matrix: Matrix) -> List[List[str]]:
+    def make_hover_text(mesh: MeshResults) -> List[List[str]]:
         text = []
         for row in reversed(mesh.rows):
             text_col = []
             for col in row.columns:
-
-                latency_ms = matrix.cells[row.agent_alias][col.agent_alias].latency_millisec.value
-                jitter_ms = matrix.cells[row.agent_alias][col.agent_alias].jitter_millisec.value
-                loss = matrix.cells[row.agent_alias][col.agent_alias].packet_loss_percent.value
+                from_agent = mesh.agents.get_by_id(row.agent_id)
+                to_agent = mesh.agents.get_by_id(col.agent_id)
+                conn = mesh.connection(from_agent.id, to_agent.id)
+                latency_ms = conn.latency_millisec.value
+                jitter_ms = conn.jitter_millisec.value
+                loss = conn.packet_loss_percent.value
+                distance_km = calc_distance_in_kilometers(from_agent.coords, to_agent.coords)
                 text_col.append(
-                    f"{row.agent_alias} -> {col.agent_alias} <br>"
+                    f"{from_agent.alias} -> {to_agent.alias} <br>"
+                    + f"Great circle distance: {distance_km:.0f} km<br>"
                     + f"Latency: {latency_ms:.2f} ms <br>"
                     + f"Jitter: {jitter_ms:.2f} ms <br>"
                     + f"Loss: {loss:.1f}%"

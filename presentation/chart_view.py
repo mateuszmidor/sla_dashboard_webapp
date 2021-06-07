@@ -1,28 +1,22 @@
 import urllib.parse as urlparse
-from typing import List, Tuple
+from typing import Tuple
 from urllib.parse import parse_qs
 
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 
+from domain.geo import calc_distance_in_kilometers
 from domain.metric_type import MetricType
 from domain.model import MeshResults
-from domain.model.mesh_results import HealthItem, MeshResults
-from domain.types import AgentID, MetricValue
-from presentation.localtime import utc_to_localtime
+from domain.types import AgentID
 
 
 class ChartView:
-    @staticmethod
-    def make_layout(from_agent, to_agent: AgentID, metric: MetricType, results: MeshResults) -> html.Div:
-        # make chart title
-        from_alias = results.agents.get_alias(from_agent)
-        to_alias = results.agents.get_alias(to_agent)
-        title = f"{metric.value}: {from_alias} -> {to_alias}"
-
-        # make chart data
-        xdata, ydata = zip(*results.filter(from_agent, to_agent, metric))
+    @classmethod
+    def make_layout(cls, from_agent, to_agent: AgentID, metric: MetricType, mesh: MeshResults) -> html.Div:
+        title = cls.make_title(from_agent, to_agent, metric, mesh)
+        xdata, ydata = zip(*mesh.filter(from_agent, to_agent, metric))
         fig = go.Figure(data=[go.Scatter(x=xdata, y=ydata)])
 
         return html.Div(
@@ -32,6 +26,15 @@ class ChartView:
                 html.Center(dcc.Link("Back to matrix view", href="/")),
             ],
         )
+
+    @staticmethod
+    def make_title(from_agent, to_agent: AgentID, metric: MetricType, mesh: MeshResults) -> str:
+        from_alias = mesh.agents.get_alias(from_agent)
+        to_alias = mesh.agents.get_alias(to_agent)
+        from_coords = mesh.agents.get_by_id(from_agent).coords
+        to_coords = mesh.agents.get_by_id(to_agent).coords
+        distance_km = calc_distance_in_kilometers(from_coords, to_coords)
+        return f"{metric.value}: {from_alias} -> {to_alias} ({distance_km:.0f} km)"
 
     @staticmethod
     def encode_path(from_agent, to_agent: AgentID, metric: MetricType) -> str:

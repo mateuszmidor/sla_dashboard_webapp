@@ -88,10 +88,9 @@ class WebApp:
         from_agent_alias, to_agent_alias = y, x
         if from_agent_alias == to_agent_alias:
             return None
-
-        results = self._cached_repo.get_mesh_test_results()
-        from_agent_id = results.agents.get_id(from_agent_alias)
-        to_agent_id = results.agents.get_id(to_agent_alias)
+        mesh = self._cached_repo.get_mesh_test_results()
+        from_agent_id = mesh.agents.get_by_alias(from_agent_alias).id
+        to_agent_id = mesh.agents.get_by_alias(to_agent_alias).id
 
         return self._redirect_to_chart_view(from_agent_id, to_agent_id, self._current_metric)
 
