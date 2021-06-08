@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 
-from domain.model import HealthItem, MeshColumn, MeshResults, MeshRow, Metric
+from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow, Metric, mesh_results
+from domain.model.mesh_results import Coordinates
 from domain.types import AgentID, MetricValue, TestID
 
 # the below "disable=E0611" is needed as we don't commit the generated code into git repo and thus CI linter complains
@@ -13,7 +14,7 @@ from generated.synthetics_http_client.synthetics.api.synthetics_data_service_api
 )
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_column import V202101beta1MeshColumn
 from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_metrics import V202101beta1MeshMetrics
-from generated.synthetics_http_client.synthetics.model.v202101beta1_mesh_response import V202101beta1MeshResponse
+from generated.synthetics_http_client.synthetics.model.v202101beta1_test_health import V202101beta1TestHealth
 
 # pylint: enable=E0611
 from infrastructure.data_access.http.api_client import KentikAPI
@@ -38,35 +39,46 @@ class SyntheticsRepo:
             if num_results == 0:
                 raise Exception("get_health_for_tests returned 0 items")
 
-            most_recent_result = response.health[num_results - 1].mesh
-            return transform_to_internal_mesh(most_recent_result)
+            most_recent_result = response.health[num_results - 1]
+            rows = transform_to_internal_mesh_rows(most_recent_result)
+            agents = transform_to_internal_agents(most_recent_result)
+            return MeshResults(datetime.now(timezone.utc), rows, agents)
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test id: {test_id}") from err
 
 
-def transform_to_internal_mesh(input_rows: V202101beta1MeshResponse) -> MeshResults:
-    mesh = MeshResults()
-    for input_row in input_rows:
+def transform_to_internal_agents(input: V202101beta1TestHealth) -> Agents:
+    agents = Agents()
+    for task in input.tasks:
+        for agentHealth in task.agents:
+            input_agent = agentHealth.agent
+            agent = Agent(
+                id=AgentID(input_agent.id),
+                ip=input_agent.ip,
+                name=input_agent.name,
+                alias=input_agent.alias,
+                coords=Coordinates(input_agent.long, input_agent.lat),
+            )
+            agents.insert(agent)
+    return agents
+
+
+def transform_to_internal_mesh_rows(input: V202101beta1TestHealth) -> List[MeshRow]:
+    rows: List[MeshRow] = []
+    for input_row in input.mesh:
         row = MeshRow(
-            agent_name=input_row.name,
-            agent_alias=input_row.alias,
             agent_id=AgentID(input_row.id),
-            ip=input_row.ip,
-            local_ip=input_row.local_ip,
             columns=transform_to_internal_mesh_columns(input_row.columns),
         )
-        mesh.append_row(row)
-    return mesh
+        rows.append(row)
+    return rows
 
 
 def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColumn]) -> List[MeshColumn]:
     columns = []
     for input_column in input_columns:
         column = MeshColumn(
-            agent_name=input_column.name,
-            agent_alias=input_column.alias,
             agent_id=AgentID(input_column.id),
-            target_ip=input_column.target,
             jitter_millisec=Metric(
                 health=input_column.metrics.jitter.health,
                 value=scale_us_to_ms(input_column.metrics.jitter.value),

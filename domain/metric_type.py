@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Metric(Enum):
+class MetricType(Enum):
     """ Available mesh test metric types """
 
     LATENCY = "Latency[ms]"
