@@ -92,7 +92,7 @@ class WebApp:
         from_agent_id = mesh.agents.get_by_alias(from_agent_alias).id
         to_agent_id = mesh.agents.get_by_alias(to_agent_alias).id
 
-        return self._redirect_to_chart_view(from_agent_id, to_agent_id, self._current_metric)
+        return self._redirect_to_chart_view(from_agent_id, to_agent_id)
 
     def _make_matrix_layout(self) -> html.Div:
         mesh_test_results = self._cached_repo.get_mesh_test_results()
@@ -100,13 +100,13 @@ class WebApp:
         return MatrixView.make_layout(mesh_test_results, metric)
 
     def _make_chart_layout(self, path: str) -> html.Div:
-        from_agent, to_agent, metric = ChartView.decode_path(path)
+        from_agent, to_agent = ChartView.decode_path(path)
         results = self._cached_repo.get_mesh_test_results()
-        return ChartView.make_layout(from_agent, to_agent, metric, results)
+        return ChartView.make_layout(from_agent, to_agent, results)
 
     @staticmethod
-    def _redirect_to_chart_view(from_agent, to_agent: AgentID, metric: MetricType) -> dcc.Location:
-        path = ChartView.encode_path(from_agent, to_agent, metric)
+    def _redirect_to_chart_view(from_agent, to_agent: AgentID) -> dcc.Location:
+        path = ChartView.encode_path(from_agent, to_agent)
         return dcc.Location(pathname=path, id="")
 
     @property
