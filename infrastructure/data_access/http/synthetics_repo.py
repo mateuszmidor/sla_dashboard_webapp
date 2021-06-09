@@ -89,7 +89,7 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
             ),
             packet_loss_percent=Metric(
                 health=input_column.metrics.packet_loss.health,
-                value=MetricValue(input_column.metrics.packet_loss.value),
+                value=scale_to_percents(input_column.metrics.packet_loss.value),
             ),
             health=transform_to_internal_health_items(input_column.health),
         )
@@ -112,3 +112,8 @@ def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetric
 
 def scale_us_to_ms(val: str) -> MetricValue:
     return MetricValue(float(val) / 1000.0)
+
+
+def scale_to_percents(val: str) -> MetricValue:
+    # scale 0..1 -> 0..100
+    return MetricValue(float(val) * 100.0)
