@@ -170,7 +170,7 @@ class MatrixView:
                 distance_km = calc_distance_in_kilometers(from_agent.coords, to_agent.coords)
                 text_col.append(
                     f"{from_agent.alias} -> {to_agent.alias} <br>"
-                    + f"Great circle distance: {distance_km:.0f} km<br>"
+                    + f"Distance: {distance_km:.0f} km<br>"
                     + f"Latency: {latency_ms:.2f} ms <br>"
                     + f"Jitter: {jitter_ms:.2f} ms <br>"
                     + f"Loss: {loss:.1f}%"
