@@ -28,8 +28,14 @@ logger = logging.getLogger(__name__)
 class WebApp:
     def __init__(self) -> None:
         try:
+            # app configuration
             config = ConfigYAML("data/config.yaml")
+            self._config = config
+
+            # logging
             logging.basicConfig(level=config.logging_level, format=FORMAT)
+
+            # data access
             email, token = get_auth_email_token()
             repo = SyntheticsRepo(email, token, config.timeout)
             self._cached_repo = CachedRepoRequestDriven(
@@ -38,8 +44,14 @@ class WebApp:
                 config.data_update_period_seconds,
                 config.data_update_lookback_seconds,
             )
-            self._config = config
-            app = dash.Dash(__name__, suppress_callback_exceptions=True)
+
+            # web framework configuration
+            app = dash.Dash(
+                __name__,
+                suppress_callback_exceptions=True,
+                title="SLA Dashboard",
+                update_title="Loading test results...",
+            )
             app.layout = IndexView.make_layout()
             self._app = app
             self._current_metric = MetricType.LATENCY

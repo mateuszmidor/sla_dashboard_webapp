@@ -19,7 +19,11 @@ class IndexView:
                 html.Div(id=IndexView.REDIRECT),
                 # doesn't render anything, represents the URL bar
                 dcc.Location(id=IndexView.URL, refresh=False),
-                # content will be rendered in this element
-                html.Div(id=IndexView.PAGE_CONTENT),
+                # content will be rendered in this element,
+                dcc.Loading(
+                    id=IndexView.PAGE_CONTENT,
+                    type="default",
+                    fullscreen=True,
+                ),
             ]
         )
