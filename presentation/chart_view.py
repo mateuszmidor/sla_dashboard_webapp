@@ -1,5 +1,5 @@
 import urllib.parse as urlparse
-from typing import Tuple
+from typing import Optional, Tuple
 from urllib.parse import parse_qs
 
 import dash_core_components as dcc
@@ -18,17 +18,18 @@ class ChartView:
         title = cls.make_title(from_agent, to_agent, mesh)
         fig_latency = cls.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
         fig_jitter = cls.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
-        fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh)
+        fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
+        style = {"width": "95vw", "height": "20vh", "display": "inline-block"}
         return html.Div(
             children=[
                 html.H1(children=title, style={"textAlign": "center", "marginBottom": 50}),
                 html.H3(children=MetricType.LATENCY.value),
-                dcc.Graph(id="timeseries_latency_chart", figure=fig_latency),
+                dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
                 html.H3(children=MetricType.JITTER.value),
-                dcc.Graph(id="timeseries_jitter_chart", figure=fig_jitter),
+                dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
                 html.H3(children=MetricType.PACKET_LOSS.value),
-                dcc.Graph(id="timeseries_packetloss_chart", figure=fig_packetloss),
-                html.Center(dcc.Link("Back to matrix view", href="/")),
+                dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
+                html.Center(dcc.Link("Back to matrix view", href="/"), style={"font-size": "large"}),
             ],
         )
 
@@ -42,9 +43,22 @@ class ChartView:
         return f"{from_alias} -> {to_alias} ({distance_km:.0f} km)"
 
     @staticmethod
-    def make_figure(from_agent, to_agent: AgentID, metric: MetricType, mesh: MeshResults):
+    def make_figure(
+        from_agent,
+        to_agent: AgentID,
+        metric: MetricType,
+        mesh: MeshResults,
+        y_range: Optional[Tuple[float, float]] = None,
+    ):
         xdata, ydata = zip(*mesh.filter(from_agent, to_agent, metric))
-        return go.Figure(data=[go.Scatter(x=xdata, y=ydata)])
+        layout = go.Layout(margin={"t": 0, "b": 0})  # remove empty space above and below the chart
+        fig = go.Figure(
+            data=[go.Scatter(x=xdata, y=ydata)],
+            layout=layout,
+            layout_yaxis_range=y_range,
+        )
+        fig.update_yaxes(rangemode="tozero")  # make the y-scale start from 0
+        return fig
 
     @staticmethod
     def encode_path(from_agent, to_agent: AgentID) -> str:
