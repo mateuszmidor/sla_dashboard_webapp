@@ -69,3 +69,6 @@ target/
 .openapi-generator/
 
 generated/
+
+# JetBrain IDEs
+.idea/
