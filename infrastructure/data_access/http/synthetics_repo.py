@@ -27,24 +27,59 @@ class SyntheticsRepo:
         self._api_client = KentikAPI(email=email, token=token)
         self._timeout = timeout
 
+    # @MM
+    # def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
+    #     try:
+    #         end = datetime.now(timezone.utc)
+    #         start = end - timedelta(seconds=results_lookback_seconds)
+
+    #         request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
+    #         response = self._api_client.synthetics.get_health_for_tests(request, _request_timeout=self._timeout)
+
+    #         num_results = len(response.health)
+    #         if num_results == 0:
+    #             raise Exception("get_health_for_tests returned 0 items")
+
+    #         most_recent_result = response.health[num_results - 1]
+    #         rows = transform_to_internal_mesh_rows(most_recent_result)
+    #         agents = transform_to_internal_agents(most_recent_result)
+
+    #         results = MeshResults(datetime.now(timezone.utc), rows, agents)
+
+    #         _pickle(results, "mesh_results.data")
+    #         return _unpickle("mesh_results.data")
+    #     except ApiException as err:
+    #         raise Exception(f"Failed to fetch results for test id: {test_id}") from err
+
+    # @MM
     def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
         try:
-            end = datetime.now(timezone.utc)
-            start = end - timedelta(seconds=results_lookback_seconds)
+            return _unpickle("mesh_results.data")
+        except Exception as err:
+            raise Exception(f"Failed to unpickle mesh data") from err
 
-            request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
-            response = self._api_client.synthetics.get_health_for_tests(request, _request_timeout=self._timeout)
 
-            num_results = len(response.health)
-            if num_results == 0:
-                raise Exception("get_health_for_tests returned 0 items")
+# @MM
+def _pickle(obj, filename) -> None:
+    import pickle
 
-            most_recent_result = response.health[num_results - 1]
-            rows = transform_to_internal_mesh_rows(most_recent_result)
-            agents = transform_to_internal_agents(most_recent_result)
-            return MeshResults(datetime.now(timezone.utc), rows, agents)
-        except ApiException as err:
-            raise Exception(f"Failed to fetch results for test id: {test_id}") from err
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
+
+
+# @MM
+def _unpickle(filename):
+    import pickle
+
+    with open(filename, "rb") as f:
+        return pickle.load(f)
+
+
+# @MM
+def random_packet_loss() -> float:
+    import random
+
+    return 100 * random.random() / 6
 
 
 def transform_to_internal_agents(input: V202101beta1TestHealth) -> Agents:
@@ -85,11 +120,12 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
             ),
             latency_millisec=Metric(
                 health=input_column.metrics.latency.health,
-                value=scale_us_to_ms(input_column.metrics.latency.value),
+                value=scale_us_to_ms(input_column.metrics.latency.value) + 60,
             ),
             packet_loss_percent=Metric(
                 health=input_column.metrics.packet_loss.health,
-                value=scale_to_percents(input_column.metrics.packet_loss.value),
+                # value=scale_to_percents(input_column.metrics.packet_loss.value),
+                value=random_packet_loss(),
             ),
             health=transform_to_internal_health_items(input_column.health),
         )
@@ -103,7 +139,8 @@ def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetric
         item = HealthItem(
             jitter_millisec=scale_us_to_ms(h.jitter.value),
             latency_millisec=scale_us_to_ms(h.latency.value),
-            packet_loss_percent=scale_to_percents(h.packet_loss.value),
+            # packet_loss_percent= scale_to_percents(h.packet_loss.value),
+            packet_loss_percent=random_packet_loss(),
             time=h.time,
         )
         health.append(item)
