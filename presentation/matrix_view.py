@@ -26,31 +26,33 @@ class MatrixView:
         header = "SLA Dashboard"
         return html.Div(
             children=[
-                html.H1(children=header, style={"textAlign": "center", "marginBottom": 50}),
-                html.H2(
-                    f"Data timestamp {timestamp}",
-                    style={"textAlign": "center", "marginTop": 100},
-                ),
-                html.Center("Select primary metric: "),
-                dcc.Dropdown(
-                    id=cls.METRIC_SELECTOR,
-                    options=[
-                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
-                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
-                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
-                    ],
-                    value=metric.value,
-                    clearable=False,
-                    style={"width": 450, "margin-left": "auto", "margin-right": "auto"},
-                ),
-                html.Div(
-                    html.Center(
-                        dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
-                        style={"marginLeft": 200, "marginRight": 200},
-                    ),
-                ),
+                html.H1(children=header, className="header_main"),
+                html.Div(children=[
+                      html.H2(f"Data timestamp {timestamp}", className="header__subTitle"),
+                      html.Div(
+                          children=[
+                              html.Label("Select primary metric:", className="select_label"),
+                              dcc.Dropdown(
+                                  id=cls.METRIC_SELECTOR,
+                                  options=[
+                                      {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
+                                      {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
+                                      {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
+                                  ],
+                                  value=metric.value,
+                                  clearable=False,
+                                  className="dropdowns"
+                              )
+                          ], className="select_container"
+                      ),
+                      html.Div(
+                          html.Div(
+                               dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
+                               className="chart__default"
+                          )
+                      )
+                ], className="main_container")
             ],
-            style={"marginBottom": 50, "marginTop": 50, "marginLeft": 50, "marginRight": 50},
         )
 
     @classmethod
