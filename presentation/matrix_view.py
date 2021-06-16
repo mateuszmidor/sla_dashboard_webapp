@@ -46,11 +46,21 @@ class MatrixView:
                           ], className="select_container"
                       ),
                       html.Div(
+                      children=[
                           html.Div(
                                dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
                                className="chart__default"
-                          )
-                      )
+                          ),
+                          html.Div(children = [
+                              html.Label("GOOD", className="chart_legend__label chart_legend__label_good"),
+                              html.Div(className="chart_legend__cell chart_legend__cell_good"),
+                              html.Label("WARNING", className="chart_legend__label chart_legend__label_warning"),
+                              html.Div(className="chart_legend__cell chart_legend__cell_warning"),
+                              html.Label("ERROR", className="chart_legend__label chart_legend__label_error"),
+                              html.Div(className="chart_legend__cell chart_legend__cell_error"),
+                          ], className="chart_legend")
+                      ], className="chart_container"
+                  )
                 ], className="main_container")
             ],
         )
