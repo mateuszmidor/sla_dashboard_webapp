@@ -4,6 +4,7 @@
   transition: height 0.3s ease-in-out;
   min-height: 60px;
 }
+
 .chart__default {
   display: flex;
   align-content: center;
