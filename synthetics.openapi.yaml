@@ -544,6 +544,10 @@ components:
           format: int64
         type:
           type: string
+        inetDirection:
+          type: string
+        direction:
+          type: string
     v202101beta1Geo:
       type: object
       properties:
@@ -634,6 +638,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/v202101beta1TracerouteResult"
+    v202101beta1GridTest:
+      type: object
+      properties:
+        targets:
+          type: array
+          items:
+            type: string
+    v202101beta1HTTPConfig:
+      type: object
+      properties:
+        period:
+          type: integer
+          format: int64
+        expiry:
+          type: integer
+          format: int64
+        method:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        body:
+          type: string
+        ignoreTlsErrors:
+          type: boolean
     v202101beta1HTTPTaskDefinition:
       type: object
       properties:
@@ -664,8 +694,8 @@ components:
         dstIp:
           type: string
         packetLoss:
-          type: integer
-          format: int64
+          type: number
+          format: double
         avgLatency:
           type: integer
           format: int64
@@ -1075,6 +1105,9 @@ components:
         expiry:
           type: number
           format: float
+        delay:
+          type: number
+          format: float
     v202101beta1TestSettings:
       type: object
       properties:
@@ -1094,6 +1127,12 @@ components:
           $ref: "#/components/schemas/v202101beta1DnsTest"
         url:
           $ref: "#/components/schemas/v202101beta1UrlTest"
+        networkGrid:
+          $ref: "#/components/schemas/v202101beta1GridTest"
+        pageLoad:
+          $ref: "#/components/schemas/v202101beta1UrlTest"
+        dnsGrid:
+          $ref: "#/components/schemas/v202101beta1GridTest"
         agentIds:
           type: array
           items:
@@ -1144,6 +1183,8 @@ components:
         rollupLevel:
           type: integer
           format: int64
+        http:
+          $ref: "#/components/schemas/v202101beta1HTTPConfig"
     v202101beta1TestStatus:
       type: string
       enum:
@@ -1170,6 +1211,9 @@ components:
           type: number
           format: float
         limit:
+          type: number
+          format: float
+        delay:
           type: number
           format: float
     v202101beta1Trace:
@@ -1242,4 +1286,3 @@ components:
           type: string
         fullName:
           type: string
-

@@ -67,7 +67,7 @@ class WebApp:
             def update_matrix(value: str):
                 metric = MetricType(value)
                 self._current_metric = metric
-                return MatrixView.make_matrix_data(self.mesh, metric, self.config)
+                return MatrixView.make_matrix_data(self._cached_repo.get_mesh_test_results(), metric, self.config)
 
             # matrix view - handle cell click
             @app.callback(Output(IndexView.REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
@@ -104,7 +104,6 @@ class WebApp:
         mesh = self._cached_repo.get_mesh_test_results()
         from_agent_id = mesh.agents.get_by_alias(from_agent_alias).id
         to_agent_id = mesh.agents.get_by_alias(to_agent_alias).id
-
         return self._redirect_to_chart_view(from_agent_id, to_agent_id)
 
     def _make_matrix_layout(self) -> html.Div:
@@ -120,11 +119,7 @@ class WebApp:
     @staticmethod
     def _redirect_to_chart_view(from_agent, to_agent: AgentID) -> dcc.Location:
         path = ChartView.encode_path(from_agent, to_agent)
-        return dcc.Location(pathname=path, id="")
-
-    @property
-    def mesh(self) -> MeshResults:
-        return self._cached_repo.get_mesh_test_results()
+        return dcc.Location(pathname=path, id=IndexView.URL, refresh=False)
 
     @property
     def config(self) -> ConfigYAML:
