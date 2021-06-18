@@ -51,3 +51,19 @@
   color: var(--white-0);
   text-decoration: none;
 }
+.header-time-warning {
+  opacity: 0;
+  color: var(--color-warning);
+  margin-bottom: 20px;
+  transition: opacity 0.5s linear;
+}
+.header-time-warning-visible{
+  opacity: 1;
+
+}
+.header-timestamp{
+  margin-left: 10px;
+}
+.header-time-interval{
+  display: none;
+}

@@ -22,13 +22,21 @@ class MatrixView:
     @classmethod
     def make_layout(cls, mesh: MeshResults, metric: MetricType) -> html.Div:
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
+        timeRefresh = 15*60
+        timestampISO = localtime_timestamp.isoformat()
         timestamp = localtime_timestamp.strftime("%x %X")
         header = "SLA Dashboard"
         return html.Div(
             children=[
                 html.H1(children=header, className="header_main"),
                 html.Div(children=[
-                      html.H2(f"Data timestamp {timestamp}", className="header__subTitle"),
+                      html.H2(
+                      children=[
+                        html.Span("Data timestamp"),
+                        html.Span(timestamp, className="header-timestamp", id="current-timestamp", title=timestampISO),
+                        html.Span(timeRefresh, className="header-time-interval", id="timeinterval")
+                      ], className="header__subTitle"),
+                      html.Div('warning: data is stale', className="header-time-warning"),
                       html.Div(
                           children=[
                               html.Label("Select primary metric:", className="select_label"),
