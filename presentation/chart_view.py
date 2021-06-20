@@ -50,7 +50,8 @@ class ChartView:
         mesh: MeshResults,
         y_range: Optional[Tuple[float, float]] = None,
     ):
-        xdata, ydata = zip(*mesh.filter(from_agent, to_agent, metric))
+        filtered = mesh.filter(from_agent, to_agent, metric)
+        xdata, ydata = zip(*filtered) if filtered else ((), ())
         layout = go.Layout(margin={"t": 0, "b": 0})  # remove empty space above and below the chart
         fig = go.Figure(
             data=[go.Scatter(x=xdata, y=ydata)],
