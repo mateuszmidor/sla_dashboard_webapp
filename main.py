@@ -119,7 +119,7 @@ class WebApp:
     @staticmethod
     def _redirect_to_chart_view(from_agent, to_agent: AgentID) -> dcc.Location:
         path = ChartView.encode_path(from_agent, to_agent)
-        return dcc.Location(pathname=path, id=IndexView.URL, refresh=False)
+        return dcc.Location(pathname=path, id=IndexView.URL, refresh=True)
 
     @property
     def config(self) -> ConfigYAML:
