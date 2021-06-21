@@ -19,6 +19,7 @@ jobs:
           VALIDATE_OPENAPI: false
           VALIDATE_PYTHON_FLAKE8: false
           LINTER_RULES_PATH: /
+          FILTER_REGEX_EXCLUDE: data/assets
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
           PYTHON_ISORT_CONFIG_FILE: pyproject.toml
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

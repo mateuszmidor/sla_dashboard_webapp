@@ -22,54 +22,68 @@ class MatrixView:
     @classmethod
     def make_layout(cls, mesh: MeshResults, metric: MetricType) -> html.Div:
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
-        timeRefresh = 15*60
+        timeRefresh = 15 * 60
         timestampISO = localtime_timestamp.isoformat()
         timestamp = localtime_timestamp.strftime("%x %X")
         header = "SLA Dashboard"
         return html.Div(
             children=[
                 html.H1(children=header, className="header_main"),
-                html.Div(children=[
-                      html.H2(
-                      children=[
-                        html.Span("Data timestamp"),
-                        html.Span(timestamp, className="header-timestamp", id="current-timestamp", title=timestampISO),
-                        html.Span(timeRefresh, className="header-time-interval", id="timeinterval")
-                      ], className="header__subTitle"),
-                      html.Div('warning: data is stale', className="header-time-warning"),
-                      html.Div(
-                          children=[
-                              html.Label("Select primary metric:", className="select_label"),
-                              dcc.Dropdown(
-                                  id=cls.METRIC_SELECTOR,
-                                  options=[
-                                      {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
-                                      {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
-                                      {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
-                                  ],
-                                  value=metric.value,
-                                  clearable=False,
-                                  className="dropdowns"
-                              )
-                          ], className="select_container"
-                      ),
-                      html.Div(
-                      children=[
-                          html.Div(
-                               dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
-                               className="chart__default"
-                          ),
-                          html.Div(children = [
-                              html.Label("GOOD", className="chart_legend__label chart_legend__label_good"),
-                              html.Div(className="chart_legend__cell chart_legend__cell_good"),
-                              html.Label("WARNING", className="chart_legend__label chart_legend__label_warning"),
-                              html.Div(className="chart_legend__cell chart_legend__cell_warning"),
-                              html.Label("ERROR", className="chart_legend__label chart_legend__label_error"),
-                              html.Div(className="chart_legend__cell chart_legend__cell_error"),
-                          ], className="chart_legend")
-                      ], className="chart_container"
-                  )
-                ], className="main_container")
+                html.Div(
+                    children=[
+                        html.H2(
+                            children=[
+                                html.Span("Data timestamp"),
+                                html.Span(
+                                    timestamp, className="header-timestamp", id="current-timestamp", title=timestampISO
+                                ),
+                                html.Span(timeRefresh, className="header-time-interval", id="timeinterval"),
+                            ],
+                            className="header__subTitle",
+                        ),
+                        html.Div("warning: data is stale", className="header-time-warning"),
+                        html.Div(
+                            children=[
+                                html.Label("Select primary metric:", className="select_label"),
+                                dcc.Dropdown(
+                                    id=cls.METRIC_SELECTOR,
+                                    options=[
+                                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
+                                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
+                                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
+                                    ],
+                                    value=metric.value,
+                                    clearable=False,
+                                    className="dropdowns",
+                                ),
+                            ],
+                            className="select_container",
+                        ),
+                        html.Div(
+                            children=[
+                                html.Div(
+                                    dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
+                                    className="chart__default",
+                                ),
+                                html.Div(
+                                    children=[
+                                        html.Label("GOOD", className="chart_legend__label chart_legend__label_good"),
+                                        html.Div(className="chart_legend__cell chart_legend__cell_good"),
+                                        html.Label(
+                                            "WARNING", className="chart_legend__label chart_legend__label_warning"
+                                        ),
+                                        html.Div(className="chart_legend__cell chart_legend__cell_warning"),
+                                        html.Label("ERROR", className="chart_legend__label chart_legend__label_error"),
+                                        html.Div(className="chart_legend__cell chart_legend__cell_error"),
+                                    ],
+                                    className="chart_legend",
+                                ),
+                            ],
+                            className="chart_container",
+                        ),
+                    ],
+                    className="main_container",
+                ),
             ],
         )
 

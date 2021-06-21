@@ -19,22 +19,25 @@ class ChartView:
         fig_latency = cls.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
         fig_jitter = cls.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
         fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
-        style = { "width":"100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
+        style = {"width": "100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
         return html.Div(
             children=[
-                html.H1(children=title,className="header_main"),
-                html.Div(children=[
-                    html.H3(children=MetricType.LATENCY.value, className="chart_title"),
-                    dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
-                    html.H3(children=MetricType.JITTER.value, className="chart_title"),
-                    dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
-                    html.H3(children=MetricType.PACKET_LOSS.value, className="chart_title"),
-                    dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
-                    html.Div(
-                        html.Center(dcc.Link("Back to matrix view", href="/"), style={"font-size": "large"})
-                        ,className="button"
-                    )
-                ], className="main_container")
+                html.H1(children=title, className="header_main"),
+                html.Div(
+                    children=[
+                        html.H3(children=MetricType.LATENCY.value, className="chart_title"),
+                        dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
+                        html.H3(children=MetricType.JITTER.value, className="chart_title"),
+                        dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
+                        html.H3(children=MetricType.PACKET_LOSS.value, className="chart_title"),
+                        dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
+                        html.Div(
+                            html.Center(dcc.Link("Back to matrix view", href="/"), style={"font-size": "large"}),
+                            className="button",
+                        ),
+                    ],
+                    className="main_container",
+                ),
             ],
         )
 
