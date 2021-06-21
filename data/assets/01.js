@@ -16,7 +16,7 @@ function checkTimeInterval() {
             }
         }
     }
-    setTimeout(checkTimeInterval, 1000);
+    setTimeout(checkTimeInterval, 100);
 }
 
-setTimeout(checkTimeInterval, 1000);
+setTimeout(checkTimeInterval, 100);

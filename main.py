@@ -45,6 +45,9 @@ class WebApp:
                 config.data_update_lookback_seconds,
             )
 
+            # views
+            self._matrix_view = MatrixView(config)
+
             # web framework configuration
             app = dash.Dash(
                 __name__,
@@ -63,14 +66,13 @@ class WebApp:
                 return self._get_page_content(unquote(pathname))
 
             # matrix view - handle metric select
-            @app.callback(Output(MatrixView.MATRIX, "figure"), [Input(MatrixView.METRIC_SELECTOR, "value")])
+            @app.callback(Output(IndexView.METRIC_REDIRECT, "children"), [Input(MatrixView.METRIC_SELECTOR, "value")])
             def update_matrix(value: str):
-                metric = MetricType(value)
-                self._current_metric = metric
-                return MatrixView.make_matrix_data(self._cached_repo.get_mesh_test_results(), metric, self.config)
+                self._current_metric = MetricType(value)
+                return dcc.Location(id=IndexView.URL, pathname="/", refresh=False)
 
             # matrix view - handle cell click
-            @app.callback(Output(IndexView.REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
+            @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
             def open_chart(clickData: Optional[Dict[str, Any]]):
                 if clickData is not None:
                     return self._handle_cell_click(clickData["points"][0]["x"], clickData["points"][0]["y"])
@@ -109,7 +111,7 @@ class WebApp:
     def _make_matrix_layout(self) -> html.Div:
         mesh_test_results = self._cached_repo.get_mesh_test_results()
         metric = self._current_metric
-        return MatrixView.make_layout(mesh_test_results, metric)
+        return self._matrix_view.make_layout(mesh_test_results, metric, self._config)
 
     def _make_chart_layout(self, path: str) -> html.Div:
         from_agent, to_agent = ChartView.decode_path(path)
