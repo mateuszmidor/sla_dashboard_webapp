@@ -1,3 +1,4 @@
+// data stale warning mechanism
 function checkTimeInterval() {
     const domTimeElement = document.getElementById('current-timestamp');
     const domDiffWarningElement = document.getElementById('timeinterval');
@@ -11,8 +12,8 @@ function checkTimeInterval() {
         if(warningElement[0]) {
             if(diff > parseInt(diffWarning)) {
                 warningElement[0].className = 'header-time-warning header-time-warning-visible';
-            }else{
-                warningElement[0].className = 'header-time-warning';
+            } else{
+               warningElement[0].className = 'header-time-warning';
             }
         }
     }

@@ -1,4 +1,10 @@
 @import './01.css';
+
+/* METRIC SELECTOR */
+.Select-control{
+  cursor: pointer;
+  border-color: var(--theme-3);
+}
 .select_container {
   max-width: 220px;
   text-align: left;
@@ -6,26 +12,17 @@
 .select_label{
   line-height: 20px;
 }
-
-.Select-control{
-  cursor: pointer;
-  border-color: var(--theme-3);
-}
-
-
 .Select-menu-outer{
   cursor: pointer;
-  border-color: var(--theme-3);
+  border-color : var(--theme-3);
 }
 .VirtualizedSelectOption{
   color: var(--theme-1);
 }
-
 .VirtualizedSelectOption:hover {
   color: var(--theme-0);
   background: var(--blue-4);
 }
-
 .VirtualizedSelectSelectedOption{
   color: var(--theme-0);
   font-weight: normal;
@@ -35,6 +32,8 @@
   background: var(--blue-4);
   font-weight: normal;
 }
+
+/* BACK TO MATRIX VIEW BUTTON */
 .button {
   width: auto;
   padding: 20px;
@@ -51,16 +50,22 @@
   color: var(--white-0);
   text-decoration: none;
 }
+
+/* DATA STALE WARNING (MATRIX VIEW) */
 .header-time-warning {
   opacity: 0;
   color: var(--color-warning);
   margin-bottom: 20px;
   transition: opacity 0.5s linear;
+  visibility: hidden;
+  font-weight: bold;
 }
 .header-time-warning-visible{
   opacity: 1;
-
+  visibility: visible;
 }
+
+/* DATA TIMESTAMP LABEL */
 .header-timestamp{
   margin-left: 10px;
 }

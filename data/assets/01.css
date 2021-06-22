@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;600&display=swap');
 
+/* VARIABLES USED IN OTHER CSS FILES */
 :root {
   --theme-0: #202020;
   --theme-1: #454545;
@@ -26,7 +27,4 @@
   --font-size-normal: 14px;
   --font-size-small: 11px;
   --text-color: var(--blue-1);
-
-
 }
-

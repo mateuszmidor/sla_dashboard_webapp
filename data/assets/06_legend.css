@@ -1,5 +1,6 @@
 @import './01.css';
 
+/* LEGEND EXPLAINING COLORS; UNDER THE CONNECTION MATRIX */
 .chart_legend{
   width: 100%;
   display: flex;

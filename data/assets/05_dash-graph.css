@@ -1,5 +1,6 @@
 @import './01.css';
 
+/* GRAPHS IN MATRIX VIEW AND CHART VIEW */
 .dash-graph{
   transition: height 0.3s ease-in-out;
   min-height: 60px;
