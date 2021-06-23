@@ -47,7 +47,7 @@ class MatrixView:
                             ],
                             className="header__subTitle",
                         ),
-                        html.Div("warning: data is stale", className="header-time-warning"),
+                        html.Div("warning: data is stale", className="header-stale-data-warning"),
                         html.Div(
                             children=[
                                 html.Label("Select primary metric:", className="select_label"),

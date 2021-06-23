@@ -1,6 +1,6 @@
 @import './01.css';
 
-/* LEGEND EXPLAINING COLORS; UNDER THE CONNECTION MATRIX */
+/* Legend explaining colors; under the connection matrix */
 .chart_legend{
   width: 100%;
   display: flex;

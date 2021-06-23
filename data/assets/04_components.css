@@ -1,6 +1,6 @@
 @import './01.css';
 
-/* METRIC SELECTOR */
+/* Metric selector */
 .Select-control{
   cursor: pointer;
   border-color: var(--theme-3);
@@ -33,7 +33,7 @@
   font-weight: normal;
 }
 
-/* BACK TO MATRIX VIEW BUTTON */
+/* Back to matrix view button */
 .button {
   width: auto;
   padding: 20px;
@@ -51,21 +51,21 @@
   text-decoration: none;
 }
 
-/* DATA STALE WARNING (MATRIX VIEW) */
-.header-time-warning {
+/* Data stale warning (matrix view) */
+.header-stale-data-warning {
   opacity: 0;
-  color: var(--color-warning);
+  color: var(--warning-color);
   margin-bottom: 20px;
   transition: opacity 0.5s linear;
   visibility: hidden;
   font-weight: bold;
 }
-.header-time-warning-visible{
+.header-stale-data-warning-visible{
   opacity: 1;
   visibility: visible;
 }
 
-/* DATA TIMESTAMP LABEL */
+/* Data timestamp label */
 .header-timestamp{
   margin-left: 10px;
 }
