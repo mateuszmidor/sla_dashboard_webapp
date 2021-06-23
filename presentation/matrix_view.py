@@ -19,44 +19,83 @@ class MatrixView:
     MATRIX = "matrix"
     METRIC_SELECTOR = "metric-selector"
 
-    @classmethod
-    def make_layout(cls, mesh: MeshResults, metric: MetricType) -> html.Div:
+    def __init__(self, config: Config) -> None:
+        self._config = config
+
+    def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
+        timestampISO = localtime_timestamp.isoformat()
         timestamp = localtime_timestamp.strftime("%x %X")
         header = "SLA Dashboard"
+        fig = self.make_matrix_data(mesh, metric)
         return html.Div(
             children=[
-                html.H1(children=header, style={"textAlign": "center", "marginBottom": 50}),
-                html.H2(
-                    f"Data timestamp {timestamp}",
-                    style={"textAlign": "center", "marginTop": 100},
-                ),
-                html.Center("Select primary metric: "),
-                dcc.Dropdown(
-                    id=cls.METRIC_SELECTOR,
-                    options=[
-                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
-                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
-                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
-                    ],
-                    value=metric.value,
-                    clearable=False,
-                    style={"width": 450, "margin-left": "auto", "margin-right": "auto"},
-                ),
+                html.H1(children=header, className="header_main"),
                 html.Div(
-                    html.Center(
-                        dcc.Graph(id=cls.MATRIX, style={"width": 900, "height": 750}),
-                        style={"marginLeft": 200, "marginRight": 200},
-                    ),
+                    children=[
+                        html.H2(
+                            children=[
+                                html.Span("Data timestamp"),
+                                html.Span(
+                                    timestamp, className="header-timestamp", id="current-timestamp", title=timestampISO
+                                ),
+                                html.Span(
+                                    self._config.data_update_period_seconds,
+                                    className="header-time-interval",
+                                    id="timeinterval",
+                                ),
+                            ],
+                            className="header__subTitle",
+                        ),
+                        html.Div("warning: data is stale", className="header-stale-data-warning"),
+                        html.Div(
+                            children=[
+                                html.Label("Select primary metric:", className="select_label"),
+                                dcc.Dropdown(
+                                    id=self.METRIC_SELECTOR,
+                                    options=[
+                                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
+                                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
+                                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
+                                    ],
+                                    value=metric.value,
+                                    clearable=False,
+                                    className="dropdowns",
+                                ),
+                            ],
+                            className="select_container",
+                        ),
+                        html.Div(
+                            children=[
+                                html.Div(
+                                    dcc.Graph(id=self.MATRIX, style={"width": 900, "height": 750}, figure=fig),
+                                    className="chart__default",
+                                ),
+                                html.Div(
+                                    children=[
+                                        html.Label("GOOD", className="chart_legend__label chart_legend__label_good"),
+                                        html.Div(className="chart_legend__cell chart_legend__cell_good"),
+                                        html.Label(
+                                            "WARNING", className="chart_legend__label chart_legend__label_warning"
+                                        ),
+                                        html.Div(className="chart_legend__cell chart_legend__cell_warning"),
+                                        html.Label("ERROR", className="chart_legend__label chart_legend__label_error"),
+                                        html.Div(className="chart_legend__cell chart_legend__cell_error"),
+                                    ],
+                                    className="chart_legend",
+                                ),
+                            ],
+                            className="chart_container",
+                        ),
+                    ],
+                    className="main_container",
                 ),
             ],
-            style={"marginBottom": 50, "marginTop": 50, "marginLeft": 50, "marginRight": 50},
         )
 
-    @classmethod
-    def make_matrix_data(cls, mesh: MeshResults, metric: MetricType, config: Config) -> Dict:
-        data = cls.make_data(mesh, metric, cls.get_thresholds(metric, config))
-        annotations = cls.make_annotations(mesh, metric)
+    def make_matrix_data(self, mesh: MeshResults, metric: MetricType) -> Dict:
+        data = self.make_data(mesh, metric, self.get_thresholds(metric))
+        annotations = self.make_annotations(mesh, metric)
         layout = dict(
             margin=dict(l=150, b=50, t=100, r=50),
             modebar={"orientation": "v"},
@@ -69,14 +108,13 @@ class MatrixView:
 
         return {"data": data, "layout": layout}
 
-    @staticmethod
-    def get_thresholds(metric: MetricType, config: Config) -> Thresholds:
+    def get_thresholds(self, metric: MetricType) -> Thresholds:
         if metric == MetricType.LATENCY:
-            return config.latency
+            return self._config.latency
         elif metric == MetricType.JITTER:
-            return config.jitter
+            return self._config.jitter
         else:
-            return config.packet_loss
+            return self._config.packet_loss
 
     @classmethod
     def make_data(cls, mesh: MeshResults, metric: MetricType, tresholds: Thresholds) -> List[Dict]:

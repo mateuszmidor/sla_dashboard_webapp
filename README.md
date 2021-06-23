@@ -44,9 +44,10 @@ docker run \
 ```
 **Note:** running the app as docker container requires `data/` folder with `config.yaml` and `gunicorn.conf.py`
 
-## Application configuration
+## Application configuration and customization
 
-Configuration is stored in config file [config.yaml](./data/config.yaml)
+Configuration is stored in config file [config.yaml](./data/config.yaml)  
+UI customization is possible by modifying CSS files in [./data/assets](./data/assets)
 
 ## API request quota utilisation
 

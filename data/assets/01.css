@@ -1,3 +1,30 @@
-body {
-  background-color: white;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;600&display=swap');
+
+/* Variables used in other css files */
+:root {
+  --theme-0: #202020;
+  --theme-1: #454545;
+  --theme-2: #858585;
+  --theme-3: #CCC;
+  --theme-4: #F5f5f5;
+  --white-0: #FFFFFF;
+  /* CSS HEX */
+  --blue-2: #134074ff;
+  --blue-1: #13315cff;
+  --blue-0: #0b2545ff;
+  --blue-3: #8da9c4ff;
+  --blue-4: #eef4edff;
+  --gray-1: #eeeeee;
+  --warning-color: #FF3300;
+
+  --font-family:'Poppins', sans-serif;
+  --font-weight-bold: 600;
+  --font-weight-light: 100;
+
+  --font-size-xlarge: 30px;
+  --font-size-large: 24px;
+  --font-size-medium: 18px;
+  --font-size-normal: 14px;
+  --font-size-small: 11px;
+  --text-color: var(--blue-1);
 }

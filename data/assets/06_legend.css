@@ -1,0 +1,30 @@
+@import './01.css';
+
+/* Legend explaining colors; under the connection matrix */
+.chart_legend{
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: var(--font-size-small);
+  color: var(--theme-1);
+}
+.chart_legend__label{
+  margin: 0 10px 0 30px;
+}
+
+.chart_legend__cell {
+  width: 30px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.chart_legend__cell_good {
+  background: #0f0;
+}
+.chart_legend__cell_warning {
+  background: #FFA500;
+}
+.chart_legend__cell_error {
+  background: #F00;
+}

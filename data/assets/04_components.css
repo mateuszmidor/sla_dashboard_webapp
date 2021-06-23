@@ -1,0 +1,74 @@
+@import './01.css';
+
+/* Metric selector */
+.Select-control{
+  cursor: pointer;
+  border-color: var(--theme-3);
+}
+.select_container {
+  max-width: 220px;
+  text-align: left;
+}
+.select_label{
+  line-height: 20px;
+}
+.Select-menu-outer{
+  cursor: pointer;
+  border-color : var(--theme-3);
+}
+.VirtualizedSelectOption{
+  color: var(--theme-1);
+}
+.VirtualizedSelectOption:hover {
+  color: var(--theme-0);
+  background: var(--blue-4);
+}
+.VirtualizedSelectSelectedOption{
+  color: var(--theme-0);
+  font-weight: normal;
+}
+.VirtualizedSelectFocusedOption {
+  color: var(--theme-0);
+  background: var(--blue-4);
+  font-weight: normal;
+}
+
+/* Back to matrix view button */
+.button {
+  width: auto;
+  padding: 20px;
+  background: var(--blue-1);
+  display: inline-block;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  transition: background 0.3s linear;
+}
+.button:hover{
+  background: var(--blue-2);
+}
+.button a {
+  color: var(--white-0);
+  text-decoration: none;
+}
+
+/* Data stale warning (matrix view) */
+.header-stale-data-warning {
+  opacity: 0;
+  color: var(--warning-color);
+  margin-bottom: 20px;
+  transition: opacity 0.5s linear;
+  visibility: hidden;
+  font-weight: bold;
+}
+.header-stale-data-warning-visible{
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Data timestamp label */
+.header-timestamp{
+  margin-left: 10px;
+}
+.header-time-interval{
+  display: none;
+}
