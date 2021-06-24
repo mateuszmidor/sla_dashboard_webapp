@@ -51,7 +51,7 @@
   text-decoration: none;
 }
 
-/* Data stale warning (matrix view) */
+/* Stale data warning (matrix view) */
 .header-stale-data-warning {
   opacity: 0;
   color: var(--warning-color);
@@ -65,7 +65,7 @@
   visibility: visible;
 }
 
-/* Data timestamp label */
+/* Data timestamp label (matrix view) */
 .header-timestamp{
   margin-left: 10px;
 }

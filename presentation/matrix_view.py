@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 import dash_core_components as dcc
 import dash_html_components as html
 
-from domain.config import Config
+from domain.config import Config, matrix
 from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance_in_kilometers
 from domain.metric_type import MetricType
@@ -73,14 +73,27 @@ class MatrixView:
                                 ),
                                 html.Div(
                                     children=[
-                                        html.Label("GOOD", className="chart_legend__label chart_legend__label_good"),
-                                        html.Div(className="chart_legend__cell chart_legend__cell_good"),
                                         html.Label(
-                                            "WARNING", className="chart_legend__label chart_legend__label_warning"
+                                            "Healthy", className="chart_legend__label chart_legend__label_healthy"
                                         ),
-                                        html.Div(className="chart_legend__cell chart_legend__cell_warning"),
-                                        html.Label("ERROR", className="chart_legend__label chart_legend__label_error"),
-                                        html.Div(className="chart_legend__cell chart_legend__cell_error"),
+                                        html.Div(
+                                            className="chart_legend__cell",
+                                            style={"background": self._config.matrix.cell_color_healthy},
+                                        ),
+                                        html.Label(
+                                            "Warning", className="chart_legend__label chart_legend__label_warning"
+                                        ),
+                                        html.Div(
+                                            className="chart_legend__cell",
+                                            style={"background": self._config.matrix.cell_color_warning},
+                                        ),
+                                        html.Label(
+                                            "Critical", className="chart_legend__label chart_legend__label_critical"
+                                        ),
+                                        html.Div(
+                                            className="chart_legend__cell",
+                                            style={"background": self._config.matrix.cell_color_critical},
+                                        ),
                                     ],
                                     className="chart_legend",
                                 ),
@@ -116,9 +129,8 @@ class MatrixView:
         else:
             return self._config.packet_loss
 
-    @classmethod
-    def make_data(cls, mesh: MeshResults, metric: MetricType, tresholds: Thresholds) -> List[Dict]:
-        colors = cls.make_colors(mesh, metric, tresholds)
+    def make_data(self, mesh: MeshResults, metric: MetricType, tresholds: Thresholds) -> List[Dict]:
+        colors = self.make_colors(mesh, metric, tresholds)
         labels = [mesh.agents.get_by_id(row.agent_id).alias for row in mesh.rows]
         reversed_labels = list(reversed(labels))
         return [
@@ -126,13 +138,13 @@ class MatrixView:
                 x=labels,
                 y=reversed_labels,
                 z=colors,
-                text=cls.make_hover_text(mesh),
+                text=self.make_hover_text(mesh),
                 type="heatmap",
                 hoverinfo="text",
                 opacity=1,
                 name="",
                 showscale=False,
-                colorscale=cls.get_colorscale(colors),
+                colorscale=self.get_colorscale(colors),
             )
         ]
 
@@ -228,21 +240,20 @@ class MatrixView:
         else:
             return 1.0
 
-    @staticmethod
-    def get_colorscale(z: List[List]) -> List[List]:
-        RED = "rgb(255,0,0)"
-        ORANGE = "rgb(255,165,0)"
-        GREEN = "rgb(0,255,0)"
+    def get_colorscale(self, z: List[List]) -> List[List]:
+        healthy = self._config.matrix.cell_color_healthy
+        warning = self._config.matrix.cell_color_warning
+        critical = self._config.matrix.cell_color_critical
 
         if all([i == 0.0 for i in itertools.chain(*z)]):
-            return [[0.0, GREEN], [1.0, GREEN]]
+            return [[0.0, healthy], [1.0, healthy]]
         if all([i == 0.5 for i in itertools.chain(*z)]):
-            return [[0.0, ORANGE], [1.0, ORANGE]]
+            return [[0.0, warning], [1.0, warning]]
         if all([i == 1.0 for i in itertools.chain(*z)]):
-            return [[0.0, RED], [1.0, RED]]
+            return [[0.0, critical], [1.0, critical]]
         if not any([i == 0.0 for i in itertools.chain(*z)]):
-            return [[0.0, ORANGE], [1.0, RED]]
+            return [[0.0, warning], [1.0, critical]]
         if not any([i == 1.0 for i in itertools.chain(*z)]):
-            return [[0.0, GREEN], [1.0, ORANGE]]
+            return [[0.0, healthy], [1.0, warning]]
         else:
-            return [[0.0, GREEN], [0.5, ORANGE], [1.0, RED]]
+            return [[0.0, healthy], [0.5, warning], [1.0, critical]]

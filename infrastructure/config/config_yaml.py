@@ -3,8 +3,8 @@ from typing import Tuple
 
 import yaml
 
+from domain.config import Matrix
 from domain.types import TestID
-from infrastructure import config
 from infrastructure.config.thresholds import Thresholds
 
 
@@ -43,6 +43,10 @@ class ConfigYAML:
     def logging_level(self) -> int:
         return self._logging_level
 
+    @property
+    def matrix(self) -> Matrix:
+        return self._matrix
+
     def __init__(self, filename: str) -> None:
         try:
             with open(filename, "r") as file:
@@ -56,6 +60,11 @@ class ConfigYAML:
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
             self._timeout = tuple(config["timeout"])
             self._logging_level = self._parse_logging_level(config)
+            self._matrix = Matrix(
+                config["matrix"]["cell_color_healthy"],
+                config["matrix"]["cell_color_warning"],
+                config["matrix"]["cell_color_critical"],
+            )
         except Exception as err:
             raise Exception("Configuration error") from err
 

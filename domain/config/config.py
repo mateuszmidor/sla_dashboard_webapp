@@ -1,5 +1,6 @@
 from typing import Protocol
 
+from domain.config.matrix import Matrix
 from domain.config.thresholds import Thresholds
 from domain.types import TestID
 
@@ -35,4 +36,9 @@ class Config(Protocol):
     @property
     def packet_loss(self) -> Thresholds:
         """ Packet loss thresholds, in percents (0-100) """
+        pass
+
+    @property
+    def matrix(self) -> Matrix:
+        """ Matrix cell colors """
         pass
