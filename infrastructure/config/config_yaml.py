@@ -4,6 +4,7 @@ from typing import Tuple
 import yaml
 
 from domain.config import Matrix
+from domain.geo import DistanceUnit
 from domain.types import TestID
 from infrastructure.config.thresholds import Thresholds
 
@@ -47,6 +48,10 @@ class ConfigYAML:
     def matrix(self) -> Matrix:
         return self._matrix
 
+    @property
+    def distance_unit(self) -> DistanceUnit:
+        return self._distance_unit
+
     def __init__(self, filename: str) -> None:
         try:
             with open(filename, "r") as file:
@@ -65,6 +70,7 @@ class ConfigYAML:
                 config["matrix"]["cell_color_warning"],
                 config["matrix"]["cell_color_critical"],
             )
+            self._distance_unit = DistanceUnit(config["distance_unit"])
         except Exception as err:
             raise Exception("Configuration error") from err
 

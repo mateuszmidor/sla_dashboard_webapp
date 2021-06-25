@@ -6,19 +6,22 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 
-from domain.geo import calc_distance_in_kilometers
+from domain.config import Config
+from domain.geo import calc_distance
 from domain.metric_type import MetricType
 from domain.model import MeshResults
 from domain.types import AgentID
 
 
 class ChartView:
-    @classmethod
-    def make_layout(cls, from_agent, to_agent: AgentID, mesh: MeshResults) -> html.Div:
-        title = cls.make_title(from_agent, to_agent, mesh)
-        fig_latency = cls.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
-        fig_jitter = cls.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
-        fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
+    def __init__(self, config: Config) -> None:
+        self._config = config
+
+    def make_layout(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> html.Div:
+        title = self.make_title(from_agent, to_agent, mesh)
+        fig_latency = self.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
+        fig_jitter = self.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
+        fig_packetloss = self.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
         style = {"width": "100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
         return html.Div(
             children=[
@@ -41,14 +44,14 @@ class ChartView:
             ],
         )
 
-    @staticmethod
-    def make_title(from_agent, to_agent: AgentID, mesh: MeshResults) -> str:
+    def make_title(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> str:
         from_alias = mesh.agents.get_alias(from_agent)
         to_alias = mesh.agents.get_alias(to_agent)
         from_coords = mesh.agents.get_by_id(from_agent).coords
         to_coords = mesh.agents.get_by_id(to_agent).coords
-        distance_km = calc_distance_in_kilometers(from_coords, to_coords)
-        return f"{from_alias} -> {to_alias} ({distance_km:.0f} km)"
+        distance_unit = self._config.distance_unit
+        distance = calc_distance(from_coords, to_coords, distance_unit)
+        return f"{from_alias} -> {to_alias} ({distance:.0f} {distance_unit.value})"
 
     @staticmethod
     def make_figure(

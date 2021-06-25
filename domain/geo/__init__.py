@@ -1,2 +1,2 @@
 from .coordinates import Coordinates
-from .distance_calculator import calc_distance_in_kilometers
+from .distance_calculator import DistanceUnit, calc_distance

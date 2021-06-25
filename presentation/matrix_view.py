@@ -1,18 +1,18 @@
 import itertools
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import dash_core_components as dcc
 import dash_html_components as html
 
 from domain.config import Config, MatrixCellColor
 from domain.config.thresholds import Thresholds
-from domain.geo import calc_distance_in_kilometers
+from domain.geo import calc_distance
 from domain.metric_type import MetricType
 from domain.model import MeshResults
-from domain.model.mesh_results import MeshColumn
-from domain.types import MetricValue, Threshold
+from domain.model.mesh_results import Agents, MeshColumn
+from domain.types import AgentID, MetricValue, Threshold
 from presentation.localtime import utc_to_localtime
 
 
@@ -33,8 +33,10 @@ class MatrixView:
 
     def __init__(self, config: Config) -> None:
         self._config = config
+        self._agents = Agents()
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
+        self._agents = mesh.agents  # remember agents used to make the layout for further processing
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
         timestampISO = localtime_timestamp.isoformat()
         timestamp = localtime_timestamp.strftime("%x %X")
@@ -212,8 +214,7 @@ class MatrixView:
             return f"<b>{(cell.jitter_millisec.value):.2f} ms</b>"
         return f"<b>{cell.packet_loss_percent.value:.1f}%</b>"
 
-    @staticmethod
-    def make_hover_text(mesh: MeshResults) -> List[List[str]]:
+    def make_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         text = []
         for row in reversed(mesh.rows):
             text_col = []
@@ -224,10 +225,11 @@ class MatrixView:
                 latency_ms = conn.latency_millisec.value
                 jitter_ms = conn.jitter_millisec.value
                 loss = conn.packet_loss_percent.value
-                distance_km = calc_distance_in_kilometers(from_agent.coords, to_agent.coords)
+                distance_unit = self._config.distance_unit
+                distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
                 text_col.append(
                     f"{from_agent.alias} -> {to_agent.alias} <br>"
-                    + f"Distance: {distance_km:.0f} km<br>"
+                    + f"Distance: {distance:.0f} {distance_unit.value}<br>"
                     + f"Latency: {latency_ms:.2f} ms <br>"
                     + f"Jitter: {jitter_ms:.2f} ms <br>"
                     + f"Loss: {loss:.1f}%"

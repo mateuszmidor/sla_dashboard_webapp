@@ -2,6 +2,7 @@ from typing import Protocol
 
 from domain.config.matrix import Matrix
 from domain.config.thresholds import Thresholds
+from domain.geo import DistanceUnit
 from domain.types import TestID
 
 
@@ -41,4 +42,9 @@ class Config(Protocol):
     @property
     def matrix(self) -> Matrix:
         """ Matrix cell colors """
+        pass
+
+    @property
+    def distance_unit(self) -> DistanceUnit:
+        """ Unit for distance between agents  """
         pass

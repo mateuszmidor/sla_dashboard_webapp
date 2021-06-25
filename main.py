@@ -47,6 +47,7 @@ class WebApp:
 
             # views
             self._matrix_view = MatrixView(config)
+            self._chart_view = ChartView(config)
 
             # web framework configuration
             app = dash.Dash(
@@ -116,7 +117,7 @@ class WebApp:
     def _make_chart_layout(self, path: str) -> html.Div:
         from_agent, to_agent = ChartView.decode_path(path)
         results = self._cached_repo.get_mesh_test_results()
-        return ChartView.make_layout(from_agent, to_agent, results)
+        return self._chart_view.make_layout(from_agent, to_agent, results)
 
     @staticmethod
     def _redirect_to_chart_view(from_agent, to_agent: AgentID) -> dcc.Location:
