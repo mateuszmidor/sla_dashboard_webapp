@@ -1,7 +1,6 @@
 import itertools
-from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import dash_core_components as dcc
 import dash_html_components as html
@@ -10,9 +9,9 @@ from domain.config import Config, MatrixCellColor
 from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance_in_kilometers
 from domain.metric_type import MetricType
-from domain.model import MeshResults
+from domain.model import Agents, MeshResults
 from domain.model.mesh_results import MeshColumn
-from domain.types import MetricValue, Threshold
+from domain.types import AgentID, MetricValue, Threshold
 from presentation.localtime import utc_to_localtime
 
 
@@ -33,8 +32,10 @@ class MatrixView:
 
     def __init__(self, config: Config) -> None:
         self._config = config
+        self._agents = Agents()
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
+        self._agents = mesh.agents
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
         timestampISO = localtime_timestamp.isoformat()
         timestamp = localtime_timestamp.strftime("%x %X")
@@ -262,3 +263,10 @@ class MatrixView:
         if not any([val == SLALevel.CRITICAL for val in itertools.chain(*z)]):
             return [(SLALevel.HEALTHY, healthy), (SLALevel.CRITICAL, warning)]
         return [(SLALevel.HEALTHY, healthy), (SLALevel.WARNING, warning), (SLALevel.CRITICAL, critical)]
+
+    def get_agents_from_click(self, clickData: Optional[Dict[str, Any]]) -> Tuple[Optional[AgentID], Optional[AgentID]]:
+        if clickData is None:
+            return None, None
+
+        to_agent_alias, from_agent_alias = clickData["points"][0]["x"], clickData["points"][0]["y"]
+        return self._agents.get_by_alias(from_agent_alias).id, self._agents.get_by_alias(to_agent_alias).id
