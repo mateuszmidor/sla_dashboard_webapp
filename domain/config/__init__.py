@@ -1,1 +1,2 @@
-from .config import Config, Matrix
+from .config import Config
+from .matrix import Matrix, MatrixCellColor

@@ -24,8 +24,8 @@ matrix:
 thresholds:
   latency: # thresholds in milliseconds
     defaults:
-      warning: 200.0 # latency low threshold; if above, then display connection as warning
-      error: 400.0 # latency high threshold; if above, then display connection as error
+      warning: 200.0 # latency low threshold; if equal or above, then display connection as warning
+      error: 400.0 # latency high threshold; if equal or above, then display connection as error
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
@@ -37,8 +37,8 @@ thresholds:
         error: 2000.0
   jitter: # thresholds in milliseconds
     defaults:
-      warning: 0.3 # jitter low threshold; if above, then display connection as warning
-      error: 0.9 # jitter high threshold; if above, then display connection as error
+      warning: 0.3 # jitter low threshold; if equal or above, then display connection as warning
+      error: 0.9 # jitter high threshold; if equal or above, then display connection as error
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
@@ -50,8 +50,8 @@ thresholds:
         error: 0.07
   packet_loss: # thresholds in percents (0-100)
     defaults:
-      warning: 5 # packet_loss low threshold; if above, then display connection as warning
-      error: 20 # packet_loss high threshold; if above, then display connection as error
+      warning: 5 # packet_loss low threshold; if equal or above, then display connection as warning
+      error: 20 # packet_loss high threshold; if equal or above, then display connection as error
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
