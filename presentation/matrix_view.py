@@ -158,9 +158,9 @@ class MatrixView:
             sla_levels_col: SLALevelColumn = []
             for col in row.columns:
                 warning = thresholds.warning(row.agent_id, col.agent_id)
-                error = thresholds.error(row.agent_id, col.agent_id)
+                critical = thresholds.critical(row.agent_id, col.agent_id)
                 value = self.get_metric_value(metric, mesh.connection(row.agent_id, col.agent_id))
-                sla_level = self.get_sla_level(value, warning, error)
+                sla_level = self.get_sla_level(value, warning, critical)
                 sla_levels_col.append(sla_level)
             sla_levels.append(sla_levels_col)
 
@@ -239,10 +239,10 @@ class MatrixView:
         return text
 
     @staticmethod
-    def get_sla_level(val: MetricValue, warning_threshold: Threshold, error_threshold: Threshold) -> SLALevel:
+    def get_sla_level(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> SLALevel:
         if val < warning_threshold:
             return SLALevel.HEALTHY
-        if val < error_threshold:
+        if val < critical_threshold:
             return SLALevel.WARNING
         return SLALevel.CRITICAL
 
