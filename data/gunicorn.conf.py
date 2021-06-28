@@ -2,6 +2,7 @@
 
 import multiprocessing
 
+wsgi_app = "main:run()"
 workers = 1
 worker_connections = 100
 bind = ":8050"
