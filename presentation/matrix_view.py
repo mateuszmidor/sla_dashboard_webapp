@@ -1,5 +1,4 @@
 import itertools
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -264,3 +263,10 @@ class MatrixView:
         if not any([val == SLALevel.CRITICAL for val in itertools.chain(*z)]):
             return [(SLALevel.HEALTHY, healthy), (SLALevel.CRITICAL, warning)]
         return [(SLALevel.HEALTHY, healthy), (SLALevel.WARNING, warning), (SLALevel.CRITICAL, critical)]
+
+    def get_agents_from_click(self, clickData: Optional[Dict[str, Any]]) -> Tuple[Optional[AgentID], Optional[AgentID]]:
+        if clickData is None:
+            return None, None
+
+        to_agent_alias, from_agent_alias = clickData["points"][0]["x"], clickData["points"][0]["y"]
+        return self._agents.get_by_alias(from_agent_alias).id, self._agents.get_by_alias(to_agent_alias).id
