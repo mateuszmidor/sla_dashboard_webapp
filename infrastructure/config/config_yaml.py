@@ -64,6 +64,7 @@ class ConfigYAML:
                 config["matrix"]["cell_color_healthy"],
                 config["matrix"]["cell_color_warning"],
                 config["matrix"]["cell_color_critical"],
+                config["matrix"]["cell_color_nodata"],
             )
         except Exception as err:
             raise Exception("Configuration error") from err

@@ -1,5 +1,3 @@
-import itertools
-from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
@@ -18,9 +16,12 @@ from presentation.localtime import utc_to_localtime
 
 # SLALevel represents measured value in regard to threshold, as a value in connection matrix cell
 class SLALevel(float, Enum):
-    HEALTHY = 0.0
-    WARNING = 0.5
-    CRITICAL = 1.0
+    _MIN = 0.0
+    HEALTHY = 0.2
+    WARNING = 0.4
+    CRITICAL = 0.6
+    NODATA = 0.8
+    _MAX = 1.0
 
 
 # SLALevelColumn represents SLALevel single column in connectin matrix
@@ -106,6 +107,13 @@ class MatrixView:
                                             className="chart_legend__cell",
                                             style={"background": self._config.matrix.cell_color_critical},
                                         ),
+                                        html.Label(
+                                            "No data", className="chart_legend__label chart_legend__label_nodata"
+                                        ),
+                                        html.Div(
+                                            className="chart_legend__cell",
+                                            style={"background": self._config.matrix.cell_color_nodata},
+                                        ),
                                     ],
                                     className="chart_legend",
                                 ),
@@ -147,7 +155,7 @@ class MatrixView:
             opacity=1,
             name="",
             showscale=False,
-            colorscale=self.make_color_scale(sla_levels),
+            colorscale=self.make_color_scale(),
         )
 
     def make_sla_levels(self, mesh: MeshResults, metric: MetricType) -> List[SLALevelColumn]:
@@ -159,14 +167,19 @@ class MatrixView:
             for col in row.columns:
                 warning = thresholds.warning(row.agent_id, col.agent_id)
                 error = thresholds.error(row.agent_id, col.agent_id)
-                value = self.get_metric_value(metric, mesh.connection(row.agent_id, col.agent_id))
-                sla_level = self.get_sla_level(value, warning, error)
+                connection = mesh.connection(row.agent_id, col.agent_id)
+                if connection.is_no_data():
+                    sla_level = SLALevel.NODATA
+                else:
+                    value = self.get_metric_value(metric, connection)
+                    sla_level = self.get_sla_level(value, warning, error)
                 sla_levels_col.append(sla_level)
             sla_levels.append(sla_levels_col)
 
-        for i in range(len(mesh.rows)):  # add Nones at diagonal to avoid colorising it
-            sla_levels[-(i + 1)].insert(i, None)
-
+        # mark matrix diagonal, use alternating SLALevel._MIN and SLALevel._MAX
+        # to ensure matrix contains values in full range 0..1; this simplify mapping values to colors
+        for i in range(len(mesh.rows)):
+            sla_levels[-(i + 1)].insert(i, SLALevel(i % 2))
         return sla_levels
 
     def get_thresholds(self, metric: MetricType) -> Thresholds:
@@ -214,29 +227,30 @@ class MatrixView:
 
     @staticmethod
     def make_hover_text(mesh: MeshResults) -> List[List[str]]:
-        text = []
+        matrix_hover_text: List[List[str]] = []
         for row in reversed(mesh.rows):
-            text_col = []
+            column_hover_text: List[str] = []
             for col in row.columns:
                 from_agent = mesh.agents.get_by_id(row.agent_id)
                 to_agent = mesh.agents.get_by_id(col.agent_id)
                 conn = mesh.connection(from_agent.id, to_agent.id)
-                latency_ms = conn.latency_millisec.value
-                jitter_ms = conn.jitter_millisec.value
-                loss = conn.packet_loss_percent.value
                 distance_km = calc_distance_in_kilometers(from_agent.coords, to_agent.coords)
-                text_col.append(
-                    f"{from_agent.alias} -> {to_agent.alias} <br>"
-                    + f"Distance: {distance_km:.0f} km<br>"
-                    + f"Latency: {latency_ms:.2f} ms <br>"
-                    + f"Jitter: {jitter_ms:.2f} ms <br>"
-                    + f"Loss: {loss:.1f}%"
-                )
-            text.append(text_col)
+                cell_hover_text = f"{from_agent.alias} -> {to_agent.alias} <br>" + f"Distance: {distance_km:.0f} km<br>"
+                if conn.is_no_data():
+                    cell_hover_text += "NO DATA"
+                else:
+                    latency_ms = conn.latency_millisec.value
+                    jitter_ms = conn.jitter_millisec.value
+                    loss = conn.packet_loss_percent.value
+                    cell_hover_text += (
+                        f"Latency: {latency_ms:.2f} ms <br>" + f"Jitter: {jitter_ms:.2f} ms <br>" + f"Loss: {loss:.1f}%"
+                    )
+                column_hover_text.append(cell_hover_text)
+            matrix_hover_text.append(column_hover_text)
         for i in range(len(mesh.rows)):
-            text[-(i + 1)].insert(i, "")
+            matrix_hover_text[-(i + 1)].insert(i, "")  # make matrix diagonal
 
-        return text
+        return matrix_hover_text
 
     @staticmethod
     def get_sla_level(val: MetricValue, warning_threshold: Threshold, error_threshold: Threshold) -> SLALevel:
@@ -246,19 +260,18 @@ class MatrixView:
             return SLALevel.WARNING
         return SLALevel.CRITICAL
 
-    def make_color_scale(self, z: List[SLALevelColumn]) -> List[Tuple[SLALevel, MatrixCellColor]]:
+    def make_color_scale(self) -> List[Tuple[SLALevel, MatrixCellColor]]:
         healthy = self._config.matrix.cell_color_healthy
         warning = self._config.matrix.cell_color_warning
         critical = self._config.matrix.cell_color_critical
+        no_data = self._config.matrix.cell_color_nodata
+        diagonal = "rgba(0,0,0, 0.0)"  # diagonal is transparent
 
-        if all([val is None or val == SLALevel.HEALTHY for val in itertools.chain(*z)]):
-            return [(SLALevel.HEALTHY, healthy), (SLALevel.CRITICAL, healthy)]
-        if all([val is None or val == SLALevel.WARNING for val in itertools.chain(*z)]):
-            return [(SLALevel.HEALTHY, warning), (SLALevel.CRITICAL, warning)]
-        if all([val is None or val == SLALevel.CRITICAL for val in itertools.chain(*z)]):
-            return [(SLALevel.HEALTHY, critical), (SLALevel.CRITICAL, critical)]
-        if not any([val == SLALevel.HEALTHY for val in itertools.chain(*z)]):
-            return [(SLALevel.HEALTHY, warning), (SLALevel.CRITICAL, critical)]
-        if not any([val == SLALevel.CRITICAL for val in itertools.chain(*z)]):
-            return [(SLALevel.HEALTHY, healthy), (SLALevel.CRITICAL, warning)]
-        return [(SLALevel.HEALTHY, healthy), (SLALevel.WARNING, warning), (SLALevel.CRITICAL, critical)]
+        return [
+            (SLALevel._MIN, diagonal),
+            (SLALevel.HEALTHY, healthy),
+            (SLALevel.WARNING, warning),
+            (SLALevel.CRITICAL, critical),
+            (SLALevel.NODATA, no_data),
+            (SLALevel._MAX, diagonal),
+        ]

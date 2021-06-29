@@ -5,6 +5,8 @@ from urllib.parse import parse_qs
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
+from dash_html_components.Br import Br
+from dash_html_components.Div import Div
 
 from domain.geo import calc_distance_in_kilometers
 from domain.metric_type import MetricType
@@ -16,26 +18,38 @@ class ChartView:
     @classmethod
     def make_layout(cls, from_agent, to_agent: AgentID, mesh: MeshResults) -> html.Div:
         title = cls.make_title(from_agent, to_agent, mesh)
-        fig_latency = cls.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
-        fig_jitter = cls.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
-        fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
         style = {"width": "100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
+
+        conn = mesh.connection(from_agent, to_agent)
+        if conn.is_no_data():
+            children = [
+                html.H1("NO DATA"),
+                html.Br(),
+                html.Br(),
+            ]
+        else:
+            fig_latency = cls.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
+            fig_jitter = cls.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
+            fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
+            children = [
+                html.H3(children=MetricType.LATENCY.value, className="chart_title"),
+                dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
+                html.H3(children=MetricType.JITTER.value, className="chart_title"),
+                dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
+                html.H3(children=MetricType.PACKET_LOSS.value, className="chart_title"),
+                dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
+            ]
+        children.append(
+            html.Div(
+                html.Center(dcc.Link("Back to matrix view", href="/"), style={"font-size": "large"}),
+                className="button",
+            )
+        )
         return html.Div(
             children=[
                 html.H1(children=title, className="header_main"),
                 html.Div(
-                    children=[
-                        html.H3(children=MetricType.LATENCY.value, className="chart_title"),
-                        dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
-                        html.H3(children=MetricType.JITTER.value, className="chart_title"),
-                        dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
-                        html.H3(children=MetricType.PACKET_LOSS.value, className="chart_title"),
-                        dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
-                        html.Div(
-                            html.Center(dcc.Link("Back to matrix view", href="/"), style={"font-size": "large"}),
-                            className="button",
-                        ),
-                    ],
+                    children=children,
                     className="main_container",
                 ),
             ],
