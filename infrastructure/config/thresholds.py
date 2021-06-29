@@ -9,12 +9,12 @@ class ThresholdOverride:
     """ Threshold overrides can be optionally specified; if not specified - default values shall be used """
 
     warning: Optional[Threshold] = None
-    error: Optional[Threshold] = None
+    critical: Optional[Threshold] = None
 
 
 class Thresholds:
     """
-    Thresholds allow to read integer threshold values for given agent pair based on configuration.
+    Thresholds allow to read threshold values for given agent pair based on configuration.
     It implements domain.config.thresholds.Thresholds protocol
     """
 
@@ -24,38 +24,38 @@ class Thresholds:
             return self._default_warning
         return override.warning
 
-    def error(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
+    def critical(self, from_agent: AgentID, to_agent: AgentID) -> Threshold:
         override = self._get_override_or_none(from_agent, to_agent)
-        if override is None or override.error is None:
-            return self._default_error
-        return override.error
+        if override is None or override.critical is None:
+            return self._default_critical
+        return override.critical
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """
         Example of config dict structure for thresholds:
         "defaults":{
             "warning":200.0,
-            "error":400.0
+            "critical":400.0
         },
         "overrides":[
             {
             "from":10,
             "to":11,
             "warning":10.0,
-            "error":20.0
+            "critical":20.0
             },
             {
             "from":60,
             "to":70,
             "warning":1000.0,
-            "error":2000.0
+            "critical":2000.0
             }
         ]
         """
         try:
             # read defaults config (required)
             self._default_warning = Threshold(config["defaults"]["warning"])
-            self._default_error = Threshold(config["defaults"]["error"])
+            self._default_critical = Threshold(config["defaults"]["critical"])
 
             # read overrides config (optional)
             self._overrides: Dict[AgentID, Dict[AgentID, ThresholdOverride]] = dict()
@@ -67,8 +67,8 @@ class Thresholds:
                 to_agent = AgentID(override["to"])
                 if "warning" in override:
                     self._override_warning(from_agent, to_agent, Threshold(override["warning"]))
-                if "error" in override:
-                    self._override_error(from_agent, to_agent, Threshold(override["error"]))
+                if "critical" in override:
+                    self._override_critical(from_agent, to_agent, Threshold(override["critical"]))
         except KeyError as err:
             raise Exception("Incomplete thresholds definition") from err
 
@@ -76,9 +76,9 @@ class Thresholds:
         override = self._get_or_create_override(from_agent, to_agent)
         override.warning = value
 
-    def _override_error(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
+    def _override_critical(self, from_agent: AgentID, to_agent: AgentID, value: Threshold) -> None:
         override = self._get_or_create_override(from_agent, to_agent)
-        override.error = value
+        override.critical = value
 
     def _get_or_create_override(self, from_agent: AgentID, to_agent: AgentID) -> ThresholdOverride:
         overrides = self._overrides
