@@ -12,7 +12,6 @@ from domain.metric_type import MetricType
 from domain.model import MeshResults
 from domain.model.mesh_results import Agents, MeshColumn
 from domain.types import AgentID, MetricValue, Threshold
-from presentation.localtime import utc_to_localtime
 
 
 # SLALevel represents measured value in regard to threshold, as a value in connection matrix cell
@@ -36,9 +35,7 @@ class MatrixView:
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
-        timestampISO = localtime_timestamp.isoformat()
-        timestamp = localtime_timestamp.strftime("%x %X")
+        timestampISO = mesh.utc_timestamp.isoformat()
         header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
         return html.Div(
@@ -50,7 +47,10 @@ class MatrixView:
                             children=[
                                 html.Span("Data timestamp"),
                                 html.Span(
-                                    timestamp, className="header-timestamp", id="current-timestamp", title=timestampISO
+                                    "<test_results_date_time>",
+                                    className="header-timestamp",
+                                    id="current-timestamp",
+                                    title=timestampISO,
                                 ),
                                 html.Span(
                                     self._config.data_update_period_seconds,
