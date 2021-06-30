@@ -13,8 +13,15 @@ from domain.model.mesh_results import Agents, MeshColumn
 from domain.types import AgentID, MetricValue, Threshold
 from presentation.localtime import utc_to_localtime
 
+# Connections are displayed as a matrix using dcc.Graph component.
+# The Graph is configured as a heatmap.
+# In heatmap, each cell is assigned a floating-point type value.
+# The heatmap itself is assigned a color scale that maps range [0.0 - 1.0] to colors.
+# The heatmap dynamiacally "stretches" it's color scale range to cover all cells values.
+# We make sure to always have values in range [0.0 - 1.0] in our matrix,
+# so that no range stretching occurs and coloring works as expected.
 
-# SLALevel represents measured value in regard to threshold, as a value in connection matrix cell
+# SLALevel maps connection state to a value in connection matrix, in range [0.0 - 1.0]
 class SLALevel(float, Enum):
     _MIN = 0.0
     HEALTHY = 0.2
