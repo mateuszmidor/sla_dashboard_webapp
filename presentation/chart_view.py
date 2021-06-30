@@ -1,5 +1,5 @@
 import urllib.parse as urlparse
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import parse_qs
 
 import dash_core_components as dcc
@@ -8,61 +8,75 @@ import plotly.graph_objs as go
 from dash_html_components.Br import Br
 from dash_html_components.Div import Div
 
-from domain.geo import calc_distance_in_kilometers
+from domain.config import Config
+from domain.geo import calc_distance
 from domain.metric_type import MetricType
 from domain.model import MeshResults
 from domain.types import AgentID
 
 
 class ChartView:
-    @classmethod
-    def make_layout(cls, from_agent, to_agent: AgentID, mesh: MeshResults) -> html.Div:
-        title = cls.make_title(from_agent, to_agent, mesh)
-        style = {"width": "100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
+    def __init__(self, config: Config) -> None:
+        self._config = config
 
+    def make_layout(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> html.Div:
+        title = self.make_title(from_agent, to_agent, mesh)
         conn = mesh.connection(from_agent, to_agent)
+
         if conn.is_no_data():
-            children = [
-                html.H1("NO DATA"),
-                html.Br(),
-                html.Br(),
-            ]
+            content = self.make_no_data_content()
         else:
-            fig_latency = cls.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
-            fig_jitter = cls.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
-            fig_packetloss = cls.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
-            children = [
-                html.H3(children=MetricType.LATENCY.value, className="chart_title"),
-                dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
-                html.H3(children=MetricType.JITTER.value, className="chart_title"),
-                dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
-                html.H3(children=MetricType.PACKET_LOSS.value, className="chart_title"),
-                dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
-            ]
-        children.append(
+            content = self.make_charts_content(from_agent, to_agent, mesh)
+
+        content.append(
             html.Div(
-                html.Center(dcc.Link("Back to matrix view", href="/"), style={"font-size": "large"}),
+                html.Center(
+                    dcc.Link("Back to matrix view", href="/"),
+                    style={"font-size": "large"},
+                ),
                 className="button",
             )
         )
+
         return html.Div(
             children=[
                 html.H1(children=title, className="header_main"),
                 html.Div(
-                    children=children,
+                    children=content,
                     className="main_container",
                 ),
             ],
         )
 
-    @staticmethod
-    def make_title(from_agent, to_agent: AgentID, mesh: MeshResults) -> str:
+    def make_no_data_content(self) -> List:
+        return [
+            html.H1("NO DATA"),
+            html.Br(),
+            html.Br(),
+        ]
+
+    def make_charts_content(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> List:
+        fig_latency = self.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
+        fig_jitter = self.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
+        fig_packetloss = self.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
+        style = {"width": "100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
+        return [
+            html.H3(children=MetricType.LATENCY.value, className="chart_title"),
+            dcc.Graph(id="timeseries_latency_chart", style=style, figure=fig_latency),
+            html.H3(children=MetricType.JITTER.value, className="chart_title"),
+            dcc.Graph(id="timeseries_jitter_chart", style=style, figure=fig_jitter),
+            html.H3(children=MetricType.PACKET_LOSS.value, className="chart_title"),
+            dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
+        ]
+
+    def make_title(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> str:
         from_alias = mesh.agents.get_alias(from_agent)
         to_alias = mesh.agents.get_alias(to_agent)
         from_coords = mesh.agents.get_by_id(from_agent).coords
         to_coords = mesh.agents.get_by_id(to_agent).coords
-        distance_km = calc_distance_in_kilometers(from_coords, to_coords)
-        return f"{from_alias} -> {to_alias} ({distance_km:.0f} km)"
+        distance_unit = self._config.distance_unit
+        distance = calc_distance(from_coords, to_coords, distance_unit)
+        return f"{from_alias} -> {to_alias} ({distance:.0f} {distance_unit.value})"
 
     @staticmethod
     def make_figure(

@@ -46,6 +46,7 @@ class WebApp:
 
             # views
             self._matrix_view = MatrixView(config)
+            self._chart_view = ChartView(config)
 
             # web framework configuration
             app = dash.Dash(
@@ -73,8 +74,12 @@ class WebApp:
             # matrix view - handle cell click
             @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
             def open_chart(clickData: Optional[Dict[str, Any]]):
-                if clickData is not None:
-                    return self._handle_cell_click(clickData["points"][0]["x"], clickData["points"][0]["y"])
+                from_agent, to_agent = self._matrix_view.get_agents_from_click(clickData)
+                if from_agent is None or to_agent is None or from_agent == to_agent:
+                    return None
+
+                path = ChartView.encode_path(from_agent, to_agent)
+                return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
 
         except Exception as err:
             logger.exception("WebApp initialization failure")
@@ -98,15 +103,6 @@ class WebApp:
             logger.exception("Error while rendering page")
             return HTTPErrorView.make_layout(500)
 
-    def _handle_cell_click(self, x, y: str) -> Optional[dcc.Location]:
-        from_agent_alias, to_agent_alias = y, x
-        if from_agent_alias == to_agent_alias:
-            return None
-        mesh = self._cached_repo.get_mesh_test_results()
-        from_agent_id = mesh.agents.get_by_alias(from_agent_alias).id
-        to_agent_id = mesh.agents.get_by_alias(to_agent_alias).id
-        return self._redirect_to_chart_view(from_agent_id, to_agent_id)
-
     def _make_matrix_layout(self) -> html.Div:
         mesh_test_results = self._cached_repo.get_mesh_test_results()
         metric = self._current_metric
@@ -115,12 +111,7 @@ class WebApp:
     def _make_chart_layout(self, path: str) -> html.Div:
         from_agent, to_agent = ChartView.decode_path(path)
         results = self._cached_repo.get_mesh_test_results()
-        return ChartView.make_layout(from_agent, to_agent, results)
-
-    @staticmethod
-    def _redirect_to_chart_view(from_agent, to_agent: AgentID) -> dcc.Location:
-        path = ChartView.encode_path(from_agent, to_agent)
-        return dcc.Location(pathname=path, id=IndexView.URL, refresh=True)
+        return self._chart_view.make_layout(from_agent, to_agent, results)
 
     @property
     def config(self) -> ConfigYAML:

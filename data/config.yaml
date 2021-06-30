@@ -11,7 +11,7 @@ data_update_lookback_seconds: 3600
 # numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both
 timeout: [30.0, 30.0]
 
-# sets the logging level ppossible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
+# sets the logging level. Possible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
 logging_level: INFO
 
 # matrix look
@@ -21,44 +21,47 @@ matrix:
   cell_color_critical: "rgb(255,0,0)"     # red
   cell_color_nodata: "rgb(192, 192, 192)" # light grey
 
+# distance unit between agents. Possible values are: [miles, kilometers]
+distance_unit: "miles"
+
 # metric thresholds
 thresholds:
   latency: # thresholds in milliseconds
     defaults:
       warning: 200.0 # latency low threshold; if equal or above, then display connection as warning
-      error: 400.0 # latency high threshold; if equal or above, then display connection as error
+      critical: 400.0 # latency high threshold; if equal or above, then display connection as critical
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
         warning: 10.0
-        error: 20.0
+        critical: 20.0
       - from: 60
         to: 70
         warning: 1000.0
-        error: 2000.0
+        critical: 2000.0
   jitter: # thresholds in milliseconds
     defaults:
       warning: 0.3 # jitter low threshold; if equal or above, then display connection as warning
-      error: 0.9 # jitter high threshold; if equal or above, then display connection as error
+      critical: 0.9 # jitter high threshold; if equal or above, then display connection as critical
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
         warning: 0.01
-        error: 0.02
+        critical: 0.02
       - from: 60
         to: 70
         warning: 0.03
-        error: 0.07
+        critical: 0.07
   packet_loss: # thresholds in percents (0-100)
     defaults:
       warning: 5 # packet_loss low threshold; if equal or above, then display connection as warning
-      error: 20 # packet_loss high threshold; if equal or above, then display connection as error
+      critical: 20 # packet_loss high threshold; if equal or above, then display connection as critical
     overrides:
       - from: 10 # agent_id. Assigned by Kentik
         to: 11 # agent_id. Assigned by Kentik
         warning: 10
-        error: 40
+        critical: 40
       - from: 60
         to: 70
         warning: 3
-        error: 8
+        critical: 8

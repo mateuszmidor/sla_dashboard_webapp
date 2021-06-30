@@ -23,4 +23,4 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # configure default command for the image
-CMD ["gunicorn", "--config=data/gunicorn.conf.py", "main:run()"]
+CMD ["gunicorn", "--config=data/gunicorn.conf.py"]

@@ -1,16 +1,16 @@
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import dash_core_components as dcc
 import dash_html_components as html
 
 from domain.config import Config, MatrixCellColor
 from domain.config.thresholds import Thresholds
-from domain.geo import calc_distance_in_kilometers
+from domain.geo import calc_distance
 from domain.metric_type import MetricType
 from domain.model import MeshResults
-from domain.model.mesh_results import MeshColumn
-from domain.types import MetricValue, Threshold
+from domain.model.mesh_results import Agents, MeshColumn
+from domain.types import AgentID, MetricValue, Threshold
 from presentation.localtime import utc_to_localtime
 
 
@@ -34,8 +34,10 @@ class MatrixView:
 
     def __init__(self, config: Config) -> None:
         self._config = config
+        self._agents = Agents()
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
+        self._agents = mesh.agents  # remember agents used to make the layout for further processing
         localtime_timestamp = utc_to_localtime(mesh.utc_timestamp)
         timestampISO = localtime_timestamp.isoformat()
         timestamp = localtime_timestamp.strftime("%x %X")
@@ -166,13 +168,13 @@ class MatrixView:
             sla_levels_col: SLALevelColumn = []
             for col in row.columns:
                 warning = thresholds.warning(row.agent_id, col.agent_id)
-                error = thresholds.error(row.agent_id, col.agent_id)
+                critical = thresholds.critical(row.agent_id, col.agent_id)
                 connection = mesh.connection(row.agent_id, col.agent_id)
                 if connection.is_no_data():
                     sla_level = SLALevel.NODATA
                 else:
                     value = self.get_metric_value(metric, connection)
-                    sla_level = self.get_sla_level(value, warning, error)
+                    sla_level = self.get_sla_level(value, warning, critical)
                 sla_levels_col.append(sla_level)
             sla_levels.append(sla_levels_col)
 
@@ -225,8 +227,7 @@ class MatrixView:
             return f"<b>{(cell.jitter_millisec.value):.2f} ms</b>"
         return f"<b>{cell.packet_loss_percent.value:.1f}%</b>"
 
-    @staticmethod
-    def make_hover_text(mesh: MeshResults) -> List[List[str]]:
+    def make_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         matrix_hover_text: List[List[str]] = []
         for row in reversed(mesh.rows):
             column_hover_text: List[str] = []
@@ -234,8 +235,12 @@ class MatrixView:
                 from_agent = mesh.agents.get_by_id(row.agent_id)
                 to_agent = mesh.agents.get_by_id(col.agent_id)
                 conn = mesh.connection(from_agent.id, to_agent.id)
-                distance_km = calc_distance_in_kilometers(from_agent.coords, to_agent.coords)
-                cell_hover_text = f"{from_agent.alias} -> {to_agent.alias} <br>" + f"Distance: {distance_km:.0f} km<br>"
+                distance_unit = self._config.distance_unit
+                distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
+                cell_hover_text = (
+                    f"{from_agent.alias} -> {to_agent.alias} <br>"
+                    + f"Distance: {distance:.0f} {distance_unit.value}<br>"
+                )
                 if conn.is_no_data():
                     cell_hover_text += "NO DATA"
                 else:
@@ -253,10 +258,10 @@ class MatrixView:
         return matrix_hover_text
 
     @staticmethod
-    def get_sla_level(val: MetricValue, warning_threshold: Threshold, error_threshold: Threshold) -> SLALevel:
+    def get_sla_level(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> SLALevel:
         if val < warning_threshold:
             return SLALevel.HEALTHY
-        if val < error_threshold:
+        if val < critical_threshold:
             return SLALevel.WARNING
         return SLALevel.CRITICAL
 
@@ -275,3 +280,10 @@ class MatrixView:
             (SLALevel.NODATA, no_data),
             (SLALevel._MAX, diagonal),
         ]
+
+    def get_agents_from_click(self, clickData: Optional[Dict[str, Any]]) -> Tuple[Optional[AgentID], Optional[AgentID]]:
+        if clickData is None:
+            return None, None
+
+        to_agent_alias, from_agent_alias = clickData["points"][0]["x"], clickData["points"][0]["y"]
+        return self._agents.get_by_alias(from_agent_alias).id, self._agents.get_by_alias(to_agent_alias).id

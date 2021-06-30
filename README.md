@@ -20,7 +20,7 @@ export KTAPI_AUTH_EMAIL=<your kentik api email>
 export KTAPI_AUTH_TOKEN=<your kentik api token>
 ./generate_client.sh
 pip install -r requirements.txt
-gunicorn --config=data/gunicorn.conf.py 'main:run()'
+gunicorn --config=data/gunicorn.conf.py
 ```
 
 ## Docker build image
