@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -9,7 +10,7 @@ from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
 from domain.metric_type import MetricType
 from domain.model import MeshResults
-from domain.model.mesh_results import Agents, MeshColumn
+from domain.model.mesh_results import Agent, MeshColumn
 from domain.types import AgentID, MetricValue, Threshold
 
 # Connections are displayed as a matrix using dcc.Graph component.
@@ -40,10 +41,9 @@ class MatrixView:
 
     def __init__(self, config: Config) -> None:
         self._config = config
-        self._agents = Agents()
+        self._extract_agent_ids = re.compile("\[(.+?)\]")  # agent ids are in square brackets: [642]
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
-        self._agents = mesh.agents  # remember agents used to make the layout for further processing
         timestampISO = mesh.utc_timestamp.isoformat()
         header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
@@ -247,7 +247,7 @@ class MatrixView:
                 distance_unit = self._config.distance_unit
                 distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
                 cell_hover_text = (
-                    f"{from_agent.alias} -> {to_agent.alias} <br>"
+                    f"{self._encode_connection_agents(from_agent, to_agent)} <br>"
                     + f"Distance: {distance:.0f} {distance_unit.value}<br>"
                 )
                 if conn.is_no_data():
@@ -294,5 +294,14 @@ class MatrixView:
         if clickData is None:
             return None, None
 
-        to_agent_alias, from_agent_alias = clickData["points"][0]["x"], clickData["points"][0]["y"]
-        return self._agents.get_by_alias(from_agent_alias).id, self._agents.get_by_alias(to_agent_alias).id
+        from_agent_id, to_agent_id = self._decode_connection_agents(clickData["points"][0]["text"])
+        return from_agent_id, to_agent_id
+
+    def _encode_connection_agents(self, from_agent, to_agent: Agent) -> str:
+        return f"{from_agent.alias} [{from_agent.id}] -> {to_agent.alias} [{to_agent.id}]"
+
+    def _decode_connection_agents(self, connection_text: str) -> Tuple[Optional[AgentID], Optional[AgentID]]:
+        agent_id_list = self._extract_agent_ids.findall(connection_text)
+        if len(agent_id_list) == 2:
+            return AgentID(agent_id_list[0]), AgentID(agent_id_list[1])
+        return None, None

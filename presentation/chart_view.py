@@ -70,8 +70,8 @@ class ChartView:
         ]
 
     def make_title(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> str:
-        from_alias = mesh.agents.get_alias(from_agent)
-        to_alias = mesh.agents.get_alias(to_agent)
+        from_alias = mesh.agents.get_by_id(from_agent).alias
+        to_alias = mesh.agents.get_by_id(to_agent).alias
         from_coords = mesh.agents.get_by_id(from_agent).coords
         to_coords = mesh.agents.get_by_id(to_agent).coords
         distance_unit = self._config.distance_unit

@@ -21,21 +21,10 @@ class Agents:
         self._agents: Dict[AgentID, Agent] = {}
 
     def get_by_id(self, id: AgentID) -> Agent:
-        if id in self._agents:
-            return self._agents[id]
-        return Agent()
-
-    def get_by_alias(self, alias: str) -> Agent:
-        for _, v in self._agents.items():
-            if v.alias == alias:
-                return v
-        return Agent()
-
-    def get_alias(self, id: AgentID) -> str:
-        agent = self.get_by_id(id)
-        if agent.id == AgentID():
-            return f"[agent_id={id} not found]"
-        return agent.alias
+        agent = self._agents.get(id)
+        if agent is None:
+            raise Exception(f"Agent with ID = {id} does not exist")
+        return agent
 
     def insert(self, agent: Agent) -> None:
         self._agents[agent.id] = agent
