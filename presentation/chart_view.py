@@ -23,7 +23,7 @@ class ChartView:
         title = self.make_title(from_agent, to_agent, mesh)
         conn = mesh.connection(from_agent, to_agent)
 
-        if conn.is_no_data():
+        if conn.has_no_data():
             content = self.make_no_data_content()
         else:
             content = self.make_charts_content(from_agent, to_agent, mesh)
