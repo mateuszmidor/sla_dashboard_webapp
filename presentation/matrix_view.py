@@ -42,6 +42,7 @@ class MatrixView:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._agents = Agents()
+        self._color_scale = self._make_color_scale()
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
@@ -160,14 +161,14 @@ class MatrixView:
             x=x_labels,
             y=y_labels,
             z=sla_levels,
-            text=self.make_hover_text(mesh),
+            text=self.make_matrix_hover_text(mesh),
             type="heatmap",
             hoverinfo="text",
             opacity=1,
             name="",
             showscale=False,
             autosize=True,
-            colorscale=self.make_color_scale(),
+            colorscale=self._color_scale,
         )
 
     def make_sla_levels(self, mesh: MeshResults, metric: MetricType) -> List[SLALevelColumn]:
@@ -180,7 +181,7 @@ class MatrixView:
                 warning = thresholds.warning(row.agent_id, col.agent_id)
                 critical = thresholds.critical(row.agent_id, col.agent_id)
                 connection = mesh.connection(row.agent_id, col.agent_id)
-                if connection.is_no_data():
+                if connection.has_no_data():
                     sla_level = SLALevel.NODATA
                 else:
                     value = self.get_metric_value(metric, connection)
@@ -189,7 +190,7 @@ class MatrixView:
             sla_levels.append(sla_levels_col)
 
         # mark matrix diagonal, use alternating SLALevel._MIN and SLALevel._MAX
-        # to ensure matrix contains values in full range 0..1; this simplify mapping values to colors
+        # to ensure matrix contains values in full range 0..1 - to match the color scale
         for i in range(len(mesh.rows)):
             sla_levels[-(i + 1)].insert(i, SLALevel(i % 2))
         return sla_levels
@@ -237,35 +238,42 @@ class MatrixView:
             return f"{(cell.jitter_millisec.value):.2f}"
         return f"{cell.packet_loss_percent.value:.1f}"
 
-    def make_hover_text(self, mesh: MeshResults) -> List[List[str]]:
+    def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
+        # make hover text for each cell in the matrix
         matrix_hover_text: List[List[str]] = []
         for row in reversed(mesh.rows):
             column_hover_text: List[str] = []
             for col in row.columns:
-                from_agent = mesh.agents.get_by_id(row.agent_id)
-                to_agent = mesh.agents.get_by_id(col.agent_id)
-                conn = mesh.connection(from_agent.id, to_agent.id)
-                distance_unit = self._config.distance_unit
-                distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
-                cell_hover_text = (
-                    f"{from_agent.alias} -> {to_agent.alias} <br>"
-                    + f"Distance: {distance:.0f} {distance_unit.value}<br>"
-                )
-                if conn.is_no_data():
-                    cell_hover_text += "NO DATA"
-                else:
-                    latency_ms = conn.latency_millisec.value
-                    jitter_ms = conn.jitter_millisec.value
-                    loss = conn.packet_loss_percent.value
-                    cell_hover_text += (
-                        f"Latency: {latency_ms:.2f} ms <br>" + f"Jitter: {jitter_ms:.2f} ms <br>" + f"Loss: {loss:.1f}%"
-                    )
-                column_hover_text.append(cell_hover_text)
+                text = self.make_cell_hover_text(row.agent_id, col.agent_id, mesh)
+                column_hover_text.append(text)
             matrix_hover_text.append(column_hover_text)
+
+        # insert blank diagonal into matrix
         for i in range(len(mesh.rows)):
-            matrix_hover_text[-(i + 1)].insert(i, "")  # make matrix diagonal
+            matrix_hover_text[-(i + 1)].insert(i, "")
 
         return matrix_hover_text
+
+    def make_cell_hover_text(self, from_agent_id, to_agent_id: AgentID, mesh: MeshResults) -> str:
+        from_agent = mesh.agents.get_by_id(from_agent_id)
+        to_agent = mesh.agents.get_by_id(to_agent_id)
+        conn = mesh.connection(from_agent.id, to_agent.id)
+        distance_unit = self._config.distance_unit
+        distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
+
+        cell_hover_text = [
+            f"{from_agent.alias} -> {to_agent.alias}",
+            f"Distance: {distance:.0f} {distance_unit.value}",
+        ]
+
+        if conn.has_no_data():
+            cell_hover_text.append("NO DATA")
+        else:
+            cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
+            cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
+            cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
+
+        return "<br>".join(cell_hover_text)
 
     @staticmethod
     def get_sla_level(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> SLALevel:
@@ -275,12 +283,12 @@ class MatrixView:
             return SLALevel.WARNING
         return SLALevel.CRITICAL
 
-    def make_color_scale(self) -> List[Tuple[SLALevel, MatrixCellColor]]:
+    def _make_color_scale(self) -> List[Tuple[SLALevel, MatrixCellColor]]:
         healthy = self._config.matrix.cell_color_healthy
         warning = self._config.matrix.cell_color_warning
         critical = self._config.matrix.cell_color_critical
         no_data = self._config.matrix.cell_color_nodata
-        diagonal = "rgba(0,0,0, 0.0)"  # diagonal is transparent
+        diagonal = "rgba(0, 0, 0, 0.0)"  # diagonal is transparent
 
         return [
             (SLALevel._MIN, diagonal),
