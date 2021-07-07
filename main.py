@@ -2,13 +2,15 @@ import logging
 import os
 import sys
 from typing import Any, Dict, Optional, Tuple
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import flask
 from dash.dependencies import Input, Output
+
+import routing
 
 from domain.cached_repo_request_driven import CachedRepoRequestDriven
 from domain.metric_type import MetricType
@@ -44,6 +46,13 @@ class WebApp:
                 config.data_update_lookback_seconds,
             )
 
+            # routing
+            self._routes = {
+                routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(MetricType.LATENCY)),
+                routing.MATRIX: self._make_matrix_layout,
+                routing.CHART: self._make_chart_layout,
+            }
+
             # views
             self._matrix_view = MatrixView(config)
             self._chart_view = ChartView(config)
@@ -58,27 +67,37 @@ class WebApp:
             )
             app.layout = IndexView.make_layout()
             self._app = app
-            self._current_metric = MetricType.LATENCY
 
             # all views - handle path change
             @app.callback(Output(IndexView.PAGE_CONTENT, "children"), [Input(IndexView.URL, "pathname")])
             def display_page(pathname: str):
-                return self._get_page_content(unquote(pathname))
+                pathname = unquote(pathname)
+                try:
+                    path_args = pathname.split("?", maxsplit=1)
+                    make_layout = self._routes.get(path_args[0], lambda _: HTTPErrorView.make_layout(404))
+                    return make_layout(pathname)
+                except Exception as err:
+                    logger.exception("Error while rendering page")
+                    return HTTPErrorView.make_layout(500)
 
             # matrix view - handle metric select
             @app.callback(Output(IndexView.METRIC_REDIRECT, "children"), [Input(MatrixView.METRIC_SELECTOR, "value")])
-            def update_matrix(value: str):
-                self._current_metric = MetricType(value)
-                return dcc.Location(id=IndexView.URL, pathname="/", refresh=False)
+            def update_matrix(metric_name: str):
+                metric = MetricType(metric_name)
+                path = quote(routing.encode_matrix_path(metric))
+                return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
 
             # matrix view - handle cell click
-            @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
+            @app.callback(
+                Output(IndexView.MATRIX_REDIRECT, "children"),
+                Input(MatrixView.MATRIX, "clickData"),
+            )
             def open_chart(clickData: Optional[Dict[str, Any]]):
                 from_agent, to_agent = self._matrix_view.get_agents_from_click(clickData)
                 if from_agent is None or to_agent is None or from_agent == to_agent:
                     return None
 
-                path = ChartView.encode_path(from_agent, to_agent)
+                path = quote(routing.encode_chart_path(from_agent, to_agent))
                 return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
 
         except Exception as err:
@@ -91,31 +110,19 @@ class WebApp:
     def run_development_server(self) -> None:
         self._app.run_server(debug=True)
 
-    def _get_page_content(self, pathname: str) -> html.Div:
-        try:
-            if pathname == "/":
-                return self._make_matrix_layout()
-            elif pathname == "/chart" or pathname.startswith("/chart?"):
-                return self._make_chart_layout(pathname)
-            else:
-                return HTTPErrorView.make_layout(404)
-        except Exception as err:
-            logger.exception("Error while rendering page")
-            return HTTPErrorView.make_layout(500)
-
-    def _make_matrix_layout(self) -> html.Div:
+    def _make_matrix_layout(self, path: str) -> html.Div:
+        metric = routing.decode_matrix_path(path)
         mesh_test_results = self._cached_repo.get_mesh_test_results()
-        metric = self._current_metric
         return self._matrix_view.make_layout(mesh_test_results, metric, self._config)
 
     def _make_chart_layout(self, path: str) -> html.Div:
-        from_agent, to_agent = ChartView.decode_path(path)
+        from_agent, to_agent = routing.decode_chart_path(path)
         results = self._cached_repo.get_mesh_test_results()
-        return self._chart_view.make_layout(from_agent, to_agent, results)
-
-    @property
-    def config(self) -> ConfigYAML:
-        return self._config
+        return self._chart_view.make_layout(
+            from_agent,
+            to_agent,
+            results,
+        )
 
     @property
     def callback(self):

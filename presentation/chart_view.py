@@ -1,12 +1,8 @@
-import urllib.parse as urlparse
 from typing import List, Optional, Tuple
-from urllib.parse import parse_qs
 
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
-from dash_html_components.Br import Br
-from dash_html_components.Div import Div
 
 from domain.config import Config
 from domain.geo import calc_distance
@@ -27,16 +23,6 @@ class ChartView:
             content = self.make_no_data_content()
         else:
             content = self.make_charts_content(from_agent, to_agent, mesh)
-
-        content.append(
-            html.Div(
-                html.Center(
-                    dcc.Link("Back to matrix view", href="/"),
-                    style={"font-size": "large"},
-                ),
-                className="button",
-            )
-        )
 
         return html.Div(
             children=[
@@ -98,12 +84,3 @@ class ChartView:
         )
         fig.update_yaxes(rangemode="tozero")  # make the y-scale start from 0
         return fig
-
-    @staticmethod
-    def encode_path(from_agent, to_agent: AgentID) -> str:
-        return f"/chart?from={from_agent}&to={to_agent}"
-
-    @staticmethod
-    def decode_path(path: str) -> Tuple[AgentID, AgentID]:
-        params = urlparse.parse_qs(urlparse.urlparse(path).query)
-        return params["from"][0], params["to"][0]
