@@ -77,14 +77,13 @@ class WebApp:
             @app.callback(
                 Output(IndexView.MATRIX_REDIRECT, "children"),
                 Input(MatrixView.MATRIX, "clickData"),
-                State(IndexView.URL, "pathname"),
             )
-            def open_chart(clickData: Optional[Dict[str, Any]], pathname: str):
+            def open_chart(clickData: Optional[Dict[str, Any]]):
                 from_agent, to_agent = self._matrix_view.get_agents_from_click(clickData)
                 if from_agent is None or to_agent is None or from_agent == to_agent:
                     return None
 
-                path = routing.encode_chart_path(from_agent, to_agent, pathname)
+                path = routing.encode_chart_path(from_agent, to_agent)
                 return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
 
         except Exception as err:
@@ -117,9 +116,13 @@ class WebApp:
         return self._matrix_view.make_layout(mesh_test_results, metric, self._config)
 
     def _make_chart_layout(self, path: str) -> html.Div:
-        from_agent, to_agent, back_to = routing.decode_chart_path(path)
+        from_agent, to_agent = routing.decode_chart_path(path)
         results = self._cached_repo.get_mesh_test_results()
-        return self._chart_view.make_layout(from_agent, to_agent, results, back_to)
+        return self._chart_view.make_layout(
+            from_agent,
+            to_agent,
+            results,
+        )
 
     @property
     def callback(self):

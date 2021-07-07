@@ -15,7 +15,7 @@ class ChartView:
     def __init__(self, config: Config) -> None:
         self._config = config
 
-    def make_layout(self, from_agent, to_agent: AgentID, mesh: MeshResults, back_to: str) -> html.Div:
+    def make_layout(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> html.Div:
         title = self.make_title(from_agent, to_agent, mesh)
         conn = mesh.connection(from_agent, to_agent)
 
@@ -23,16 +23,6 @@ class ChartView:
             content = self.make_no_data_content()
         else:
             content = self.make_charts_content(from_agent, to_agent, mesh)
-
-        content.append(
-            html.Div(
-                html.Center(
-                    dcc.Link("Back to matrix view", href=back_to),
-                    style={"font-size": "large"},
-                ),
-                className="button",
-            )
-        )
 
         return html.Div(
             children=[

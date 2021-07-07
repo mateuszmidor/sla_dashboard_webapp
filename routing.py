@@ -15,13 +15,13 @@ def encode_matrix_path(metric: MetricType) -> str:
     return "/"
 
 
-def encode_chart_path(from_agent, to_agent: AgentID, return_path: str) -> str:
-    return f"/chart?from={from_agent}&to={to_agent}&backto={return_path}"
+def encode_chart_path(from_agent, to_agent: AgentID) -> str:
+    return f"/chart?from={from_agent}&to={to_agent}"
 
 
-def decode_chart_path(path: str) -> Tuple[AgentID, AgentID, str]:
+def decode_chart_path(path: str) -> Tuple[AgentID, AgentID]:
     params = urlparse.parse_qs(urlparse.urlparse(path).query)
-    return params["from"][0], params["to"][0], params["backto"][0]
+    return params["from"][0], params["to"][0]
 
 
 def is_latency(pathname: str) -> bool:
