@@ -49,6 +49,12 @@ docker run \
 Configuration is stored in config file [config.yaml](./data/config.yaml)  
 UI customization is possible by modifying CSS files in [./data/assets](./data/assets)
 
+## Running the application with offline test results
+
+It is possible to load mesh test results from a local file instead of fetching from API server by specifying the file name as an environment variable:
+```bash
+export KTDATA_FILENAME=data/mesh_results_20x20.data
+```
 ## API request quota utilisation
 
 Each instance of WebApp maintains it's own data cache.  

@@ -5,7 +5,7 @@ from typing import Tuple
 from domain.metric_type import MetricType
 from domain.types import AgentID
 
-MAIN = "/"
+INDEX = "/"
 MATRIX = "/matrix"
 CHART = "/chart"
 

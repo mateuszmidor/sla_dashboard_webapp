@@ -19,10 +19,14 @@ from generated.synthetics_http_client.synthetics.model.v202101beta1_test_health 
 from infrastructure.data_access.http.api_client import KentikAPI
 
 
-class SyntheticsRepo:
-    """SyntheticsRepo implements domain.Repo protocol"""
+class SyntheticsRepoAPIServer:
+    """
+    SyntheticsRepoAPIServer implements domain.Repo protocol
+    It allows to load MeshResults from API server
+    """
 
     def __init__(self, email, token: str, timeout: Tuple[float, float] = (30.0, 30.0)) -> None:
+
         self._api_client = KentikAPI(email=email, token=token)
         self._timeout = timeout
 

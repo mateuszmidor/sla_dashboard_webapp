@@ -14,9 +14,11 @@ import routing
 
 from domain.cached_repo_request_driven import CachedRepoRequestDriven
 from domain.metric_type import MetricType
+from domain.repo import Repo
 from domain.types import AgentID
 from infrastructure.config import ConfigYAML
-from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
+from infrastructure.data_access.http.synthetics_repo_apiserver import SyntheticsRepoAPIServer
+from infrastructure.data_access.synthetics_repo_localfile import SyntheticsRepoLocalFile
 from presentation.chart_view import ChartView
 from presentation.http_error_view import HTTPErrorView
 from presentation.index_view import IndexView
@@ -37,10 +39,8 @@ class WebApp:
             logging.basicConfig(level=config.logging_level, format=FORMAT)
 
             # data access
-            email, token = get_auth_email_token()
-            repo = SyntheticsRepo(email, token, config.timeout)
             self._cached_repo = CachedRepoRequestDriven(
-                repo,
+                get_test_results_repo(config.timeout),
                 config.test_id,
                 config.data_update_period_seconds,
                 config.data_update_lookback_seconds,
@@ -48,7 +48,7 @@ class WebApp:
 
             # routing
             self._routes = {
-                routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(MetricType.LATENCY)),
+                routing.INDEX: lambda _: self._make_matrix_layout(routing.encode_matrix_path(MetricType.LATENCY)),
                 routing.MATRIX: self._make_matrix_layout,
                 routing.CHART: self._make_chart_layout,
             }
@@ -134,6 +134,19 @@ def get_auth_email_token() -> Tuple[str, str]:
         return os.environ["KTAPI_AUTH_EMAIL"], os.environ["KTAPI_AUTH_TOKEN"]
     except KeyError as err:
         raise Exception(f"{err} environment variable is missing")
+
+
+def get_test_results_repo(timeout: Tuple[float, float]) -> Repo:
+    # use offline mesh test results
+    filename = os.getenv("KTDATA_FILENAME")
+    if filename:
+        logger.info(f'Using mesh test results from local file "{filename}"')
+        return SyntheticsRepoLocalFile(filename)
+
+    # ...or use online mesh test results
+    logger.info(f"Using mesh test results from API server")
+    email, token = get_auth_email_token()
+    return SyntheticsRepoAPIServer(email, token, timeout)
 
 
 # Run production server: gunicorn --workers=1 'main:run()'
