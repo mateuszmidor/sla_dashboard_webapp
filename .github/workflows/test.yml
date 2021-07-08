@@ -1,0 +1,44 @@
+name: BuildImageAndTestWebapp
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  build-image-and-test-webapp:
+    name: Build docker image and test webapp
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Generate API client
+        run: ./generate_client.sh
+
+      - name: Build image
+        run: docker build . -t sla_dashboard
+
+      - name: Run webapp with test results loaded from local file
+        run: |
+          docker run \
+            --name sla_dashboard \
+            --rm \
+            -d \
+            -e KTDATA_FILENAME=data/mesh_results_20x20.data \
+            -v "$(pwd)/data:/app/data" \
+            -p 127.0.0.1:8050:8050 \
+            sla_dashboard:latest
+
+      - name: Warm-up time
+        run: sleep 5 
+
+      - name: Inspect webapp
+        run: docker logs sla_dashboard
+
+      - name: Test webapp 
+        run: curl 127.0.0.1:8050
+
+      - name: Stop webapp
+        run: docker stop sla_dashboard
