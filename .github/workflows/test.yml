@@ -37,8 +37,14 @@ jobs:
       - name: Inspect webapp
         run: docker logs sla_dashboard
 
-      - name: Test webapp 
-        run: curl 127.0.0.1:8050
+      - name: Test webapp - Index
+        run: curl --fail --include 127.0.0.1:8050/
+
+      - name: Test webapp - Matrix
+        run: curl --fail --include 127.0.0.1:8050/matrix
+
+      - name: Test webapp - Chart
+        run: curl --fail --include 127.0.0.1:8050/chart%3Ffrom%3D646%26to%3D733
 
       - name: Stop webapp
         run: docker stop sla_dashboard
