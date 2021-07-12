@@ -38,7 +38,8 @@ class WebApp:
 
             # data access
             email, token = get_auth_email_token()
-            repo = SyntheticsRepo(email, token, config.timeout)
+            apiserver_url = os.getenv("KTAPI_URL")
+            repo = SyntheticsRepo(email, token, apiserver_url, config.timeout)
             self._cached_repo = CachedRepoRequestDriven(
                 repo,
                 config.test_id,

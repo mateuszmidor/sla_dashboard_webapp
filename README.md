@@ -23,6 +23,13 @@ pip install -r requirements.txt
 gunicorn --config=data/gunicorn.conf.py
 ```
 
+## Custom API server url
+
+It is possible to use custom API server by providing following environment variable:
+```bash
+export KTAPI_URL="127.0.0.1:9050"
+```
+
 ## Docker build image
 
 Shell:

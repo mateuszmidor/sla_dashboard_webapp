@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow, Metric
 from domain.model.mesh_results import Coordinates
@@ -22,8 +22,13 @@ from infrastructure.data_access.http.api_client import KentikAPI
 class SyntheticsRepo:
     """SyntheticsRepo implements domain.Repo protocol"""
 
-    def __init__(self, email, token: str, timeout: Tuple[float, float] = (30.0, 30.0)) -> None:
-        self._api_client = KentikAPI(email=email, token=token)
+    def __init__(
+        self, email, token: str, synthetics_url: Optional[str] = None, timeout: Tuple[float, float] = (30.0, 30.0)
+    ) -> None:
+        if synthetics_url:
+            self._api_client = KentikAPI(email=email, token=token, synthetics_url=synthetics_url)
+        else:
+            self._api_client = KentikAPI(email=email, token=token)
         self._timeout = timeout
 
     def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
@@ -64,10 +69,7 @@ def transform_to_internal_agents(data: V202101beta1TestHealth) -> Agents:
 def transform_to_internal_mesh_rows(data: V202101beta1TestHealth) -> List[MeshRow]:
     rows: List[MeshRow] = []
     for input_row in data.mesh:
-        row = MeshRow(
-            agent_id=AgentID(input_row.id),
-            columns=transform_to_internal_mesh_columns(input_row.columns),
-        )
+        row = MeshRow(agent_id=AgentID(input_row.id), columns=transform_to_internal_mesh_columns(input_row.columns))
         rows.append(row)
     return rows
 
@@ -78,12 +80,10 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
         column = MeshColumn(
             agent_id=AgentID(input_column.id),
             jitter_millisec=Metric(
-                health=input_column.metrics.jitter.health,
-                value=scale_us_to_ms(input_column.metrics.jitter.value),
+                health=input_column.metrics.jitter.health, value=scale_us_to_ms(input_column.metrics.jitter.value)
             ),
             latency_millisec=Metric(
-                health=input_column.metrics.latency.health,
-                value=scale_us_to_ms(input_column.metrics.latency.value),
+                health=input_column.metrics.latency.health, value=scale_us_to_ms(input_column.metrics.latency.value)
             ),
             packet_loss_percent=Metric(
                 health=input_column.metrics.packet_loss.health,
