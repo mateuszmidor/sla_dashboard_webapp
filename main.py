@@ -32,19 +32,16 @@ class WebApp:
             # app configuration
             config = ConfigYAML("data/config.yaml")
             self._config = config
+            email, token = get_auth_email_token()
+            apiserver_url = os.getenv("KTAPI_URL")
 
             # logging
             logging.basicConfig(level=config.logging_level, format=FORMAT)
 
             # data access
-            email, token = get_auth_email_token()
-            apiserver_url = os.getenv("KTAPI_URL")
             repo = SyntheticsRepo(email, token, apiserver_url, config.timeout)
             self._cached_repo = CachedRepoRequestDriven(
-                repo,
-                config.test_id,
-                config.data_update_period_seconds,
-                config.data_update_lookback_seconds,
+                repo, config.test_id, config.data_update_period_seconds, config.data_update_lookback_seconds
             )
 
             # routing
@@ -89,10 +86,7 @@ class WebApp:
                 return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
 
             # matrix view - handle cell click
-            @app.callback(
-                Output(IndexView.MATRIX_REDIRECT, "children"),
-                Input(MatrixView.MATRIX, "clickData"),
-            )
+            @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
             def open_chart(clickData: Optional[Dict[str, Any]]):
                 from_agent, to_agent = self._matrix_view.get_agents_from_click(clickData)
                 if from_agent is None or to_agent is None or from_agent == to_agent:
@@ -119,11 +113,7 @@ class WebApp:
     def _make_chart_layout(self, path: str) -> html.Div:
         from_agent, to_agent = routing.decode_chart_path(path)
         results = self._cached_repo.get_mesh_test_results()
-        return self._chart_view.make_layout(
-            from_agent,
-            to_agent,
-            results,
-        )
+        return self._chart_view.make_layout(from_agent, to_agent, results)
 
     @property
     def callback(self):

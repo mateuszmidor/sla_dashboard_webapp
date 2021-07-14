@@ -23,7 +23,7 @@ pip install -r requirements.txt
 gunicorn --config=data/gunicorn.conf.py
 ```
 
-## Custom API server url
+## Custom API server URL
 
 It is possible to use custom API server by providing following environment variable:
 ```bash

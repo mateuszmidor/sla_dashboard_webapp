@@ -11,14 +11,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
       - name: Prepare for running local apiserver
-        run: pip3 install -r localhost_apiserver/requirements.txt
+        run: pip3 install -r stub_api_server/requirements.txt
 
       - name: Run local apiserver
-        run: RESPONSE_FILE_PATH="localhost_apiserver/mesh_5x5.json" FLASK_ENV=developmentt FLASK_APP=localhost_apiserver flask run --port=9050 &
+        run: RESPONSE_FILE_PATH="stub_api_server/mesh_5x5.json" FLASK_ENV=development FLASK_APP=stub_api_server flask run --port=9050 &
 
       - name: Generate API client
         run: ./generate_client.sh
@@ -52,7 +50,7 @@ jobs:
         run: curl --fail --include 127.0.0.1:8050/matrix
 
       - name: Test webapp - Chart
-        run: curl --fail --include 127.0.0.1:8050/chart%3Ffrom%3D646%26to%3D733
+        run: curl --fail --include 127.0.0.1:8050/chart?from=646&to=733
 
       - name: Stop webapp
         run: docker stop sla_dashboard 
