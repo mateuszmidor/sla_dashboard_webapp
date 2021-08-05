@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from domain.geo import Coordinates
@@ -19,6 +21,9 @@ class Agent:
 class Agents:
     def __init__(self) -> None:
         self._agents: Dict[AgentID, Agent] = {}
+
+    def equals(self, other: Agents) -> bool:
+        return self._agents == other._agents
 
     def get_by_id(self, agent_id: AgentID) -> Agent:
         if agent_id in self._agents:
@@ -68,6 +73,7 @@ class MeshColumn:
     latency_millisec: Metric = Metric()
     packet_loss_percent: Metric = Metric()
     health: List[HealthItem] = field(default_factory=list)
+    last_updated_utc: datetime = datetime(year=1970, month=1, day=1)
 
     def has_no_data(self) -> bool:
         return self.packet_loss_percent.value == MetricValue(100) or len(self.health) == 0
@@ -77,8 +83,31 @@ class MeshRow:
     """Represents connection "from" endpoint"""
 
     def __init__(self, agent_id: AgentID, columns: List[MeshColumn]):
+        self._reset(agent_id, columns)
+
+    def incremental_update(self, src: MeshRow) -> None:
+        """Update with src data, add new pieces of data if any, don't remove anything"""
+
+        for src_column in src.columns:
+            col_index = self._find_column(src_column.agent_id)
+            if col_index is None:
+                self.columns.append(src_column)  # append new column even if there is no data
+            else:
+                if src_column.has_no_data() is False:  # replace existing column only if there is data
+                    self.columns[col_index] = src_column
+        self._reset(self.agent_id, self.columns)
+
+    def _reset(self, agent_id: AgentID, columns: List[MeshColumn]) -> None:
+        """Reset MeshRow state, enforce invariants"""
+
         self.agent_id = agent_id
         self.columns = sorted(columns, key=lambda x: x.agent_id)
+
+    def _find_column(self, agent_id: AgentID) -> Optional[int]:
+        for index, col in enumerate(self.columns):
+            if col.agent_id == agent_id:
+                return index
+        return None
 
 
 class ConnectionMatrix:
@@ -111,18 +140,17 @@ class MeshResults:
     """
 
     def __init__(
-        self,
-        utc_timestamp: datetime,
-        rows: Optional[List[MeshRow]] = None,
-        agents: Agents = Agents(),
+        self, utc_timestamp: datetime, rows: Optional[List[MeshRow]] = None, agents: Agents = Agents()
     ) -> None:
-        self.utc_timestamp = utc_timestamp
-        if rows is not None:
-            self.rows = sorted(rows, key=lambda x: x.agent_id)
-        else:
-            self.rows = []
-        self.agents = agents
-        self._connection_matrix = ConnectionMatrix(self.rows)
+        self._reset(utc_timestamp, rows, agents)
+
+    def incremental_update(self, src: MeshResults) -> None:
+        """Update with src data, add new pieces of data if any, don't remove anything"""
+
+        for src_row in src.rows:
+            dst_row = self._get_or_add_row(src_row.agent_id)
+            dst_row.incremental_update(src_row)
+        self._reset(datetime.now(timezone.utc), self.rows, self.agents)
 
     def filter(self, from_agent, to_agent: AgentID, metric: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health
@@ -138,3 +166,25 @@ class MeshResults:
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         return self._connection_matrix.connection(from_agent, to_agent)
+
+    def _reset(self, utc_timestamp: datetime, rows: Optional[List[MeshRow]], agents: Agents) -> None:
+        """Reset MeshResults state, enforce invariants"""
+
+        self.utc_timestamp = utc_timestamp
+        if rows is None:
+            self.rows = []
+        else:
+            self.rows = sorted(rows, key=lambda x: x.agent_id)
+        self.agents = agents
+        self._connection_matrix = ConnectionMatrix(self.rows)
+
+    def _get_or_add_row(self, agent_id: AgentID) -> MeshRow:
+        # find and return row with matching agent_id
+        for row in self.rows:
+            if row.agent_id == agent_id:
+                return row
+
+        # row not found, append new one
+        row = MeshRow(agent_id, [])
+        self.rows.append(row)
+        return row

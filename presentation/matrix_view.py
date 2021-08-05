@@ -92,8 +92,7 @@ class MatrixView:
                         html.Div(
                             children=[
                                 html.Div(
-                                    dcc.Graph(id=self.MATRIX, figure=fig, responsive=True),
-                                    className="chart__default",
+                                    dcc.Graph(id=self.MATRIX, figure=fig, responsive=True), className="chart__default"
                                 ),
                                 html.Div(
                                     children=[
@@ -134,7 +133,7 @@ class MatrixView:
                     ],
                     className="main_container",
                 ),
-            ],
+            ]
         )
 
     def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:
@@ -219,14 +218,7 @@ class MatrixView:
                 to_agent = mesh.agents.get_by_id(col.agent_id)
                 text = cls.get_text(metric, mesh.connection(from_agent.id, to_agent.id))
                 annotations.append(
-                    dict(
-                        showarrow=False,
-                        text=text,
-                        xref="x",
-                        yref="y",
-                        x=to_agent.alias,
-                        y=from_agent.alias,
-                    )
+                    dict(showarrow=False, text=text, xref="x", yref="y", x=to_agent.alias, y=from_agent.alias)
                 )
         return annotations
 
@@ -261,10 +253,7 @@ class MatrixView:
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        cell_hover_text = [
-            f"{from_agent.alias} -> {to_agent.alias}",
-            f"Distance: {distance:.0f} {distance_unit.value}",
-        ]
+        cell_hover_text = [f"{from_agent.alias} -> {to_agent.alias}", f"Distance: {distance:.0f} {distance_unit.value}"]
 
         if conn.has_no_data():
             cell_hover_text.append("NO DATA")
@@ -272,6 +261,7 @@ class MatrixView:
             cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
             cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
             cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
+            cell_hover_text.append(f"Last updated: {conn.last_updated_utc.strftime('%x %X')}")
 
         return "<br>".join(cell_hover_text)
 

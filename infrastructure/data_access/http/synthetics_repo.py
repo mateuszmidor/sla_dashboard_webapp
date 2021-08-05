@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
@@ -17,6 +18,8 @@ from generated.synthetics_http_client.synthetics.model.v202101beta1_test_health 
 
 # pylint: enable=E0611
 from infrastructure.data_access.http.api_client import KentikAPI
+
+logger = logging.getLogger(__name__)
 
 
 class SyntheticsRepo:
@@ -49,8 +52,14 @@ class SyntheticsRepo:
         response = self._api_client.synthetics_data_service.get_health_for_tests(
             request, _request_timeout=self._timeout
         )
+
+        # response.health can be an empty list if no measurements were recorded in requested period of time
+        # for example: right after mesh test was started, after mesh test was paused
         if len(response.health) == 0:
-            raise Exception("get_health_for_tests returned 0 items")
+            logger.warning(
+                f'get_health_for_tests returned 0 items for test_id "{test_id}"" in period "{start} - {end}"'
+            )
+            return []
 
         most_recent_result = response.health[-1]
         return transform_to_internal_mesh_rows(most_recent_result)
@@ -85,6 +94,7 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
                 value=scale_to_percents(input_column.metrics.packet_loss.value),
             ),
             health=transform_to_internal_health_items(input_column.health),
+            last_updated_utc=datetime.now(timezone.utc),
         )
         columns.append(column)
     return columns
