@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -7,6 +8,8 @@ from typing import Dict, List, Optional, Tuple
 from domain.geo import Coordinates
 from domain.metric_type import MetricType
 from domain.types import AgentID, MetricValue
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -83,31 +86,8 @@ class MeshRow:
     """Represents connection "from" endpoint"""
 
     def __init__(self, agent_id: AgentID, columns: List[MeshColumn]):
-        self._reset(agent_id, columns)
-
-    def incremental_update(self, src: MeshRow) -> None:
-        """Update with src data, add new pieces of data if any, don't remove anything"""
-
-        for column in src.columns:
-            col_index = self._find_column(column.agent_id)
-            if col_index is None:
-                self.columns.append(column)  # append new column even if there is no data
-            else:
-                if column.has_no_data() is False:  # replace existing column only if there is data
-                    self.columns[col_index] = column
-        self._reset(self.agent_id, self.columns)
-
-    def _reset(self, agent_id: AgentID, columns: List[MeshColumn]) -> None:
-        """Reset MeshRow state, enforce invariants"""
-
         self.agent_id = agent_id
         self.columns = sorted(columns, key=lambda x: x.agent_id)
-
-    def _find_column(self, agent_id: AgentID) -> Optional[int]:
-        for index, col in enumerate(self.columns):
-            if col.agent_id == agent_id:
-                return index
-        return None
 
 
 class ConnectionMatrix:
@@ -123,14 +103,24 @@ class ConnectionMatrix:
             connections[row.agent_id] = {}
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
-        self._connections = connections
+        self.connections = connections
+
+    def incremental_update(self, src: ConnectionMatrix) -> None:
+        """Update with src connections, add new connections if any, don't remove anything"""
+
+        for from_agent_id in src.connections.keys():
+            dst_row = self.connections[from_agent_id]  # get or insert
+            for to_agent_id, connection in src.connections[from_agent_id].items():
+                # add or update connection
+                if to_agent_id not in dst_row or connection.has_no_data() is False:
+                    dst_row[to_agent_id] = connection
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
-        if from_agent not in self._connections:
+        if from_agent not in self.connections:
             return MeshColumn()
-        if to_agent not in self._connections[from_agent]:
+        if to_agent not in self.connections[from_agent]:
             return MeshColumn()
-        return self._connections[from_agent][to_agent]
+        return self.connections[from_agent][to_agent]
 
 
 class MeshResults:
@@ -142,15 +132,22 @@ class MeshResults:
     def __init__(
         self, utc_last_updated: datetime, rows: Optional[List[MeshRow]] = None, agents: Agents = Agents()
     ) -> None:
-        self._reset(utc_last_updated, rows, agents)
+
+        # utc_last_updated is when the data was fetched from the server, as opposed to when the data was actually collected.
+        # the latter is a property of MeshColumn
+        self.utc_last_updated = utc_last_updated
+        self.agents = agents
+        self.connection_matrix = ConnectionMatrix(rows if rows else [])
 
     def incremental_update(self, src: MeshResults) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
-        for src_row in src.rows:
-            dst_row = self._get_or_add_row(src_row.agent_id)
-            dst_row.incremental_update(src_row)
-        self._reset(datetime.now(timezone.utc), self.rows, self.agents)
+        if not self.agents.equals(src.agents):
+            logger.warning("Mesh test agents configuration mismatch. Skipping incremental update")
+            return
+
+        self.utc_last_updated = datetime.now(timezone.utc)
+        self.connection_matrix.incremental_update(src.connection_matrix)
 
     def filter(self, from_agent, to_agent: AgentID, metric: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health
@@ -165,29 +162,4 @@ class MeshResults:
         return []
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
-        return self._connection_matrix.connection(from_agent, to_agent)
-
-    def _reset(self, utc_last_updated: datetime, rows: Optional[List[MeshRow]], agents: Agents) -> None:
-        """Reset MeshResults state, enforce invariants"""
-
-        # utc_last_updated is when the data was fetched from the server, as opposed to when the data was actually collected.
-        # the latter is a property of MeshColumn
-        self.utc_last_updated = utc_last_updated
-
-        if rows is None:
-            self.rows = []
-        else:
-            self.rows = sorted(rows, key=lambda x: x.agent_id)
-        self.agents = agents
-        self._connection_matrix = ConnectionMatrix(self.rows)
-
-    def _get_or_add_row(self, agent_id: AgentID) -> MeshRow:
-        # find and return row with matching agent_id
-        for row in self.rows:
-            if row.agent_id == agent_id:
-                return row
-
-        # row not found, append new one
-        row = MeshRow(agent_id, [])
-        self.rows.append(row)
-        return row
+        return self.connection_matrix.connection(from_agent, to_agent)
