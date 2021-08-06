@@ -73,7 +73,7 @@ class MeshColumn:
     latency_millisec: Metric = Metric()
     packet_loss_percent: Metric = Metric()
     health: List[HealthItem] = field(default_factory=list)
-    last_updated_utc: datetime = datetime(year=1970, month=1, day=1)
+    utc_timestamp: datetime = datetime(year=1970, month=1, day=1)
 
     def has_no_data(self) -> bool:
         return self.packet_loss_percent.value == MetricValue(100) or len(self.health) == 0
@@ -88,13 +88,13 @@ class MeshRow:
     def incremental_update(self, src: MeshRow) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
-        for src_column in src.columns:
-            col_index = self._find_column(src_column.agent_id)
+        for column in src.columns:
+            col_index = self._find_column(column.agent_id)
             if col_index is None:
-                self.columns.append(src_column)  # append new column even if there is no data
+                self.columns.append(column)  # append new column even if there is no data
             else:
-                if src_column.has_no_data() is False:  # replace existing column only if there is data
-                    self.columns[col_index] = src_column
+                if column.has_no_data() is False:  # replace existing column only if there is data
+                    self.columns[col_index] = column
         self._reset(self.agent_id, self.columns)
 
     def _reset(self, agent_id: AgentID, columns: List[MeshColumn]) -> None:
@@ -140,9 +140,9 @@ class MeshResults:
     """
 
     def __init__(
-        self, utc_timestamp: datetime, rows: Optional[List[MeshRow]] = None, agents: Agents = Agents()
+        self, utc_last_updated: datetime, rows: Optional[List[MeshRow]] = None, agents: Agents = Agents()
     ) -> None:
-        self._reset(utc_timestamp, rows, agents)
+        self._reset(utc_last_updated, rows, agents)
 
     def incremental_update(self, src: MeshResults) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
@@ -167,10 +167,13 @@ class MeshResults:
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         return self._connection_matrix.connection(from_agent, to_agent)
 
-    def _reset(self, utc_timestamp: datetime, rows: Optional[List[MeshRow]], agents: Agents) -> None:
+    def _reset(self, utc_last_updated: datetime, rows: Optional[List[MeshRow]], agents: Agents) -> None:
         """Reset MeshResults state, enforce invariants"""
 
-        self.utc_timestamp = utc_timestamp
+        # utc_last_updated is when the data was fetched from the server, as opposed to when the data was actually collected.
+        # the latter is a property of MeshColumn
+        self.utc_last_updated = utc_last_updated
+
         if rows is None:
             self.rows = []
         else:

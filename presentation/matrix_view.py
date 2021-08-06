@@ -46,7 +46,7 @@ class MatrixView:
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestampISO = mesh.utc_timestamp.isoformat()
+        timestampISO = mesh.utc_last_updated.isoformat()
         header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
         return html.Div(
@@ -261,7 +261,7 @@ class MatrixView:
             cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
             cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
             cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
-            cell_hover_text.append(f"Last updated: {conn.last_updated_utc.strftime('%x %X')}")
+            cell_hover_text.append(f"Time stamp: {conn.utc_timestamp.strftime('%x %X %Z')}")
 
         return "<br>".join(cell_hover_text)
 

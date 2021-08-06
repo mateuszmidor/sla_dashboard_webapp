@@ -57,4 +57,4 @@ class CachedRepoRequestDriven:
     def _cached_data_fresh_enough(self) -> bool:
         max_age = timedelta(seconds=self._max_data_age_seconds)
         with self._cache_access_lock:
-            return datetime.now(timezone.utc) - self._cache_test_results.utc_timestamp <= max_age
+            return datetime.now(timezone.utc) - self._cache_test_results.utc_last_updated <= max_age

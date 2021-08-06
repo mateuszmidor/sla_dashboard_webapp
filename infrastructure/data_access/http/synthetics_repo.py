@@ -37,7 +37,7 @@ class SyntheticsRepo:
     def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
         try:
             return MeshResults(
-                utc_timestamp=datetime.now(timezone.utc),
+                utc_last_updated=datetime.now(timezone.utc),
                 rows=self._get_mesh_test_rows(test_id, results_lookback_seconds),
                 agents=self._get_agents(test_id),
             )
@@ -56,9 +56,7 @@ class SyntheticsRepo:
         # response.health can be an empty list if no measurements were recorded in requested period of time
         # for example: right after mesh test was started, after mesh test was paused
         if len(response.health) == 0:
-            logger.warning(
-                f'get_health_for_tests returned 0 items for test_id "{test_id}"" in period "{start} - {end}"'
-            )
+            logger.warning("get_health_for_tests: no data for test id '%s' from '%s' to '%s'", test_id, start, end)
             return []
 
         most_recent_result = response.health[-1]
@@ -94,7 +92,7 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
                 value=scale_to_percents(input_column.metrics.packet_loss.value),
             ),
             health=transform_to_internal_health_items(input_column.health),
-            last_updated_utc=datetime.now(timezone.utc),
+            utc_timestamp=input_column.metrics.time,
         )
         columns.append(column)
     return columns
