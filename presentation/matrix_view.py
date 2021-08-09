@@ -46,7 +46,8 @@ class MatrixView:
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestampISO = mesh.utc_last_updated.isoformat()
+        timestamp_low_ISO = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else "none"
+        timestamp_high_ISO = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else "none"
         header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
         return html.Div(
@@ -56,22 +57,29 @@ class MatrixView:
                     children=[
                         html.H2(
                             children=[
-                                html.Span("Last update: "),
+                                html.Span("Data timestamp range: "),
                                 html.Span(
-                                    "<test_results_date_time>",
+                                    "<test_results_timestamp_low>",
                                     className="header-timestamp",
-                                    id="current-timestamp",
-                                    title=timestampISO,
+                                    id="timestamp-low",
+                                    title=timestamp_low_ISO,
                                 ),
+                                html.Span(" - "),
                                 html.Span(
-                                    self._config.data_update_period_seconds,
-                                    className="header-time-interval",
-                                    id="timeinterval",
+                                    "<test_results_timestamp_high>",
+                                    className="header-timestamp",
+                                    id="timestamp-high",
+                                    title=timestamp_high_ISO,
                                 ),
+                                # html.Span(
+                                #     self._config.data_update_period_seconds,
+                                #     className="header-time-interval",
+                                #     id="timeinterval",
+                                # ),
                             ],
                             className="header__subTitle",
                         ),
-                        html.Div("warning: data is stale", className="header-stale-data-warning"),
+                        # html.Div("warning: data is stale", className="header-stale-data-warning"),
                         html.Div(
                             children=[
                                 html.Label("Select primary metric:", className="select_label"),

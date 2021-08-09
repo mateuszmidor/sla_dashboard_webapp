@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from domain.geo import Coordinates
@@ -104,6 +104,7 @@ class ConnectionMatrix:
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
         self.connections = connections
+        self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def incremental_update(self, src: ConnectionMatrix) -> None:
         """Update with src connections, add new connections if any, don't remove anything"""
@@ -114,6 +115,7 @@ class ConnectionMatrix:
                 # add or update connection
                 if to_agent_id not in dst_row or connection.has_no_data() is False:
                     dst_row[to_agent_id] = connection
+        self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         if from_agent not in self.connections:
@@ -121,6 +123,19 @@ class ConnectionMatrix:
         if to_agent not in self.connections[from_agent]:
             return MeshColumn()
         return self.connections[from_agent][to_agent]
+
+    def _get_lowest_highest_timestamp(self) -> Tuple[Optional[datetime], Optional[datetime]]:
+        lowest: Optional[datetime] = None
+        highest: Optional[datetime] = None
+
+        for row in self.connections.values():
+            for col in row.values():
+                if not lowest or col.utc_timestamp < lowest:
+                    lowest = col.utc_timestamp
+                if not highest or col.utc_timestamp > highest:
+                    highest = col.utc_timestamp
+
+        return lowest, highest
 
 
 class MeshResults:
@@ -163,3 +178,11 @@ class MeshResults:
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         return self.connection_matrix.connection(from_agent, to_agent)
+
+    @property
+    def utc_timestamp_low(self) -> Optional[datetime]:
+        return self.connection_matrix.connection_timestamp_lowest
+
+    @property
+    def utc_timestamp_high(self) -> Optional[datetime]:
+        return self.connection_matrix.connection_timestamp_highest

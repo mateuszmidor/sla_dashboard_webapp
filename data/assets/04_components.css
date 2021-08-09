@@ -52,7 +52,7 @@
 }
 
 /* Stale data warning (matrix view) */
-.header-stale-data-warning {
+/* .header-stale-data-warning {
   opacity: 0;
   color: var(--warning-color);
   margin-bottom: 20px;
@@ -63,12 +63,12 @@
 .header-stale-data-warning-visible{
   opacity: 1;
   visibility: visible;
-}
+} */
 
 /* Data timestamp label (matrix view) */
 .header-timestamp{
   margin-left: 10px;
 }
-.header-time-interval{
+/* .header-time-interval{
   display: none;
-}
+} */
