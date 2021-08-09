@@ -78,8 +78,8 @@ class MeshColumn:
     health: List[HealthItem] = field(default_factory=list)
     utc_timestamp: datetime = datetime(year=1970, month=1, day=1)
 
-    def has_no_data(self) -> bool:
-        return self.packet_loss_percent.value == MetricValue(100) or len(self.health) == 0
+    def has_data(self) -> bool:
+        return self.packet_loss_percent.value < MetricValue(100) and len(self.health) > 0
 
 
 class MeshRow:
@@ -98,41 +98,49 @@ class ConnectionMatrix:
     """
 
     def __init__(self, rows: List[MeshRow]) -> None:
+        agent_ids: List[AgentID] = []
         connections: Dict[AgentID, Dict[AgentID, MeshColumn]] = {}
         for row in rows:
+            agent_ids.append(row.agent_id)
             connections[row.agent_id] = {}
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
-        self.connections = connections
+        self._connections = connections
+        self.agent_ids = sorted(agent_ids)
         self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def incremental_update(self, src: ConnectionMatrix) -> None:
-        """Update with src connections, add new connections if any, don't remove anything"""
+        """
+        Update with src connections, add new connections if any, don't remove anything.
+        Prerequisite: agents configuration hasn't change.
+        """
 
-        for from_agent_id in src.connections.keys():
-            dst_row = self.connections[from_agent_id]  # get or insert
-            for to_agent_id, connection in src.connections[from_agent_id].items():
+        for from_agent_id in src._connections.keys():
+            dst_row = self._connections[from_agent_id]  # get or insert
+            for to_agent_id, connection in src._connections[from_agent_id].items():
                 # add or update connection
-                if to_agent_id not in dst_row or connection.has_no_data() is False:
+                if to_agent_id not in dst_row or connection.has_data():
                     dst_row[to_agent_id] = connection
         self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
-        if from_agent not in self.connections:
+        if from_agent not in self._connections:
             return MeshColumn()
-        if to_agent not in self.connections[from_agent]:
+        if to_agent not in self._connections[from_agent]:
             return MeshColumn()
-        return self.connections[from_agent][to_agent]
+        return self._connections[from_agent][to_agent]
 
     def _get_lowest_highest_timestamp(self) -> Tuple[Optional[datetime], Optional[datetime]]:
         lowest: Optional[datetime] = None
         highest: Optional[datetime] = None
 
-        for row in self.connections.values():
+        for row in self._connections.values():
             for col in row.values():
-                if not lowest or col.utc_timestamp < lowest:
+                if not col.has_data():
+                    continue
+                if lowest is None or col.utc_timestamp < lowest:
                     lowest = col.utc_timestamp
-                if not highest or col.utc_timestamp > highest:
+                if highest is None or col.utc_timestamp > highest:
                     highest = col.utc_timestamp
 
         return lowest, highest

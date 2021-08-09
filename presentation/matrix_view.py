@@ -162,7 +162,7 @@ class MatrixView:
 
     def make_figure_data(self, mesh: MeshResults, metric: MetricType) -> Dict:
 
-        x_labels = [mesh.agents.get_by_id(agent_id).alias for agent_id in mesh.connection_matrix.connections.keys()]
+        x_labels = [mesh.agents.get_by_id(agent_id).alias for agent_id in mesh.connection_matrix.agent_ids]
         y_labels = list(reversed(x_labels))
         sla_levels = self.make_sla_levels(mesh, metric)
         return dict(
@@ -183,23 +183,25 @@ class MatrixView:
         thresholds = self.get_thresholds(metric)
         sla_levels: List[SLALevelColumn] = []
 
-        for from_id in reversed(mesh.connection_matrix.connections.keys()):
+        for from_id in reversed(mesh.connection_matrix.agent_ids):
             sla_levels_col: SLALevelColumn = []
-            for to_id in mesh.connection_matrix.connections[from_id].keys():
+            for to_id in mesh.connection_matrix.agent_ids:
+                if from_id == to_id:
+                    continue
                 warning = thresholds.warning(from_id, to_id)
                 critical = thresholds.critical(from_id, to_id)
                 connection = mesh.connection(from_id, to_id)
-                if connection.has_no_data():
-                    sla_level = SLALevel.NODATA
-                else:
+                if connection.has_data():
                     value = self.get_metric_value(metric, connection)
                     sla_level = self.get_sla_level(value, warning, critical)
+                else:
+                    sla_level = SLALevel.NODATA
                 sla_levels_col.append(sla_level)
             sla_levels.append(sla_levels_col)
 
         # mark matrix diagonal, use alternating SLALevel._MIN and SLALevel._MAX
         # to ensure matrix contains values in full range 0..1 - to match the color scale
-        for i in range(len(mesh.connection_matrix.connections)):
+        for i in range(len(mesh.connection_matrix.agent_ids)):
             sla_levels[-(i + 1)].insert(i, SLALevel(i % 2))
         return sla_levels
 
@@ -221,8 +223,10 @@ class MatrixView:
     @classmethod
     def make_figure_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
         annotations: List[Dict] = []
-        for from_id in reversed(mesh.connection_matrix.connections.keys()):
-            for to_id in mesh.connection_matrix.connections[from_id].keys():
+        for from_id in reversed(mesh.connection_matrix.agent_ids):
+            for to_id in mesh.connection_matrix.agent_ids:
+                if from_id == to_id:
+                    continue
                 from_agent = mesh.agents.get_by_id(from_id)
                 to_agent = mesh.agents.get_by_id(to_id)
                 text = cls.get_text(metric, mesh.connection(from_agent.id, to_agent.id))
@@ -242,15 +246,17 @@ class MatrixView:
     def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         # make hover text for each cell in the matrix
         matrix_hover_text: List[List[str]] = []
-        for from_id in reversed(mesh.connection_matrix.connections.keys()):
+        for from_id in reversed(mesh.connection_matrix.agent_ids):
             column_hover_text: List[str] = []
-            for to_id in mesh.connection_matrix.connections[from_id].keys():
+            for to_id in mesh.connection_matrix.agent_ids:
+                if from_id == to_id:
+                    continue
                 text = self.make_cell_hover_text(from_id, to_id, mesh)
                 column_hover_text.append(text)
             matrix_hover_text.append(column_hover_text)
 
         # insert blank diagonal into matrix
-        for i in range(len(mesh.connection_matrix.connections)):
+        for i in range(len(mesh.connection_matrix.agent_ids)):
             matrix_hover_text[-(i + 1)].insert(i, "")
 
         return matrix_hover_text
@@ -264,13 +270,13 @@ class MatrixView:
 
         cell_hover_text = [f"{from_agent.alias} -> {to_agent.alias}", f"Distance: {distance:.0f} {distance_unit.value}"]
 
-        if conn.has_no_data():
-            cell_hover_text.append("NO DATA")
-        else:
+        if conn.has_data():
             cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
             cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
             cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
             cell_hover_text.append(f"Time stamp: {conn.utc_timestamp.strftime('%x %X %Z')}")
+        else:
+            cell_hover_text.append("NO DATA")
 
         return "<br>".join(cell_hover_text)
 

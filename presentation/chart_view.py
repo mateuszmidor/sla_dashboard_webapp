@@ -19,27 +19,20 @@ class ChartView:
         title = self.make_title(from_agent, to_agent, mesh)
         conn = mesh.connection(from_agent, to_agent)
 
-        if conn.has_no_data():
-            content = self.make_no_data_content()
-        else:
+        if conn.has_data():
             content = self.make_charts_content(from_agent, to_agent, mesh)
+        else:
+            content = self.make_no_data_content()
 
         return html.Div(
             children=[
                 html.H1(children=title, className="header_main"),
-                html.Div(
-                    children=content,
-                    className="main_container",
-                ),
-            ],
+                html.Div(children=content, className="main_container"),
+            ]
         )
 
     def make_no_data_content(self) -> List:
-        return [
-            html.H1("NO DATA"),
-            html.Br(),
-            html.Br(),
-        ]
+        return [html.H1("NO DATA"), html.Br(), html.Br()]
 
     def make_charts_content(self, from_agent, to_agent: AgentID, mesh: MeshResults) -> List:
         fig_latency = self.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
@@ -77,10 +70,6 @@ class ChartView:
         layout = go.Layout(
             margin={"t": 0, "b": 0}, modebar={"orientation": "v"}  # remove empty space above and below the chart
         )
-        fig = go.Figure(
-            data=[go.Scatter(x=xdata, y=ydata)],
-            layout=layout,
-            layout_yaxis_range=y_range,
-        )
+        fig = go.Figure(data=[go.Scatter(x=xdata, y=ydata)], layout=layout, layout_yaxis_range=y_range)
         fig.update_yaxes(rangemode="tozero")  # make the y-scale start from 0
         return fig
