@@ -64,7 +64,7 @@ class MatrixView:
                                     id="timestamp-low",
                                     title=timestamp_low_ISO,
                                 ),
-                                html.Span(" - "),
+                                html.Span(" - ", className="header-timestamp"),
                                 html.Span(
                                     "<test_results_timestamp_high>",
                                     className="header-timestamp",
@@ -185,7 +185,7 @@ class MatrixView:
                 warning = thresholds.warning(from_id, to_id)
                 critical = thresholds.critical(from_id, to_id)
                 connection = mesh.connection(from_id, to_id)
-                if connection.has_data():
+                if connection.is_live() and connection.has_data():
                     value = self.get_metric_value(metric, connection)
                     sla_level = self.get_sla_level(value, warning, critical)
                 else:
@@ -262,14 +262,20 @@ class MatrixView:
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        cell_hover_text = [f"{from_agent.alias} -> {to_agent.alias}", f"Distance: {distance:.0f} {distance_unit.value}"]
+        cell_hover_text: List[str] = []
+        cell_hover_text.append(f"{from_agent.alias} -> {to_agent.alias}")
+        cell_hover_text.append(f"Distance: {distance:.0f} {distance_unit.value}")
 
         if conn.has_data():
-            cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
-            cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
+            if conn.is_live():
+                # latency and jitter only apply when there is successful connection between agents
+                cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
+                cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
+
             cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
             cell_hover_text.append(f"Time stamp: {conn.utc_timestamp.strftime('%x %X %Z')}")
         else:
+            # no data available for this connection at requested time window
             cell_hover_text.append("NO DATA")
 
         return "<br>".join(cell_hover_text)

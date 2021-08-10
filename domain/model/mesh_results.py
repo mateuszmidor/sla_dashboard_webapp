@@ -79,7 +79,18 @@ class MeshColumn:
     utc_timestamp: datetime = datetime(year=1970, month=1, day=1)
 
     def has_data(self) -> bool:
-        return self.packet_loss_percent.value < MetricValue(100) and len(self.health) > 0
+        """
+        Determines if there are any observations available for this connection.
+        Lack of observations may be caused by specyfing incorrect time window in tests health request,
+        or by the test itself being in paused state.
+        """
+
+        return len(self.health) > 0
+
+    def is_live(self) -> bool:
+        """Determines if there actually is a connection and the packets reach the destination"""
+
+        return self.packet_loss_percent.value < MetricValue(100.0)
 
 
 class MeshRow:
@@ -189,8 +200,12 @@ class MeshResults:
 
     @property
     def utc_timestamp_low(self) -> Optional[datetime]:
+        """utc_timestamp_low can be None if there was no health data for specified time window (empty MeshResults)"""
+
         return self.connection_matrix.connection_timestamp_lowest
 
     @property
     def utc_timestamp_high(self) -> Optional[datetime]:
+        """utc_timestamp_high can be None if there was no health data for specified time window (empty MeshResults)"""
+
         return self.connection_matrix.connection_timestamp_highest

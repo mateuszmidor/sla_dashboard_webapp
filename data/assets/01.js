@@ -2,12 +2,12 @@
 function getDataTimestamp(domDateTimeElement) {
     const isoDateTimeStr =  domDateTimeElement.title;
     if (isoDateTimeStr == "") {
-        return "<no date>"
+        return "<unknown>"
     }
     return new Date(isoDateTimeStr).toLocaleString();
 }
 
-// setTimestampsToLocalTime sets LastUpdated label to client's local time
+// setTimestampsToLocalTime sets the test data timestamp low and high values
 function setTimestampsToLocalTime() {
     var domTimestampLowElement = document.getElementById('timestamp-low');
     var domTimestampHighElement = document.getElementById('timestamp-high');
