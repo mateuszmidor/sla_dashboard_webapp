@@ -46,8 +46,8 @@ class MatrixView:
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestamp_low_ISO = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else "none"
-        timestamp_high_ISO = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else "none"
+        timestamp_low_ISO = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else None
+        timestamp_high_ISO = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else None
         header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
         return html.Div(
@@ -71,15 +71,9 @@ class MatrixView:
                                     id="timestamp-high",
                                     title=timestamp_high_ISO,
                                 ),
-                                # html.Span(
-                                #     self._config.data_update_period_seconds,
-                                #     className="header-time-interval",
-                                #     id="timeinterval",
-                                # ),
                             ],
                             className="header__subTitle",
                         ),
-                        # html.Div("warning: data is stale", className="header-stale-data-warning"),
                         html.Div(
                             children=[
                                 html.Label("Select primary metric:", className="select_label"),
