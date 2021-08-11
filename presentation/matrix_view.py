@@ -9,7 +9,7 @@ from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
 from domain.metric_type import MetricType
 from domain.model import MeshResults
-from domain.model.mesh_results import Agents, MeshColumn
+from domain.model.mesh_results import Agents, HealthItem, MeshColumn
 from domain.types import AgentID, MetricValue, Threshold
 
 # Connections are displayed as a matrix using dcc.Graph component.
@@ -184,9 +184,9 @@ class MatrixView:
                     continue
                 warning = thresholds.warning(from_id, to_id)
                 critical = thresholds.critical(from_id, to_id)
-                connection = mesh.connection(from_id, to_id)
-                if connection.is_live() and connection.has_data():
-                    value = self.get_metric_value(metric, connection)
+                health = mesh.connection(from_id, to_id).latest_measurement
+                if health:
+                    value = self.get_metric_value(metric, health)
                     sla_level = self.get_sla_level(value, warning, critical)
                 else:
                     sla_level = SLALevel.NODATA
@@ -207,12 +207,12 @@ class MatrixView:
         return self._config.packet_loss
 
     @staticmethod
-    def get_metric_value(metric: MetricType, cell: MeshColumn) -> MetricValue:
+    def get_metric_value(metric: MetricType, health: HealthItem) -> MetricValue:
         if metric == MetricType.LATENCY:
-            return cell.latency_millisec.value
+            return health.latency_millisec
         if metric == MetricType.JITTER:
-            return cell.jitter_millisec.value
-        return cell.packet_loss_percent.value
+            return health.jitter_millisec
+        return health.packet_loss_percent
 
     @classmethod
     def make_figure_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
@@ -223,19 +223,20 @@ class MatrixView:
                     continue
                 from_agent = mesh.agents.get_by_id(from_id)
                 to_agent = mesh.agents.get_by_id(to_id)
-                text = cls.get_text(metric, mesh.connection(from_agent.id, to_agent.id))
+                health = mesh.connection(from_agent.id, to_agent.id).latest_measurement
+                text = cls.get_text(metric, health) if health else "N/A"
                 annotations.append(
                     dict(showarrow=False, text=text, xref="x", yref="y", x=to_agent.alias, y=from_agent.alias)
                 )
         return annotations
 
     @staticmethod
-    def get_text(metric: MetricType, cell: MeshColumn) -> str:
+    def get_text(metric: MetricType, health: HealthItem) -> str:
         if metric == MetricType.LATENCY:
-            return f"{(cell.latency_millisec.value):.2f}"
+            return f"{(health.latency_millisec):.2f}"
         if metric == MetricType.JITTER:
-            return f"{(cell.jitter_millisec.value):.2f}"
-        return f"{cell.packet_loss_percent.value:.1f}"
+            return f"{(health.jitter_millisec):.2f}"
+        return f"{health.packet_loss_percent:.1f}"
 
     def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         # make hover text for each cell in the matrix
@@ -266,14 +267,15 @@ class MatrixView:
         cell_hover_text.append(f"{from_agent.alias} -> {to_agent.alias}")
         cell_hover_text.append(f"Distance: {distance:.0f} {distance_unit.value}")
 
-        if conn.has_data():
+        health = conn.latest_measurement
+        if health:
             if conn.is_live():
                 # latency and jitter only apply when there is successful connection between agents
-                cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
-                cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
+                cell_hover_text.append(f"Latency: {health.latency_millisec:.2f} ms")
+                cell_hover_text.append(f"Jitter: {health.jitter_millisec:.2f} ms")
 
-            cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
-            cell_hover_text.append(f"Time stamp: {conn.utc_timestamp.strftime('%x %X %Z')}")
+            cell_hover_text.append(f"Loss: {health.packet_loss_percent:.1f}%")
+            cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
         else:
             # no data available for this connection at requested time window
             cell_hover_text.append("NO DATA")

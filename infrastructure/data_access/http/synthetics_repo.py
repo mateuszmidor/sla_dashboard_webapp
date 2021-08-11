@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
-from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow, Metric
+from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow
 from domain.model.mesh_results import Coordinates
 from domain.types import AgentID, MetricValue, TestID
 
@@ -80,19 +80,7 @@ def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColum
     columns = []
     for input_column in input_columns:
         column = MeshColumn(
-            agent_id=AgentID(input_column.id),
-            jitter_millisec=Metric(
-                health=input_column.metrics.jitter.health, value=scale_us_to_ms(input_column.metrics.jitter.value)
-            ),
-            latency_millisec=Metric(
-                health=input_column.metrics.latency.health, value=scale_us_to_ms(input_column.metrics.latency.value)
-            ),
-            packet_loss_percent=Metric(
-                health=input_column.metrics.packet_loss.health,
-                value=scale_to_percents(input_column.metrics.packet_loss.value),
-            ),
-            health=transform_to_internal_health_items(input_column.health),
-            utc_timestamp=input_column.metrics.time,
+            agent_id=AgentID(input_column.id), health=transform_to_internal_health_items(input_column.health)
         )
         columns.append(column)
     return columns
@@ -105,7 +93,7 @@ def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetric
             jitter_millisec=scale_us_to_ms(h.jitter.value),
             latency_millisec=scale_us_to_ms(h.latency.value),
             packet_loss_percent=scale_to_percents(h.packet_loss.value),
-            time=h.time,
+            timestamp=h.time,
         )
         health.append(item)
     return health

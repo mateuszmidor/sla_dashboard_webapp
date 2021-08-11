@@ -50,21 +50,13 @@ class Agents:
 
 
 @dataclass
-class Metric:
-    """Represents single from->to connection metric"""
-
-    health: str = ""  # "healthy", "warning", ...
-    value: MetricValue = MetricValue()
-
-
-@dataclass
 class HealthItem:
     """Represents single from->to connection health time-series entry"""
 
     jitter_millisec: MetricValue
     latency_millisec: MetricValue
     packet_loss_percent: MetricValue
-    time: datetime
+    timestamp: datetime
 
 
 @dataclass
@@ -72,11 +64,13 @@ class MeshColumn:
     """Represents connection "to" endpoint"""
 
     agent_id: AgentID = AgentID()
-    jitter_millisec: Metric = Metric()
-    latency_millisec: Metric = Metric()
-    packet_loss_percent: Metric = Metric()
-    health: List[HealthItem] = field(default_factory=list)
-    utc_timestamp: datetime = datetime(year=1970, month=1, day=1)
+    health: List[HealthItem] = field(default_factory=list)  # sorted by timestamp from newest to oldest
+
+    @property
+    def latest_measurement(self) -> Optional[HealthItem]:
+        """Latest connection health measurement, if available"""
+
+        return self.health[0] if self.health else None
 
     def has_data(self) -> bool:
         """
@@ -90,7 +84,8 @@ class MeshColumn:
     def is_live(self) -> bool:
         """Determines if there actually is a connection and the packets reach the destination"""
 
-        return self.packet_loss_percent.value < MetricValue(100.0)
+        health = self.latest_measurement
+        return health is not None and health.packet_loss_percent < MetricValue(100.0)
 
 
 class MeshRow:
@@ -147,12 +142,13 @@ class ConnectionMatrix:
 
         for row in self._connections.values():
             for col in row.values():
-                if not col.has_data():
+                health = col.latest_measurement
+                if not health:
                     continue
-                if lowest is None or col.utc_timestamp < lowest:
-                    lowest = col.utc_timestamp
-                if highest is None or col.utc_timestamp > highest:
-                    highest = col.utc_timestamp
+                if lowest is None or health.timestamp < lowest:
+                    lowest = health.timestamp
+                if highest is None or health.timestamp > highest:
+                    highest = health.timestamp
 
         return lowest, highest
 
@@ -187,11 +183,11 @@ class MeshResults:
         items = self.connection(from_agent, to_agent).health
 
         if metric == MetricType.LATENCY:
-            return [(i.time, i.latency_millisec) for i in items]
+            return [(i.timestamp, i.latency_millisec) for i in items]
         if metric == MetricType.JITTER:
-            return [(i.time, i.jitter_millisec) for i in items]
+            return [(i.timestamp, i.jitter_millisec) for i in items]
         if metric == MetricType.PACKET_LOSS:
-            return [(i.time, i.packet_loss_percent) for i in items]
+            return [(i.timestamp, i.packet_loss_percent) for i in items]
 
         return []
 
