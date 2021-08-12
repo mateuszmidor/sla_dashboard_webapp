@@ -33666,7 +33666,7 @@
                                         "packetLoss": {
                                             "name": "packet_loss",
                                             "health": "healthy",
-                                            "value": "0"
+                                            "value": "1"
                                         },
                                         "jitter": {
                                             "name": "jitter",

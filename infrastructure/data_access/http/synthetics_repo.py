@@ -93,7 +93,7 @@ def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetric
             jitter_millisec=scale_us_to_ms(h.jitter.value),
             latency_millisec=scale_us_to_ms(h.latency.value),
             packet_loss_percent=scale_to_percents(h.packet_loss.value),
-            timestamp=h.time,
+            time=h.time,
         )
         health.append(item)
     return health

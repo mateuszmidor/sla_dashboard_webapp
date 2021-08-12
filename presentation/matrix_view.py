@@ -1,3 +1,4 @@
+import math
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -224,19 +225,39 @@ class MatrixView:
                 from_agent = mesh.agents.get_by_id(from_id)
                 to_agent = mesh.agents.get_by_id(to_id)
                 health = mesh.connection(from_agent.id, to_agent.id).latest_measurement
-                text = cls.get_text(metric, health) if health else "N/A"
+                text = cls.format_health(metric, health)
                 annotations.append(
                     dict(showarrow=False, text=text, xref="x", yref="y", x=to_agent.alias, y=from_agent.alias)
                 )
         return annotations
 
     @staticmethod
-    def get_text(metric: MetricType, health: HealthItem) -> str:
+    def format_health(metric: MetricType, health: Optional[HealthItem], include_unit: bool = False) -> str:
+        not_available = "N/A"
+
+        if not health:
+            return not_available
+
         if metric == MetricType.LATENCY:
-            return f"{(health.latency_millisec):.2f}"
+            if math.isnan(health.latency_millisec):
+                return not_available
+            result = f"{(health.latency_millisec):.2f}"
+            if include_unit:
+                result += " ms"
+            return result
+
         if metric == MetricType.JITTER:
-            return f"{(health.jitter_millisec):.2f}"
-        return f"{health.packet_loss_percent:.1f}"
+            if math.isnan(health.jitter_millisec):
+                return not_available
+            result = f"{(health.jitter_millisec):.2f}"
+            if include_unit:
+                result += " ms"
+            return result
+
+        result = f"{health.packet_loss_percent:.1f}"
+        if include_unit:
+            result += "%"
+        return result
 
     def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         # make hover text for each cell in the matrix
@@ -269,21 +290,20 @@ class MatrixView:
 
         health = conn.latest_measurement
         if health:
-            if conn.is_live():
-                # latency and jitter only apply when there is successful connection between agents
-                cell_hover_text.append(f"Latency: {health.latency_millisec:.2f} ms")
-                cell_hover_text.append(f"Jitter: {health.jitter_millisec:.2f} ms")
-
-            cell_hover_text.append(f"Loss: {health.packet_loss_percent:.1f}%")
+            cell_hover_text.append(f"Latency: {self.format_health(MetricType.LATENCY, health, True)}")
+            cell_hover_text.append(f"Jitter: {self.format_health(MetricType.JITTER, health, True)}")
+            cell_hover_text.append(f"Loss: {self.format_health(MetricType.PACKET_LOSS, health, True)}")
             cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
         else:
-            # no data available for this connection at requested time window
+            # no data available for this connection
             cell_hover_text.append("NO DATA")
 
         return "<br>".join(cell_hover_text)
 
     @staticmethod
     def get_sla_level(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> SLALevel:
+        if math.isnan(val):
+            return SLALevel.NODATA
         if val < warning_threshold:
             return SLALevel.HEALTHY
         if val < critical_threshold:

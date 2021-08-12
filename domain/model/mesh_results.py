@@ -49,14 +49,16 @@ class Agents:
         self._agents[agent.id] = agent
 
 
-@dataclass
 class HealthItem:
     """Represents single from->to connection health time-series entry"""
 
-    jitter_millisec: MetricValue
-    latency_millisec: MetricValue
-    packet_loss_percent: MetricValue
-    timestamp: datetime
+    def __init__(self, jitter_millisec, latency_millisec, packet_loss_percent: MetricValue, time: datetime) -> None:
+        self.timestamp = time
+        self.packet_loss_percent = packet_loss_percent
+
+        # if packet loss is 100%, then jitter and latency measurements do not apply
+        self.jitter_millisec = jitter_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
+        self.latency_millisec = latency_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
 
 
 @dataclass
@@ -80,12 +82,6 @@ class MeshColumn:
         """
 
         return len(self.health) > 0
-
-    def is_live(self) -> bool:
-        """Determines if there actually is a connection and the packets reach the destination"""
-
-        health = self.latest_measurement
-        return health is not None and health.packet_loss_percent < MetricValue(100.0)
 
 
 class MeshRow:
