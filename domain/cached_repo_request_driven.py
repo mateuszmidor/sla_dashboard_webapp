@@ -51,7 +51,7 @@ class CachedRepoRequestDriven:
                 logger.debug("Incremental cache update")
                 self._cache_test_results.incremental_update(results)
             else:
-                logger.warning("New mesh test agents configuration detected. Full cache update")
+                logger.debug("New mesh test agents configuration detected. Full cache update")
                 self._cache_test_results = results
 
     def _cached_data_fresh_enough(self) -> bool:
