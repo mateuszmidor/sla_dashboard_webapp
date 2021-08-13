@@ -2,9 +2,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
+from domain.metric import MetricValue
 from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow
 from domain.model.mesh_results import Coordinates
-from domain.types import AgentID, MetricValue, TestID
+from domain.types import AgentID, TestID
 
 # the below "disable=E0611" is needed as we don't commit the generated code into git repo and thus CI linter complains
 # pylint: disable=E0611

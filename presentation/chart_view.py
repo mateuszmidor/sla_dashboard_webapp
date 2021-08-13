@@ -6,7 +6,7 @@ import plotly.graph_objs as go
 
 from domain.config import Config
 from domain.geo import calc_distance
-from domain.metric_type import MetricType
+from domain.metric import MetricType
 from domain.model import MeshResults
 from domain.types import AgentID
 

@@ -6,8 +6,8 @@ from datetime import date, datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from domain.geo import Coordinates
-from domain.metric_type import MetricType
-from domain.types import AgentID, MetricValue
+from domain.metric import Metric, MetricType, MetricValue
+from domain.types import AgentID
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,24 @@ class HealthItem:
 
     def __init__(self, jitter_millisec, latency_millisec, packet_loss_percent: MetricValue, time: datetime) -> None:
         self.timestamp = time
-        self.packet_loss_percent = packet_loss_percent
+        self.packet_loss_percent = Metric.loss(packet_loss_percent)
 
         # if packet loss is 100%, then jitter and latency measurements do not apply
-        self.jitter_millisec = jitter_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
-        self.latency_millisec = latency_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
+        self.jitter_millisec = Metric.jitter(
+            jitter_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
+        )
+        self.latency_millisec = Metric.latency(
+            latency_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
+        )
+
+    def get_metric(self, type: MetricType) -> Metric:
+        if type == MetricType.LATENCY:
+            return self.latency_millisec
+        if type == MetricType.JITTER:
+            return self.jitter_millisec
+        if type == MetricType.PACKET_LOSS:
+            return self.packet_loss_percent
+        raise Exception(f"MetricType not supported: {type}")
 
 
 @dataclass
@@ -175,17 +188,9 @@ class MeshResults:
         self.utc_last_updated = datetime.now(timezone.utc)
         self.connection_matrix.incremental_update(src.connection_matrix)
 
-    def filter(self, from_agent, to_agent: AgentID, metric: MetricType) -> List[Tuple[datetime, MetricValue]]:
+    def filter(self, from_agent, to_agent: AgentID, type: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health
-
-        if metric == MetricType.LATENCY:
-            return [(i.timestamp, i.latency_millisec) for i in items]
-        if metric == MetricType.JITTER:
-            return [(i.timestamp, i.jitter_millisec) for i in items]
-        if metric == MetricType.PACKET_LOSS:
-            return [(i.timestamp, i.packet_loss_percent) for i in items]
-
-        return []
+        return [(i.timestamp, i.get_metric(type).value) for i in items]
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         return self.connection_matrix.connection(from_agent, to_agent)

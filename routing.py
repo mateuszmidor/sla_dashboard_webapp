@@ -2,7 +2,7 @@ import logging
 import urllib.parse as urlparse
 from typing import Tuple
 
-from domain.metric_type import MetricType
+from domain.metric import MetricType
 from domain.types import AgentID
 
 MAIN = "/"

@@ -8,10 +8,10 @@ import dash_html_components as html
 from domain.config import Config, MatrixCellColor
 from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
-from domain.metric_type import MetricType
+from domain.metric import MetricType, MetricValue
 from domain.model import MeshResults
 from domain.model.mesh_results import Agents, HealthItem, MeshColumn
-from domain.types import AgentID, MetricValue, Threshold
+from domain.types import AgentID, Threshold
 
 # Connections are displayed as a matrix using dcc.Graph component.
 # The Graph is configured as a heatmap.
@@ -174,8 +174,8 @@ class MatrixView:
             colorscale=self._color_scale,
         )
 
-    def make_sla_levels(self, mesh: MeshResults, metric: MetricType) -> List[SLALevelColumn]:
-        thresholds = self.get_thresholds(metric)
+    def make_sla_levels(self, mesh: MeshResults, type: MetricType) -> List[SLALevelColumn]:
+        thresholds = self.get_thresholds(type)
         sla_levels: List[SLALevelColumn] = []
 
         for from_id in reversed(mesh.connection_matrix.agent_ids):
@@ -187,8 +187,8 @@ class MatrixView:
                 critical = thresholds.critical(from_id, to_id)
                 health = mesh.connection(from_id, to_id).latest_measurement
                 if health:
-                    value = self.get_metric_value(metric, health)
-                    sla_level = self.get_sla_level(value, warning, critical)
+                    metric = health.get_metric(type)
+                    sla_level = self.get_sla_level(metric.value, warning, critical)
                 else:
                     sla_level = SLALevel.NODATA
                 sla_levels_col.append(sla_level)
@@ -207,14 +207,6 @@ class MatrixView:
             return self._config.jitter
         return self._config.packet_loss
 
-    @staticmethod
-    def get_metric_value(metric: MetricType, health: HealthItem) -> MetricValue:
-        if metric == MetricType.LATENCY:
-            return health.latency_millisec
-        if metric == MetricType.JITTER:
-            return health.jitter_millisec
-        return health.packet_loss_percent
-
     @classmethod
     def make_figure_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
         annotations: List[Dict] = []
@@ -225,39 +217,22 @@ class MatrixView:
                 from_agent = mesh.agents.get_by_id(from_id)
                 to_agent = mesh.agents.get_by_id(to_id)
                 health = mesh.connection(from_agent.id, to_agent.id).latest_measurement
-                text = cls.format_health(metric, health)
+                text = cls.format_health(metric, health, False, "")
                 annotations.append(
                     dict(showarrow=False, text=text, xref="x", yref="y", x=to_agent.alias, y=from_agent.alias)
                 )
         return annotations
 
     @staticmethod
-    def format_health(metric: MetricType, health: Optional[HealthItem], include_unit: bool = False) -> str:
-        not_available = "N/A"
-
+    def format_health(type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
         if not health:
-            return not_available
+            return nan
 
-        if metric == MetricType.LATENCY:
-            if math.isnan(health.latency_millisec):
-                return not_available
-            result = f"{(health.latency_millisec):.2f}"
-            if include_unit:
-                result += " ms"
-            return result
+        metric = health.get_metric(type)
+        if math.isnan(metric.value):
+            return nan
 
-        if metric == MetricType.JITTER:
-            if math.isnan(health.jitter_millisec):
-                return not_available
-            result = f"{(health.jitter_millisec):.2f}"
-            if include_unit:
-                result += " ms"
-            return result
-
-        result = f"{health.packet_loss_percent:.1f}"
-        if include_unit:
-            result += "%"
-        return result
+        return "{:.2f}{}".format(metric.value, metric.unit if include_unit else "")
 
     def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         # make hover text for each cell in the matrix
