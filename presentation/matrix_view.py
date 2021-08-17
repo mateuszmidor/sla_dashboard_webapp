@@ -10,7 +10,7 @@ from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
 from domain.metric import MetricType, MetricValue
 from domain.model import MeshResults
-from domain.model.mesh_results import Agents, HealthItem, MeshColumn
+from domain.model.mesh_results import Agents, HealthItem
 from domain.types import AgentID, Threshold
 
 # Connections are displayed as a matrix using dcc.Graph component.
@@ -80,11 +80,7 @@ class MatrixView:
                                 html.Label("Select primary metric:", className="select_label"),
                                 dcc.Dropdown(
                                     id=self.METRIC_SELECTOR,
-                                    options=[
-                                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
-                                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
-                                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
-                                    ],
+                                    options=[{"label": f"{m.value}", "value": m.value} for m in MetricType],
                                     value=metric.value,
                                     clearable=False,
                                     className="dropdowns",
@@ -152,7 +148,6 @@ class MatrixView:
             showlegend=False,
             autosize=True,
         )
-
         return {"data": [data], "layout": layout}
 
     def make_figure_data(self, mesh: MeshResults, metric: MetricType) -> Dict:
@@ -265,9 +260,8 @@ class MatrixView:
 
         health = conn.latest_measurement
         if health:
-            cell_hover_text.append(f"Latency: {self.format_health(MetricType.LATENCY, health, True)}")
-            cell_hover_text.append(f"Jitter: {self.format_health(MetricType.JITTER, health, True)}")
-            cell_hover_text.append(f"Loss: {self.format_health(MetricType.PACKET_LOSS, health, True)}")
+            for m in MetricType:
+                cell_hover_text.append(f"{m.value}: {self.format_health(m, health, True)}")
             cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
         else:
             # no data available for this connection

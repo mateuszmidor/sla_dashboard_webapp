@@ -10,9 +10,9 @@ MetricValue = float
 class MetricType(Enum):
     """Available mesh test metric types"""
 
-    LATENCY = "Latency[ms]"
-    JITTER = "Jitter[ms]"
-    PACKET_LOSS = "Packet loss[%]"
+    LATENCY = "Latency"
+    JITTER = "Jitter"
+    PACKET_LOSS = "Packet loss"
 
 
 @dataclass

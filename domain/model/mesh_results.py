@@ -181,12 +181,14 @@ class MeshResults:
     def incremental_update(self, src: MeshResults) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
-        if not self.agents.equals(src.agents):
-            logger.warning("Mesh test agents configuration mismatch. Skipping incremental update")
-            return
+        if not self.can_incremental_update(src):
+            raise Exception("Can't do incremental update - mesh test agents configuration mismatch")
 
         self.utc_last_updated = datetime.now(timezone.utc)
         self.connection_matrix.incremental_update(src.connection_matrix)
+
+    def can_incremental_update(self, src: MeshResults) -> bool:
+        return self.agents.equals(src.agents)
 
     def filter(self, from_agent, to_agent: AgentID, type: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health

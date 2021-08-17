@@ -47,7 +47,7 @@ class CachedRepoRequestDriven:
 
     def _update_cache_with(self, results: MeshResults) -> None:
         with self._cache_access_lock:
-            if self._cache_test_results.agents.equals(results.agents):
+            if self._cache_test_results.can_incremental_update(results):
                 logger.debug("Incremental cache update")
                 self._cache_test_results.incremental_update(results)
             else:
