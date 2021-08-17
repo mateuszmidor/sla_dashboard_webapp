@@ -6,6 +6,3 @@ TestID = str
 
 Threshold = float
 """ latency and jitter in milliseconds, packet_loss in percent (0-100) """
-
-MetricValue = float
-""" latency and jitter in milliseconds, packet_loss in percent (0-100) """

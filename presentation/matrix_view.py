@@ -1,3 +1,4 @@
+import math
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -7,10 +8,10 @@ import dash_html_components as html
 from domain.config import Config, MatrixCellColor
 from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
-from domain.metric_type import MetricType
+from domain.metric import MetricType, MetricValue
 from domain.model import MeshResults
-from domain.model.mesh_results import Agents, MeshColumn
-from domain.types import AgentID, MetricValue, Threshold
+from domain.model.mesh_results import Agents, HealthItem
+from domain.types import AgentID, Threshold
 
 # Connections are displayed as a matrix using dcc.Graph component.
 # The Graph is configured as a heatmap.
@@ -46,7 +47,8 @@ class MatrixView:
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestampISO = mesh.utc_timestamp.isoformat()
+        timestamp_low_ISO = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else None
+        timestamp_high_ISO = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else None
         header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
         return html.Div(
@@ -56,32 +58,29 @@ class MatrixView:
                     children=[
                         html.H2(
                             children=[
-                                html.Span("Last update: "),
+                                html.Span("Data timestamp range: "),
                                 html.Span(
-                                    "<test_results_date_time>",
+                                    "<test_results_timestamp_low>",
                                     className="header-timestamp",
-                                    id="current-timestamp",
-                                    title=timestampISO,
+                                    id="timestamp-low",
+                                    title=timestamp_low_ISO,
                                 ),
+                                html.Span(" - ", className="header-timestamp"),
                                 html.Span(
-                                    self._config.data_update_period_seconds,
-                                    className="header-time-interval",
-                                    id="timeinterval",
+                                    "<test_results_timestamp_high>",
+                                    className="header-timestamp",
+                                    id="timestamp-high",
+                                    title=timestamp_high_ISO,
                                 ),
                             ],
                             className="header__subTitle",
                         ),
-                        html.Div("warning: data is stale", className="header-stale-data-warning"),
                         html.Div(
                             children=[
                                 html.Label("Select primary metric:", className="select_label"),
                                 dcc.Dropdown(
                                     id=self.METRIC_SELECTOR,
-                                    options=[
-                                        {"label": "Latency [ms]", "value": MetricType.LATENCY.value},
-                                        {"label": "Jitter [ms]", "value": MetricType.JITTER.value},
-                                        {"label": "Packet loss [%]", "value": MetricType.PACKET_LOSS.value},
-                                    ],
+                                    options=[{"label": f"{m.value}", "value": m.value} for m in MetricType],
                                     value=metric.value,
                                     clearable=False,
                                     className="dropdowns",
@@ -92,8 +91,7 @@ class MatrixView:
                         html.Div(
                             children=[
                                 html.Div(
-                                    dcc.Graph(id=self.MATRIX, figure=fig, responsive=True),
-                                    className="chart__default",
+                                    dcc.Graph(id=self.MATRIX, figure=fig, responsive=True), className="chart__default"
                                 ),
                                 html.Div(
                                     children=[
@@ -134,7 +132,7 @@ class MatrixView:
                     ],
                     className="main_container",
                 ),
-            ],
+            ]
         )
 
     def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:
@@ -150,11 +148,11 @@ class MatrixView:
             showlegend=False,
             autosize=True,
         )
-
         return {"data": [data], "layout": layout}
 
     def make_figure_data(self, mesh: MeshResults, metric: MetricType) -> Dict:
-        x_labels = [mesh.agents.get_by_id(row.agent_id).alias for row in mesh.rows]
+
+        x_labels = [mesh.agents.get_by_id(agent_id).alias for agent_id in mesh.connection_matrix.agent_ids]
         y_labels = list(reversed(x_labels))
         sla_levels = self.make_sla_levels(mesh, metric)
         return dict(
@@ -171,27 +169,29 @@ class MatrixView:
             colorscale=self._color_scale,
         )
 
-    def make_sla_levels(self, mesh: MeshResults, metric: MetricType) -> List[SLALevelColumn]:
-        thresholds = self.get_thresholds(metric)
+    def make_sla_levels(self, mesh: MeshResults, type: MetricType) -> List[SLALevelColumn]:
+        thresholds = self.get_thresholds(type)
         sla_levels: List[SLALevelColumn] = []
 
-        for row in reversed(mesh.rows):
+        for from_id in reversed(mesh.connection_matrix.agent_ids):
             sla_levels_col: SLALevelColumn = []
-            for col in row.columns:
-                warning = thresholds.warning(row.agent_id, col.agent_id)
-                critical = thresholds.critical(row.agent_id, col.agent_id)
-                connection = mesh.connection(row.agent_id, col.agent_id)
-                if connection.has_no_data():
-                    sla_level = SLALevel.NODATA
+            for to_id in mesh.connection_matrix.agent_ids:
+                if from_id == to_id:
+                    continue
+                warning = thresholds.warning(from_id, to_id)
+                critical = thresholds.critical(from_id, to_id)
+                health = mesh.connection(from_id, to_id).latest_measurement
+                if health:
+                    metric = health.get_metric(type)
+                    sla_level = self.get_sla_level(metric.value, warning, critical)
                 else:
-                    value = self.get_metric_value(metric, connection)
-                    sla_level = self.get_sla_level(value, warning, critical)
+                    sla_level = SLALevel.NODATA
                 sla_levels_col.append(sla_level)
             sla_levels.append(sla_levels_col)
 
         # mark matrix diagonal, use alternating SLALevel._MIN and SLALevel._MAX
         # to ensure matrix contains values in full range 0..1 - to match the color scale
-        for i in range(len(mesh.rows)):
+        for i in range(len(mesh.connection_matrix.agent_ids)):
             sla_levels[-(i + 1)].insert(i, SLALevel(i % 2))
         return sla_levels
 
@@ -202,54 +202,47 @@ class MatrixView:
             return self._config.jitter
         return self._config.packet_loss
 
-    @staticmethod
-    def get_metric_value(metric: MetricType, cell: MeshColumn) -> MetricValue:
-        if metric == MetricType.LATENCY:
-            return cell.latency_millisec.value
-        if metric == MetricType.JITTER:
-            return cell.jitter_millisec.value
-        return cell.packet_loss_percent.value
-
     @classmethod
     def make_figure_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
         annotations: List[Dict] = []
-        for row in reversed(mesh.rows):
-            for col in row.columns:
-                from_agent = mesh.agents.get_by_id(row.agent_id)
-                to_agent = mesh.agents.get_by_id(col.agent_id)
-                text = cls.get_text(metric, mesh.connection(from_agent.id, to_agent.id))
+        for from_id in reversed(mesh.connection_matrix.agent_ids):
+            for to_id in mesh.connection_matrix.agent_ids:
+                if from_id == to_id:
+                    continue
+                from_agent = mesh.agents.get_by_id(from_id)
+                to_agent = mesh.agents.get_by_id(to_id)
+                health = mesh.connection(from_agent.id, to_agent.id).latest_measurement
+                text = cls.format_health(metric, health, False, "")
                 annotations.append(
-                    dict(
-                        showarrow=False,
-                        text=text,
-                        xref="x",
-                        yref="y",
-                        x=to_agent.alias,
-                        y=from_agent.alias,
-                    )
+                    dict(showarrow=False, text=text, xref="x", yref="y", x=to_agent.alias, y=from_agent.alias)
                 )
         return annotations
 
     @staticmethod
-    def get_text(metric: MetricType, cell: MeshColumn) -> str:
-        if metric == MetricType.LATENCY:
-            return f"{(cell.latency_millisec.value):.2f}"
-        if metric == MetricType.JITTER:
-            return f"{(cell.jitter_millisec.value):.2f}"
-        return f"{cell.packet_loss_percent.value:.1f}"
+    def format_health(type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
+        if not health:
+            return nan
+
+        metric = health.get_metric(type)
+        if math.isnan(metric.value):
+            return nan
+
+        return "{:.2f}{}".format(metric.value, metric.unit if include_unit else "")
 
     def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         # make hover text for each cell in the matrix
         matrix_hover_text: List[List[str]] = []
-        for row in reversed(mesh.rows):
+        for from_id in reversed(mesh.connection_matrix.agent_ids):
             column_hover_text: List[str] = []
-            for col in row.columns:
-                text = self.make_cell_hover_text(row.agent_id, col.agent_id, mesh)
+            for to_id in mesh.connection_matrix.agent_ids:
+                if from_id == to_id:
+                    continue
+                text = self.make_cell_hover_text(from_id, to_id, mesh)
                 column_hover_text.append(text)
             matrix_hover_text.append(column_hover_text)
 
         # insert blank diagonal into matrix
-        for i in range(len(mesh.rows)):
+        for i in range(len(mesh.connection_matrix.agent_ids)):
             matrix_hover_text[-(i + 1)].insert(i, "")
 
         return matrix_hover_text
@@ -261,22 +254,25 @@ class MatrixView:
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        cell_hover_text = [
-            f"{from_agent.alias} -> {to_agent.alias}",
-            f"Distance: {distance:.0f} {distance_unit.value}",
-        ]
+        cell_hover_text: List[str] = []
+        cell_hover_text.append(f"{from_agent.alias} -> {to_agent.alias}")
+        cell_hover_text.append(f"Distance: {distance:.0f} {distance_unit.value}")
 
-        if conn.has_no_data():
-            cell_hover_text.append("NO DATA")
+        health = conn.latest_measurement
+        if health:
+            for m in MetricType:
+                cell_hover_text.append(f"{m.value}: {self.format_health(m, health, True)}")
+            cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
         else:
-            cell_hover_text.append(f"Latency: {conn.latency_millisec.value:.2f} ms")
-            cell_hover_text.append(f"Jitter: {conn.jitter_millisec.value:.2f} ms")
-            cell_hover_text.append(f"Loss: {conn.packet_loss_percent.value:.1f}%")
+            # no data available for this connection
+            cell_hover_text.append("NO DATA")
 
         return "<br>".join(cell_hover_text)
 
     @staticmethod
     def get_sla_level(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> SLALevel:
+        if math.isnan(val):
+            return SLALevel.NODATA
         if val < warning_threshold:
             return SLALevel.HEALTHY
         if val < critical_threshold:

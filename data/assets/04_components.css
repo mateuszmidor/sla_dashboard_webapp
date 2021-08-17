@@ -51,24 +51,7 @@
   text-decoration: none;
 }
 
-/* Stale data warning (matrix view) */
-.header-stale-data-warning {
-  opacity: 0;
-  color: var(--warning-color);
-  margin-bottom: 20px;
-  transition: opacity 0.5s linear;
-  visibility: hidden;
-  font-weight: bold;
-}
-.header-stale-data-warning-visible{
-  opacity: 1;
-  visibility: visible;
-}
-
 /* Data timestamp label (matrix view) */
 .header-timestamp{
   margin-left: 10px;
-}
-.header-time-interval{
-  display: none;
 }

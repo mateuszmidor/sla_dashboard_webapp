@@ -1,10 +1,15 @@
+from __future__ import annotations
+
+import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from domain.geo import Coordinates
-from domain.metric_type import MetricType
-from domain.types import AgentID, MetricValue
+from domain.metric import Metric, MetricType, MetricValue
+from domain.types import AgentID
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -19,6 +24,9 @@ class Agent:
 class Agents:
     def __init__(self) -> None:
         self._agents: Dict[AgentID, Agent] = {}
+
+    def equals(self, other: Agents) -> bool:
+        return self._agents == other._agents
 
     def get_by_id(self, agent_id: AgentID) -> Agent:
         if agent_id in self._agents:
@@ -41,22 +49,29 @@ class Agents:
         self._agents[agent.id] = agent
 
 
-@dataclass
-class Metric:
-    """Represents single from->to connection metric"""
-
-    health: str = ""  # "healthy", "warning", ...
-    value: MetricValue = MetricValue()
-
-
-@dataclass
 class HealthItem:
     """Represents single from->to connection health time-series entry"""
 
-    jitter_millisec: MetricValue
-    latency_millisec: MetricValue
-    packet_loss_percent: MetricValue
-    time: datetime
+    def __init__(self, jitter_millisec, latency_millisec, packet_loss_percent: MetricValue, time: datetime) -> None:
+        self.timestamp = time
+        self.packet_loss_percent = Metric.loss(packet_loss_percent)
+
+        # if packet loss is 100%, then jitter and latency measurements do not apply
+        self.jitter_millisec = Metric.jitter(
+            jitter_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
+        )
+        self.latency_millisec = Metric.latency(
+            latency_millisec if packet_loss_percent < MetricValue(100) else MetricValue("nan")
+        )
+
+    def get_metric(self, type: MetricType) -> Metric:
+        if type == MetricType.LATENCY:
+            return self.latency_millisec
+        if type == MetricType.JITTER:
+            return self.jitter_millisec
+        if type == MetricType.PACKET_LOSS:
+            return self.packet_loss_percent
+        raise Exception(f"MetricType not supported: {type}")
 
 
 @dataclass
@@ -64,13 +79,22 @@ class MeshColumn:
     """Represents connection "to" endpoint"""
 
     agent_id: AgentID = AgentID()
-    jitter_millisec: Metric = Metric()
-    latency_millisec: Metric = Metric()
-    packet_loss_percent: Metric = Metric()
-    health: List[HealthItem] = field(default_factory=list)
+    health: List[HealthItem] = field(default_factory=list)  # sorted by timestamp from newest to oldest
 
-    def has_no_data(self) -> bool:
-        return self.packet_loss_percent.value == MetricValue(100) or len(self.health) == 0
+    @property
+    def latest_measurement(self) -> Optional[HealthItem]:
+        """Latest connection health measurement, if available"""
+
+        return self.health[0] if self.health else None
+
+    def has_data(self) -> bool:
+        """
+        Determines if there are any observations available for this connection.
+        Lack of observations may be caused by specyfing incorrect time window in tests health request,
+        or by the test itself being in paused state.
+        """
+
+        return len(self.health) > 0
 
 
 class MeshRow:
@@ -89,12 +113,30 @@ class ConnectionMatrix:
     """
 
     def __init__(self, rows: List[MeshRow]) -> None:
+        agent_ids: List[AgentID] = []
         connections: Dict[AgentID, Dict[AgentID, MeshColumn]] = {}
         for row in rows:
+            agent_ids.append(row.agent_id)
             connections[row.agent_id] = {}
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
         self._connections = connections
+        self.agent_ids = sorted(agent_ids)
+        self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
+
+    def incremental_update(self, src: ConnectionMatrix) -> None:
+        """
+        Update with src connections, add new connections if any, don't remove anything.
+        Prerequisite: agents configuration hasn't change.
+        """
+
+        for from_agent_id in src._connections.keys():
+            dst_row = self._connections[from_agent_id]  # get or insert
+            for to_agent_id, connection in src._connections[from_agent_id].items():
+                # add or update connection
+                if to_agent_id not in dst_row or connection.has_data():
+                    dst_row[to_agent_id] = connection
+        self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         if from_agent not in self._connections:
@@ -102,6 +144,22 @@ class ConnectionMatrix:
         if to_agent not in self._connections[from_agent]:
             return MeshColumn()
         return self._connections[from_agent][to_agent]
+
+    def _get_lowest_highest_timestamp(self) -> Tuple[Optional[datetime], Optional[datetime]]:
+        lowest: Optional[datetime] = None
+        highest: Optional[datetime] = None
+
+        for row in self._connections.values():
+            for col in row.values():
+                health = col.latest_measurement
+                if not health:
+                    continue
+                if lowest is None or health.timestamp < lowest:
+                    lowest = health.timestamp
+                if highest is None or health.timestamp > highest:
+                    highest = health.timestamp
+
+        return lowest, highest
 
 
 class MeshResults:
@@ -111,30 +169,42 @@ class MeshResults:
     """
 
     def __init__(
-        self,
-        utc_timestamp: datetime,
-        rows: Optional[List[MeshRow]] = None,
-        agents: Agents = Agents(),
+        self, utc_last_updated: datetime, rows: Optional[List[MeshRow]] = None, agents: Agents = Agents()
     ) -> None:
-        self.utc_timestamp = utc_timestamp
-        if rows is not None:
-            self.rows = sorted(rows, key=lambda x: x.agent_id)
-        else:
-            self.rows = []
+
+        # utc_last_updated is when the data was fetched from the server, as opposed to when the data was actually collected.
+        # the latter is a property of MeshColumn
+        self.utc_last_updated = utc_last_updated
         self.agents = agents
-        self._connection_matrix = ConnectionMatrix(self.rows)
+        self.connection_matrix = ConnectionMatrix(rows if rows else [])
 
-    def filter(self, from_agent, to_agent: AgentID, metric: MetricType) -> List[Tuple[datetime, MetricValue]]:
+    def incremental_update(self, src: MeshResults) -> None:
+        """Update with src data, add new pieces of data if any, don't remove anything"""
+
+        if not self.can_incremental_update(src):
+            raise Exception("Can't do incremental update - mesh test agents configuration mismatch")
+
+        self.utc_last_updated = datetime.now(timezone.utc)
+        self.connection_matrix.incremental_update(src.connection_matrix)
+
+    def can_incremental_update(self, src: MeshResults) -> bool:
+        return self.agents.equals(src.agents)
+
+    def filter(self, from_agent, to_agent: AgentID, type: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health
-
-        if metric == MetricType.LATENCY:
-            return [(i.time, i.latency_millisec) for i in items]
-        if metric == MetricType.JITTER:
-            return [(i.time, i.jitter_millisec) for i in items]
-        if metric == MetricType.PACKET_LOSS:
-            return [(i.time, i.packet_loss_percent) for i in items]
-
-        return []
+        return [(i.timestamp, i.get_metric(type).value) for i in items]
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
-        return self._connection_matrix.connection(from_agent, to_agent)
+        return self.connection_matrix.connection(from_agent, to_agent)
+
+    @property
+    def utc_timestamp_low(self) -> Optional[datetime]:
+        """utc_timestamp_low can be None if there was no health data for specified time window (empty MeshResults)"""
+
+        return self.connection_matrix.connection_timestamp_lowest
+
+    @property
+    def utc_timestamp_high(self) -> Optional[datetime]:
+        """utc_timestamp_high can be None if there was no health data for specified time window (empty MeshResults)"""
+
+        return self.connection_matrix.connection_timestamp_highest
