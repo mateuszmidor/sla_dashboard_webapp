@@ -3,7 +3,7 @@ FROM python:3.9-slim
 
 # install GCC, that is needed by `pip install` on ARM64
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential=12.6 && \
+    apt-get install -y --no-install-recommends build-essential=12.9 && \
     rm -rf /var/lib/apt/lists/*
 
 # setup non-root user
