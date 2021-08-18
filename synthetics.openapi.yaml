@@ -50,6 +50,7 @@ paths:
                 $ref: "#/components/schemas/rpcStatus"
       parameters:
         - name: agent.id
+          description: id of this agent.
           in: path
           required: true
           schema:
@@ -388,6 +389,7 @@ components:
       properties:
         id:
           type: string
+          description: id of this agent.
         name:
           type: string
         status:
@@ -431,6 +433,8 @@ components:
           items:
             type: string
         localIp:
+          type: string
+        cloudVpc:
           type: string
     v202101beta1AgentHealth:
       type: object
@@ -907,6 +911,8 @@ components:
           $ref: "#/components/schemas/v202101beta1Agent"
         mask:
           type: string
+          title: CSV values of fields follow the path of Agent object with dot
+            notation (ie. "agent.alias,export.type")
     v202101beta1PatchAgentResponse:
       type: object
       properties:
@@ -919,6 +925,8 @@ components:
           $ref: "#/components/schemas/v202101beta1Test"
         mask:
           type: string
+          title: CSV values of fields follow the path of Test object with dot
+            notation (ie. "test.name,test.settings")
     v202101beta1PatchTestResponse:
       type: object
       properties:
