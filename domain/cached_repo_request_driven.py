@@ -41,7 +41,10 @@ class CachedRepoRequestDriven:
         try:
             results = self._source_repo.get_mesh_test_results(self._test_id, self._lookback_seconds)
             self._update_cache_with(results)
-            logger.debug("Updating data cache successful")
+            logger.debug(
+                "Updating data cache finished with %d items",
+                results.connection_matrix.num_connections_with_health_data(),
+            )
         except Exception as err:
             logger.exception("Updating data cache error")
 

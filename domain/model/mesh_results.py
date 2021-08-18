@@ -48,6 +48,10 @@ class Agents:
     def insert(self, agent: Agent) -> None:
         self._agents[agent.id] = agent
 
+    @property
+    def sorted_ids(self) -> List[AgentID]:
+        return sorted(self._agents.keys())
+
 
 class HealthItem:
     """Represents single from->to connection health time-series entry"""
@@ -113,16 +117,21 @@ class ConnectionMatrix:
     """
 
     def __init__(self, rows: List[MeshRow]) -> None:
-        agent_ids: List[AgentID] = []
         connections: Dict[AgentID, Dict[AgentID, MeshColumn]] = {}
         for row in rows:
-            agent_ids.append(row.agent_id)
             connections[row.agent_id] = {}
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
         self._connections = connections
-        self.agent_ids = sorted(agent_ids)
         self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
+
+    def num_connections_with_health_data(self) -> int:
+        count = 0
+        for row in self._connections.values():
+            for conn in row.values():
+                if conn.has_data():
+                    count += 1
+        return count
 
     def incremental_update(self, src: ConnectionMatrix) -> None:
         """
@@ -131,11 +140,13 @@ class ConnectionMatrix:
         """
 
         for from_agent_id in src._connections.keys():
-            dst_row = self._connections[from_agent_id]  # get or insert
+            dst_row = self._connections.get(from_agent_id, {})  # get or create dst_row
             for to_agent_id, connection in src._connections[from_agent_id].items():
                 # add or update connection
                 if to_agent_id not in dst_row or connection.has_data():
                     dst_row[to_agent_id] = connection
+            self._connections[from_agent_id] = dst_row
+
         self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:

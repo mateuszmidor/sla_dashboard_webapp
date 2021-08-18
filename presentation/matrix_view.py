@@ -46,94 +46,97 @@ class MatrixView:
         self._color_scale = self._make_color_scale()
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
+        title = "SLA Dashboard"
+        if mesh.connection_matrix.num_connections_with_health_data() > 0:
+            content = self.make_matrix_content(mesh, metric)
+        else:
+            content = self.make_no_data_content()
+
+        return html.Div(
+            children=[
+                html.H1(children=title, className="header_main"),
+                html.Div(children=content, className="main_container"),
+            ]
+        )
+
+    def make_matrix_content(self, mesh: MeshResults, metric: MetricType) -> List:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
         timestamp_low_ISO = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else None
         timestamp_high_ISO = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else None
-        header = "SLA Dashboard"
         fig = self.make_figure(mesh, metric)
-        return html.Div(
-            children=[
-                html.H1(children=header, className="header_main"),
-                html.Div(
-                    children=[
-                        html.H2(
-                            children=[
-                                html.Span("Data timestamp range: "),
-                                html.Span(
-                                    "<test_results_timestamp_low>",
-                                    className="header-timestamp",
-                                    id="timestamp-low",
-                                    title=timestamp_low_ISO,
-                                ),
-                                html.Span(" - ", className="header-timestamp"),
-                                html.Span(
-                                    "<test_results_timestamp_high>",
-                                    className="header-timestamp",
-                                    id="timestamp-high",
-                                    title=timestamp_high_ISO,
-                                ),
-                            ],
-                            className="header__subTitle",
-                        ),
-                        html.Div(
-                            children=[
-                                html.Label("Select primary metric:", className="select_label"),
-                                dcc.Dropdown(
-                                    id=self.METRIC_SELECTOR,
-                                    options=[{"label": f"{m.value}", "value": m.value} for m in MetricType],
-                                    value=metric.value,
-                                    clearable=False,
-                                    className="dropdowns",
-                                ),
-                            ],
-                            className="select_container",
-                        ),
-                        html.Div(
-                            children=[
-                                html.Div(
-                                    dcc.Graph(id=self.MATRIX, figure=fig, responsive=True), className="chart__default"
-                                ),
-                                html.Div(
-                                    children=[
-                                        html.Label(
-                                            "Healthy", className="chart_legend__label chart_legend__label_healthy"
-                                        ),
-                                        html.Div(
-                                            className="chart_legend__cell",
-                                            style={"background": self._config.matrix.cell_color_healthy},
-                                        ),
-                                        html.Label(
-                                            "Warning", className="chart_legend__label chart_legend__label_warning"
-                                        ),
-                                        html.Div(
-                                            className="chart_legend__cell",
-                                            style={"background": self._config.matrix.cell_color_warning},
-                                        ),
-                                        html.Label(
-                                            "Critical", className="chart_legend__label chart_legend__label_critical"
-                                        ),
-                                        html.Div(
-                                            className="chart_legend__cell",
-                                            style={"background": self._config.matrix.cell_color_critical},
-                                        ),
-                                        html.Label(
-                                            "No data", className="chart_legend__label chart_legend__label_nodata"
-                                        ),
-                                        html.Div(
-                                            className="chart_legend__cell",
-                                            style={"background": self._config.matrix.cell_color_nodata},
-                                        ),
-                                    ],
-                                    className="chart_legend",
-                                ),
-                            ],
-                            className="chart_container",
-                        ),
-                    ],
-                    className="main_container",
-                ),
-            ]
-        )
+
+        return [
+            html.H2(
+                children=[
+                    html.Span("Data timestamp range: "),
+                    html.Span(
+                        "<test_results_timestamp_low>",
+                        className="header-timestamp",
+                        id="timestamp-low",
+                        title=timestamp_low_ISO,
+                    ),
+                    html.Span(" - ", className="header-timestamp"),
+                    html.Span(
+                        "<test_results_timestamp_high>",
+                        className="header-timestamp",
+                        id="timestamp-high",
+                        title=timestamp_high_ISO,
+                    ),
+                ],
+                className="header__subTitle",
+            ),
+            html.Div(
+                children=[
+                    html.Label("Select primary metric:", className="select_label"),
+                    dcc.Dropdown(
+                        id=self.METRIC_SELECTOR,
+                        options=[{"label": f"{m.value}", "value": m.value} for m in MetricType],
+                        value=metric.value,
+                        clearable=False,
+                        className="dropdowns",
+                    ),
+                ],
+                className="select_container",
+            ),
+            html.Div(
+                children=[
+                    html.Div(
+                        dcc.Graph(id=self.MATRIX, figure=fig, responsive=True),
+                        className="chart__default",
+                    ),
+                    html.Div(
+                        children=[
+                            html.Label("Healthy", className="chart_legend__label chart_legend__label_healthy"),
+                            html.Div(
+                                className="chart_legend__cell",
+                                style={"background": self._config.matrix.cell_color_healthy},
+                            ),
+                            html.Label("Warning", className="chart_legend__label chart_legend__label_warning"),
+                            html.Div(
+                                className="chart_legend__cell",
+                                style={"background": self._config.matrix.cell_color_warning},
+                            ),
+                            html.Label("Critical", className="chart_legend__label chart_legend__label_critical"),
+                            html.Div(
+                                className="chart_legend__cell",
+                                style={"background": self._config.matrix.cell_color_critical},
+                            ),
+                            html.Label("No data", className="chart_legend__label chart_legend__label_nodata"),
+                            html.Div(
+                                className="chart_legend__cell",
+                                style={"background": self._config.matrix.cell_color_nodata},
+                            ),
+                        ],
+                        className="chart_legend",
+                    ),
+                ],
+                className="chart_container",
+            ),
+        ]
+
+    def make_no_data_content(self) -> List:
+        no_data = f"No test results available for the last {int(self._config.data_update_lookback_seconds/60)} minutes"
+        return [html.H1(no_data), html.Br(), html.Br()]
 
     def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:
         data = self.make_figure_data(mesh, metric)
@@ -151,8 +154,7 @@ class MatrixView:
         return {"data": [data], "layout": layout}
 
     def make_figure_data(self, mesh: MeshResults, metric: MetricType) -> Dict:
-
-        x_labels = [mesh.agents.get_by_id(agent_id).alias for agent_id in mesh.connection_matrix.agent_ids]
+        x_labels = [mesh.agents.get_by_id(agent_id).alias for agent_id in mesh.agents.sorted_ids]
         y_labels = list(reversed(x_labels))
         sla_levels = self.make_sla_levels(mesh, metric)
         return dict(
@@ -173,9 +175,9 @@ class MatrixView:
         thresholds = self.get_thresholds(type)
         sla_levels: List[SLALevelColumn] = []
 
-        for from_id in reversed(mesh.connection_matrix.agent_ids):
+        for from_id in reversed(mesh.agents.sorted_ids):
             sla_levels_col: SLALevelColumn = []
-            for to_id in mesh.connection_matrix.agent_ids:
+            for to_id in mesh.agents.sorted_ids:
                 if from_id == to_id:
                     continue
                 warning = thresholds.warning(from_id, to_id)
@@ -191,7 +193,7 @@ class MatrixView:
 
         # mark matrix diagonal, use alternating SLALevel._MIN and SLALevel._MAX
         # to ensure matrix contains values in full range 0..1 - to match the color scale
-        for i in range(len(mesh.connection_matrix.agent_ids)):
+        for i in range(len(mesh.agents.sorted_ids)):
             sla_levels[-(i + 1)].insert(i, SLALevel(i % 2))
         return sla_levels
 
@@ -205,8 +207,8 @@ class MatrixView:
     @classmethod
     def make_figure_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
         annotations: List[Dict] = []
-        for from_id in reversed(mesh.connection_matrix.agent_ids):
-            for to_id in mesh.connection_matrix.agent_ids:
+        for from_id in reversed(mesh.agents.sorted_ids):
+            for to_id in mesh.agents.sorted_ids:
                 if from_id == to_id:
                     continue
                 from_agent = mesh.agents.get_by_id(from_id)
@@ -232,9 +234,9 @@ class MatrixView:
     def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
         # make hover text for each cell in the matrix
         matrix_hover_text: List[List[str]] = []
-        for from_id in reversed(mesh.connection_matrix.agent_ids):
+        for from_id in reversed(mesh.agents.sorted_ids):
             column_hover_text: List[str] = []
-            for to_id in mesh.connection_matrix.agent_ids:
+            for to_id in mesh.agents.sorted_ids:
                 if from_id == to_id:
                     continue
                 text = self.make_cell_hover_text(from_id, to_id, mesh)
@@ -242,7 +244,7 @@ class MatrixView:
             matrix_hover_text.append(column_hover_text)
 
         # insert blank diagonal into matrix
-        for i in range(len(mesh.connection_matrix.agent_ids)):
+        for i in range(len(mesh.agents.sorted_ids)):
             matrix_hover_text[-(i + 1)].insert(i, "")
 
         return matrix_hover_text
