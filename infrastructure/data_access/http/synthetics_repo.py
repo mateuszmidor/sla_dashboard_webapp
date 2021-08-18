@@ -57,7 +57,6 @@ class SyntheticsRepo:
         # response.health can be an empty list if no measurements were recorded in requested period of time
         # for example: right after mesh test was started, after mesh test was paused
         if len(response.health) == 0:
-            logger.warning("get_health_for_tests: no data for test id '%s' from '%s' to '%s'", test_id, start, end)
             return []
 
         most_recent_result = response.health[-1]
