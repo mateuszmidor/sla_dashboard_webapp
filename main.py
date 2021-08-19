@@ -40,7 +40,7 @@ class WebApp:
             # data access
             repo = SyntheticsRepo(email, token, api_server_url, config.timeout)
             self._cached_repo = CachedRepoRequestDriven(
-                repo, config.test_id, config.data_update_period_seconds, config.data_update_lookback_seconds
+                repo, config.test_id, config.max_measurement_age_seconds, config.data_update_lookback_seconds
             )
 
             # routing
@@ -106,12 +106,12 @@ class WebApp:
 
     def _make_matrix_layout(self, path: str) -> html.Div:
         metric = routing.decode_matrix_path(path)
-        results = self._cached_repo.get_mesh_test_results()
+        results = self._cached_repo.get_mesh_results_all_connections()
         return self._matrix_view.make_layout(results, metric, self._config)
 
     def _make_chart_layout(self, path: str) -> html.Div:
         from_agent, to_agent = routing.decode_chart_path(path)
-        results = self._cached_repo.get_mesh_test_results()
+        results = self._cached_repo.get_mesh_results_single_connection(from_agent, to_agent)
         return self._chart_view.make_layout(from_agent, to_agent, results)
 
     @property

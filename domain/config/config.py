@@ -15,8 +15,8 @@ class Config(Protocol):
         pass
 
     @property
-    def data_update_period_seconds(self) -> int:
-        """Minimal time period between test results cache updates"""
+    def max_measurement_age_seconds(self) -> int:
+        """maximum age of the oldest measurement in the matrix before cache update is triggered"""
         pass
 
     @property

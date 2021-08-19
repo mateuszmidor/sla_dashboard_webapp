@@ -1,8 +1,9 @@
 # ID of the test to display the data matrix for. Assigned by Kentik
 test_id: 3541
 
-# minimal time period between test results cache updates
-data_update_period_seconds: 60
+# maximum age of the oldest measurement in the matrix before cache update is triggered
+# should be at least twice as much as configured test update period to prevent updating the cache at every request
+max_measurement_age_seconds: 120
 
 # time window to fetch the test results for
 data_update_lookback_seconds: 3600

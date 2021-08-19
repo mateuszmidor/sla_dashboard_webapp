@@ -47,7 +47,7 @@ class MatrixView:
 
     def make_layout(self, mesh: MeshResults, metric: MetricType, config: Config) -> html.Div:
         title = "SLA Dashboard"
-        if mesh.connection_matrix.num_connections_with_health_data() > 0:
+        if mesh.connection_matrix.num_connections_with_data() > 0:
             content = self.make_matrix_content(mesh, metric)
         else:
             content = self.make_no_data_content()
@@ -265,6 +265,7 @@ class MatrixView:
             for m in MetricType:
                 cell_hover_text.append(f"{m.value}: {self.format_health(m, health, True)}")
             cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
+            cell_hover_text.append(f"Num measurements: {len(conn.health)}")
         else:
             # no data available for this connection
             cell_hover_text.append("NO DATA")
