@@ -134,6 +134,16 @@ class ConnectionMatrix:
             self._connections[from_agent_id] = dst_row
         self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_timestamp_range()
 
+    def drop_samples_older_than(self, threshold: datetime) -> None:
+        for row in self._connections.values():
+            for conn in row.values():
+                for i, item in enumerate(conn.health):
+                    if item.timestamp < threshold:
+                        logger.debug("Dropping %d samples outside requested time window", len(conn.health) - i)
+                        conn.health = conn.health[:i]
+                        break
+        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_timestamp_range()
+
     def num_connections_with_data(self) -> int:
         count = 0
         for row in self._connections.values():
