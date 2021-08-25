@@ -45,9 +45,7 @@ class SyntheticsRepo:
     ) -> MeshResults:
         try:
             rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, results_lookback_seconds, timeseries)
-            return MeshResults(
-                utc_last_updated=datetime.now(timezone.utc), rows=rows, tasks=tasks, agents=self._get_agents(test_id)
-            )
+            return MeshResults(rows=rows, tasks=tasks, agents=self._get_agents(test_id))
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test ID: {test_id}") from err
 

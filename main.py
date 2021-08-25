@@ -12,7 +12,7 @@ from dash.dependencies import Input, Output
 
 import routing
 
-from domain.cached_repo_request_driven import CachedRepoRequestDriven
+from domain.cache.caching_repo_request_driven import CachingRepoRequestDriven
 from domain.metric import MetricType
 from infrastructure.config import ConfigYAML
 from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
@@ -39,8 +39,12 @@ class WebApp:
 
             # data access
             repo = SyntheticsRepo(email, token, api_server_url, config.timeout)
-            self._cached_repo = CachedRepoRequestDriven(
-                repo, config.test_id, config.max_measurement_age_seconds, config.data_update_lookback_seconds
+            self._cached_repo = CachingRepoRequestDriven(
+                repo,
+                config.test_id,
+                config.max_data_age_seconds,
+                config.data_request_interval_seconds,
+                config.data_update_lookback_seconds,
             )
 
             # routing

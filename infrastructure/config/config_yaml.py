@@ -17,8 +17,12 @@ class ConfigYAML:
         return self._test_id
 
     @property
-    def max_measurement_age_seconds(self) -> int:
-        return self._data_update_seconds
+    def max_data_age_seconds(self) -> int:
+        return self._max_data_age_seconds
+
+    @property
+    def data_request_interval_seconds(self) -> int:
+        return self._data_request_interval_seconds
 
     @property
     def data_update_lookback_seconds(self) -> int:
@@ -58,7 +62,8 @@ class ConfigYAML:
                 config = yaml.load(file, yaml.SafeLoader)
 
             self._test_id = TestID(config["test_id"])
-            self._data_update_seconds = int(config["max_measurement_age_seconds"])
+            self._max_data_age_seconds = int(config["max_data_age_seconds"])
+            self._data_request_interval_seconds = int(config["data_request_interval_seconds"])
             self._data_update_lookback_seconds = int(config["data_update_lookback_seconds"])
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])

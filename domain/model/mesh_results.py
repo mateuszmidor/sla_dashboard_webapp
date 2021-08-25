@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, Generator, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, Generator, List, Optional, Protocol, Tuple
 
 from domain.geo import Coordinates
 from domain.metric import Metric, MetricType, MetricValue
@@ -27,7 +27,7 @@ class Agents:
         self._agents_by_name: Dict[str, Agent] = {}
 
     def equals(self, other: Agents) -> bool:
-        return self._agents == other._agents
+        return sorted(self._agents.keys()) == sorted(other._agents.keys())
 
     def get_by_id(self, agent_id: AgentID) -> Agent:
         return self._agents.get(agent_id, Agent())
@@ -61,6 +61,10 @@ class Agents:
     def all(self, reverse: bool = False) -> Generator[Agent, None, None]:
         for n in sorted(self._agents_by_name.keys(), key=lambda x: x.lower(), reverse=reverse):
             yield self._agents_by_name[n]
+
+    @property
+    def count(self) -> int:
+        return len(self._agents)
 
 
 @dataclass
@@ -155,6 +159,15 @@ class MeshRow:
         return self.agent.id
 
 
+class ConnectionUpdatePolicy(Protocol):
+    """
+    ConnectionUpdatePolicy evaluates an updated version of connection data
+    """
+
+    def update(self, cached_conn: Optional[MeshColumn], update_conn: MeshColumn) -> MeshColumn:
+        pass
+
+
 class ConnectionMatrix:
     """
     ConnectionMatrix holds "fromAgent" -> "toAgent" network connection metrics.
@@ -169,7 +182,20 @@ class ConnectionMatrix:
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
         self._connections = connections
-        self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
+        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_lowest_highest_timestamp()
+
+    def incremental_update(self, src: ConnectionMatrix, policy: ConnectionUpdatePolicy) -> None:
+        """
+        Update with src connections, add new connections if any, don't remove anything.
+        """
+
+        for from_agent_id in src._connections.keys():
+            dst_row = self._connections.get(from_agent_id, {})  # get or create dst_row
+            for to_agent_id, update_conn in src._connections[from_agent_id].items():
+                cached_conn = dst_row.get(to_agent_id)
+                dst_row[to_agent_id] = policy.update(cached_conn, update_conn)
+            self._connections[from_agent_id] = dst_row
+        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_lowest_highest_timestamp()
 
     def num_connections_with_data(self) -> int:
         count = 0
@@ -178,48 +204,6 @@ class ConnectionMatrix:
                 if conn.has_data():
                     count += 1
         return count
-
-    def incremental_update(self, src: ConnectionMatrix) -> None:
-        """
-        Update with src connections, add new connections if any, don't remove anything.
-        Prerequisite: agents configuration hasn't change.
-        """
-
-        for from_agent_id in src._connections.keys():
-            dst_row = self._connections.get(from_agent_id, {})  # get or create dst_row
-            for to_agent_id, received_conn in src._connections[from_agent_id].items():
-                # check if received connection has any measurements at all
-                received_latest = received_conn.latest_measurement
-                if not received_latest:
-                    continue
-
-                # 1. no such connection in cache yet
-                cached_conn = dst_row.get(to_agent_id)
-                if not cached_conn:
-                    dst_row[to_agent_id] = received_conn
-                    continue
-
-                # 2. connection in cache but has no data
-                cached_latest = cached_conn.latest_measurement
-                if not cached_latest:
-                    dst_row[to_agent_id] = received_conn
-                    continue
-
-                # 3. cached connection is older than received connection
-                if cached_latest.timestamp < received_latest.timestamp:
-                    dst_row[to_agent_id] = received_conn
-                    continue
-
-                # 4. cached and received are equally fresh but received brings more data
-                if cached_latest.timestamp == received_latest.timestamp and len(cached_conn.health) < len(
-                    received_conn.health
-                ):
-                    dst_row[to_agent_id] = received_conn
-                    continue
-
-            self._connections[from_agent_id] = dst_row
-
-        self.connection_timestamp_lowest, self.connection_timestamp_highest = self._get_lowest_highest_timestamp()
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         if from_agent not in self._connections:
@@ -253,14 +237,10 @@ class MeshResults:
 
     def __init__(
         self,
-        utc_last_updated: datetime,
         rows: Optional[List[MeshRow]] = None,
         tasks: Tasks = Tasks(),
         agents: Agents = Agents(),
     ) -> None:
-        # The 'utc_last_updated' timestamp indicates time when data was fetched from the server,
-        # as opposed to when it was actually collected. The latter is property of MeshColumn
-        self.utc_last_updated = utc_last_updated
         self.tasks = tasks
         self.agents = agents
         self.connection_matrix = ConnectionMatrix(rows if rows else [])
@@ -290,18 +270,21 @@ class MeshResults:
                 agent.alias = r.agent.alias
                 self.agents.insert(agent)
 
-    def incremental_update(self, src: MeshResults) -> None:
+    def incremental_update(self, src: MeshResults, policy: ConnectionUpdatePolicy) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
         if not self.same_configuration(src):
             raise Exception("Can't do incremental update - mesh test configuration mismatch")
 
         self.tasks.incremental_update(src.tasks)
-        self.connection_matrix.incremental_update(src.connection_matrix)
-        self.utc_last_updated = datetime.now(timezone.utc)
+        self.connection_matrix.incremental_update(src.connection_matrix, policy)
 
     def same_configuration(self, src: MeshResults) -> bool:
         return self.agents.equals(src.agents)
+
+    def data_complete(self) -> bool:
+        total_num_connections = self.agents.count * (self.agents.count - 1)
+        return self.connection_matrix.num_connections_with_data() == total_num_connections
 
     def filter(self, from_agent, to_agent: AgentID, metric_type: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health
@@ -310,12 +293,14 @@ class MeshResults:
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         return self.connection_matrix.connection(from_agent, to_agent)
 
+    def agent_id_to_task_id(self, agent_id: AgentID) -> Optional[TaskID]:
+        agent_ip = self.agents.get_by_id(agent_id).ip
+        task = self.tasks.get_by_ip(agent_ip)
+        return task.id if task else None
+
     @property
     def max_test_period_seconds(self) -> Optional[int]:
-        """
-        Maximum of task configured update periods,
-        None if no task configuration is available.
-        """
+        """Maximum of task configured update periods, None if no task configuration is available"""
 
         max_period = None
         for task in self.tasks.tasks.values():
@@ -324,13 +309,13 @@ class MeshResults:
         return max_period
 
     @property
-    def utc_timestamp_low(self) -> Optional[datetime]:
-        """utc_timestamp_low can be None if there was no health data for specified time window (empty MeshResults)"""
+    def utc_timestamp_oldest(self) -> Optional[datetime]:
+        """utc_timestamp_oldest can be None if there was no health data for specified time window (empty MeshResults)"""
 
-        return self.connection_matrix.connection_timestamp_lowest
+        return self.connection_matrix.connection_timestamp_oldest
 
     @property
-    def utc_timestamp_high(self) -> Optional[datetime]:
-        """utc_timestamp_high can be None if there was no health data for specified time window (empty MeshResults)"""
+    def utc_timestamp_newest(self) -> Optional[datetime]:
+        """utc_timestamp_newest can be None if there was no health data for specified time window (empty MeshResults)"""
 
-        return self.connection_matrix.connection_timestamp_highest
+        return self.connection_matrix.connection_timestamp_newest

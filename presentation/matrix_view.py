@@ -66,8 +66,8 @@ class MatrixView:
 
     def make_matrix_content(self, mesh: MeshResults, metric: MetricType) -> List:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestamp_low_iso = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else None
-        timestamp_high_iso = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else None
+        timestamp_low_iso = mesh.utc_timestamp_oldest.isoformat() if mesh.utc_timestamp_oldest else None
+        timestamp_high_iso = mesh.utc_timestamp_newest.isoformat() if mesh.utc_timestamp_newest else None
         fig = self.make_figure(mesh, metric)
 
         return [
