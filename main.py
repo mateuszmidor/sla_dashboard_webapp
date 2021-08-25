@@ -82,7 +82,7 @@ class WebApp:
             def update_matrix(metric_name: str):
                 metric = MetricType(metric_name)
                 path = quote(routing.encode_matrix_path(metric))
-                return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
+                return dcc.Location(id="MATRIX", pathname=path, refresh=True)
 
             # matrix view - handle cell click
             @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
@@ -92,7 +92,7 @@ class WebApp:
                     return None
 
                 path = quote(routing.encode_chart_path(from_agent, to_agent))
-                return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
+                return dcc.Location(id="CHARTS", pathname=path, refresh=True)
 
         except Exception:
             logger.exception("WebApp initialization failure")
