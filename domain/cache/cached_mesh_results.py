@@ -8,12 +8,12 @@ from domain.model.mesh_results import ConnectionUpdatePolicy
 class CachedMeshResults:
     def __init__(self, update_policy: ConnectionUpdatePolicy) -> None:
         self._mesh = MeshResults()
-        self._lock = threading.RLock()
+        self._lock = threading.Lock()
         self._connection_update_policy = update_policy
 
     def can_incremental_update(self, src: MeshResults) -> bool:
         with self._lock:
-            return self._mesh.same_configuration(src)
+            return self._mesh.same_agents(src)
 
     def incremental_update(self, src: MeshResults) -> None:
         with self._lock:

@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from domain.minimum_lookback_evaluator import MinmumLookbackEvaluator
 from domain.model.mesh_results import MeshResults
 from domain.repo import Repo
 from domain.types import AgentID, TestID
@@ -19,18 +18,19 @@ class MeshUpdatePolicySingleConnection:
         self,
         repo: Repo,
         test_id: TestID,
-        lookback_seconds: int,
+        min_history_seconds: int,
+        full_history_seconds: int,
         max_data_age_seconds: int,
         from_agent,
         to_agent: AgentID,
     ) -> None:
         self._repo = repo
         self._test_id = test_id
-        self._lookback_seconds = lookback_seconds
+        self._full_history_seconds = full_history_seconds
+        self._min_history_seconds = min_history_seconds
         self._max_data_age_seconds = max_data_age_seconds
         self._from_agent = from_agent
         self._to_agent = to_agent
-        self._lookback_evaluator = MinmumLookbackEvaluator(repo, test_id, lookback_seconds)
 
     def need_update(self, mesh: MeshResults) -> bool:
         conn = mesh.connection(self._from_agent, self._to_agent)
@@ -41,8 +41,7 @@ class MeshUpdatePolicySingleConnection:
 
         # check cached data covers expected timespan
         cached_data_timespan = newest_timestamp - oldest_timestamp
-        min_lookback = self._lookback_evaluator.minimum_lookback_seconds(mesh)
-        expected_data_timespan = timedelta(seconds=self._lookback_seconds - min_lookback)
+        expected_data_timespan = timedelta(seconds=self._full_history_seconds - self._min_history_seconds)
         if cached_data_timespan < expected_data_timespan:
             return True
 
@@ -51,7 +50,7 @@ class MeshUpdatePolicySingleConnection:
         return datetime.now(timezone.utc) - newest_timestamp > max_age
 
     def get_update(self, mesh: MeshResults) -> MeshResults:
-        logger.debug("Lookback: %ds", self._lookback_seconds)
+        logger.debug("History: %ds", self._full_history_seconds)
         agent_ids = [self._from_agent]
         task_id = mesh.agent_id_to_task_id(self._to_agent)
         if task_id:
@@ -59,4 +58,4 @@ class MeshUpdatePolicySingleConnection:
         else:
             logger.debug("TaskID for AgentID '%s' not found; requesting entire mesh row", self._to_agent)
             task_ids = []
-        return self._repo.get_mesh_test_results(self._test_id, agent_ids, task_ids, self._lookback_seconds, True)
+        return self._repo.get_mesh_test_results(self._test_id, agent_ids, task_ids, self._full_history_seconds, True)

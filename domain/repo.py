@@ -1,5 +1,6 @@
 from typing import List, Protocol
 
+from domain.model.mesh_config import MeshConfig
 from domain.model.mesh_results import MeshResults
 from domain.types import AgentID, TaskID, TestID
 
@@ -7,12 +8,15 @@ from domain.types import AgentID, TaskID, TestID
 class Repo(Protocol):
     """Repo provides data access to Kentik Synthetic Tests"""
 
+    def get_mesh_config(self, test_id: TestID) -> MeshConfig:
+        pass
+
     def get_mesh_test_results(
         self,
         test_id: TestID,
         agent_ids: List[AgentID],
         task_ids: List[TaskID],
-        results_lookback_seconds: int,
+        history_length_seconds: int,
         timeseries: bool,
     ) -> MeshResults:
         """

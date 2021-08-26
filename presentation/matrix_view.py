@@ -73,7 +73,7 @@ class MatrixView:
         return [
             html.H2(
                 children=[
-                    html.Span("Data timestamp range: "),
+                    html.Span("Data range: "),
                     html.Span(
                         "<test_results_timestamp_low>",
                         className="header-timestamp",
@@ -140,7 +140,7 @@ class MatrixView:
         ]
 
     def make_no_data_content(self) -> List:
-        no_data = f"No test results available for the last {int(self._config.data_update_lookback_seconds/60)} minutes"
+        no_data = f"No test results available for the last {int(self._config.data_history_length_seconds/60)} minutes"
         return [html.H1(no_data), html.Br(), html.Br()]
 
     def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:

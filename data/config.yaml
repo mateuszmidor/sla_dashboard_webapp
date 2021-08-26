@@ -9,7 +9,7 @@ max_data_age_seconds: 180
 data_request_interval_seconds: 5
 
 # time window to fetch the test results for
-data_update_lookback_seconds: 3600
+data_history_length_seconds: 3600
 
 # timeout for fetching synthetics tests results
 # numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both

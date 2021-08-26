@@ -25,7 +25,7 @@ class Config(Protocol):
         pass
 
     @property
-    def data_update_lookback_seconds(self) -> int:
+    def data_history_length_seconds(self) -> int:
         """Time window to fetch the test results for"""
         pass
 

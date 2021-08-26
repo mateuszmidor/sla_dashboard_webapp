@@ -1,25 +1,23 @@
 import threading
-from datetime import datetime, timedelta, timezone
+import time
 
 
 class RateLimiter:
-    """RateLimiter is used to limit request rate towards API Server"""
-
-    def __init__(self, min_interval_seconds: int) -> None:
+    def __init__(self, interval_seconds: int) -> None:
         self._lock = threading.Lock()
-        self._min_interval = timedelta(seconds=min_interval_seconds)
-        self._last_successful_check = datetime(year=1970, month=1, day=1, tzinfo=timezone.utc)
+        self._interval_seconds = interval_seconds
+        self._last_update_seconds = time.monotonic() - interval_seconds - 1  # make sure the first check is always true
 
     def check_and_update(self) -> bool:
-        """Return True if interval is preserved, False otherwise"""
+        """Returns True if acting now is within the rate limit, False otherwise"""
 
         with self._lock:
-            now = datetime.now(timezone.utc)
-            if now - self._last_successful_check > self._min_interval:
-                self._last_successful_check = now
+            now = time.monotonic()
+            if now - self._last_update_seconds > self._interval_seconds:
+                self._last_update_seconds = now
                 return True
             return False
 
     @property
-    def inverval(self) -> timedelta:
-        return self._min_interval
+    def interval_seconds(self) -> int:
+        return self._interval_seconds

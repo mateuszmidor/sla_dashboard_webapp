@@ -20,43 +20,49 @@ class CachingRepoRequestDriven:
     - get_mesh_results_single_connection() allows to get and cache test results for single connection but with timeseries data
     """
 
+    NUM_TEST_UPDATE_PERIODS_FOR_MIN_HISTORY_SECONDS = 2  # min number of periods to get data sample for each connection
+
     def __init__(
         self,
         source_repo: Repo,
         monitored_test_id: TestID,
         max_data_age_seconds,
         data_request_interval_seconds: int,
-        data_lookback_seconds: int,
+        data_history_seconds: int,
     ) -> None:
         self._source_repo = source_repo
         self._test_id = monitored_test_id
         self._max_data_age_seconds = max_data_age_seconds
-        self._data_lookback_seconds = data_lookback_seconds
+        self._full_history_seconds = data_history_seconds
         self._cached_mesh = CachedMeshResults(ConnectionUpdatePolicyReplace())
         self._rate_limiter = RateLimiter(data_request_interval_seconds)
 
+        test_update_period = source_repo.get_mesh_config(monitored_test_id).update_period_seconds
+        self._min_history_seconds = test_update_period * self.NUM_TEST_UPDATE_PERIODS_FOR_MIN_HISTORY_SECONDS
+
     def get_mesh_results_all_connections(self) -> MeshResults:
         """
-        Get results for all connections but with minimum lookback time (without timeseries data)
+        Get results for all connections but with minimum history data
         """
 
         updater = MeshUpdatePolicyAllConnections(
             self._source_repo,
             self._test_id,
-            self._data_lookback_seconds,
+            self._min_history_seconds,
             self._max_data_age_seconds,
         )
         return self._get_or_update(updater)
 
     def get_mesh_results_single_connection(self, from_agent, to_agent: AgentID) -> MeshResults:
         """
-        Get results for single connection but with full lookback time (with timeseries data)
+        Get results for single connection but with full history data
         """
 
         updater = MeshUpdatePolicySingleConnection(
             self._source_repo,
             self._test_id,
-            self._data_lookback_seconds,
+            self._min_history_seconds,
+            self._full_history_seconds,
             self._max_data_age_seconds,
             from_agent,
             to_agent,
@@ -67,7 +73,9 @@ class CachingRepoRequestDriven:
         cached_mesh = self._cached_mesh.get_copy()
 
         if not self._rate_limiter.check_and_update():
-            logger.debug("Minimum update interval %s not satisfied. Returning cached data", self._rate_limiter.inverval)
+            logger.debug(
+                "Minimum update interval %ds not satisfied. Returning cached data", self._rate_limiter.interval_seconds
+            )
             return cached_mesh
 
         if not policy.need_update(cached_mesh):

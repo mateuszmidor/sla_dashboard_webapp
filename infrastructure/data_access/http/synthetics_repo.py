@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from domain.metric import MetricValue
-from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow, Task, Tasks
+from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshConfig, MeshResults, MeshRow, Task, Tasks
 from domain.model.mesh_results import Coordinates
 from domain.types import AgentID, TaskID, TestID
 
@@ -35,16 +35,22 @@ class SyntheticsRepo:
             self._api_client = KentikAPI(email=email, token=token)
         self._timeout = timeout
 
+    def get_mesh_config(self, test_id: TestID) -> MeshConfig:
+        test_resp = self._api_client.synthetics_admin_service.test_get(test_id)
+        update_period_seconds = test_resp.test.settings.ping.period
+        logger.debug("Update period for TestID %s is %ds", test_id, update_period_seconds)
+        return MeshConfig(update_period_seconds)
+
     def get_mesh_test_results(
         self,
         test_id: TestID,
         agent_ids: List[AgentID],
         task_ids: List[TaskID],
-        results_lookback_seconds: int,
+        history_length_seconds: int,
         timeseries: bool,
     ) -> MeshResults:
         try:
-            rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, results_lookback_seconds, timeseries)
+            rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, history_length_seconds, timeseries)
             return MeshResults(rows=rows, tasks=tasks, agents=self._get_agents(test_id))
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test ID: {test_id}") from err
@@ -54,11 +60,11 @@ class SyntheticsRepo:
         test_id: TestID,
         agent_ids: List[AgentID],
         task_ids: List[TaskID],
-        results_lookback_seconds: int,
+        history_length_seconds: int,
         augment: bool,
     ) -> Tuple[List[MeshRow], Tasks]:
         end = datetime.now(timezone.utc)
-        start = end - timedelta(seconds=results_lookback_seconds)
+        start = end - timedelta(seconds=history_length_seconds)
         request = V202101beta1GetHealthForTestsRequest(
             ids=[test_id], agent_ids=agent_ids, task_ids=task_ids, start_time=start, end_time=end, augment=augment
         )

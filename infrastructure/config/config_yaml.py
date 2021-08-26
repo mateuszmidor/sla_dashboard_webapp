@@ -25,8 +25,8 @@ class ConfigYAML:
         return self._data_request_interval_seconds
 
     @property
-    def data_update_lookback_seconds(self) -> int:
-        return self._data_update_lookback_seconds
+    def data_history_length_seconds(self) -> int:
+        return self._data_history_length_seconds
 
     @property
     def latency(self) -> Thresholds:
@@ -64,7 +64,7 @@ class ConfigYAML:
             self._test_id = TestID(config["test_id"])
             self._max_data_age_seconds = int(config["max_data_age_seconds"])
             self._data_request_interval_seconds = int(config["data_request_interval_seconds"])
-            self._data_update_lookback_seconds = int(config["data_update_lookback_seconds"])
+            self._data_history_length_seconds = int(config["data_history_length_seconds"])
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])

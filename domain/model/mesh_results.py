@@ -76,19 +76,18 @@ class Task:
 
 class Tasks:
     def __init__(self) -> None:
-        self.tasks: Dict[IP, Task] = {}
+        self._tasks: Dict[IP, Task] = {}
 
     def insert(self, task: Task) -> None:
-        self.tasks[task.target_ip] = task
+        self._tasks[task.target_ip] = task
 
     def get_by_ip(self, target_ip: IP) -> Optional[Task]:
-        return self.tasks.get(target_ip)
+        return self._tasks.get(target_ip)
 
     def incremental_update(self, src: Tasks) -> None:
         """Update with new tasks, don't remove anything"""
 
-        for ip, task in src.tasks.items():
-            self.tasks[ip] = task
+        self._tasks.update(src._tasks)
 
 
 class HealthItem:
@@ -273,13 +272,13 @@ class MeshResults:
     def incremental_update(self, src: MeshResults, policy: ConnectionUpdatePolicy) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
-        if not self.same_configuration(src):
+        if not self.same_agents(src):
             raise Exception("Can't do incremental update - mesh test configuration mismatch")
 
         self.tasks.incremental_update(src.tasks)
         self.connection_matrix.incremental_update(src.connection_matrix, policy)
 
-    def same_configuration(self, src: MeshResults) -> bool:
+    def same_agents(self, src: MeshResults) -> bool:
         return self.agents.equals(src.agents)
 
     def data_complete(self) -> bool:
@@ -297,16 +296,6 @@ class MeshResults:
         agent_ip = self.agents.get_by_id(agent_id).ip
         task = self.tasks.get_by_ip(agent_ip)
         return task.id if task else None
-
-    @property
-    def max_test_period_seconds(self) -> Optional[int]:
-        """Maximum of task configured update periods, None if no task configuration is available"""
-
-        max_period = None
-        for task in self.tasks.tasks.values():
-            if not max_period or task.period_seconds > max_period:
-                max_period = task.period_seconds
-        return max_period
 
     @property
     def utc_timestamp_oldest(self) -> Optional[datetime]:
