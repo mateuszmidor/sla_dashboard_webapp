@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, Generator, List, Optional, Protocol, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 from domain.geo import Coordinates
 from domain.metric import Metric, MetricType, MetricValue
@@ -158,15 +158,6 @@ class MeshRow:
         return self.agent.id
 
 
-class ConnectionUpdatePolicy(Protocol):
-    """
-    ConnectionUpdatePolicy evaluates an updated version of connection data
-    """
-
-    def update(self, cached_conn: Optional[MeshColumn], update_conn: MeshColumn) -> MeshColumn:
-        pass
-
-
 class ConnectionMatrix:
     """
     ConnectionMatrix holds "fromAgent" -> "toAgent" network connection metrics.
@@ -183,7 +174,7 @@ class ConnectionMatrix:
         self._connections = connections
         self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_lowest_highest_timestamp()
 
-    def incremental_update(self, src: ConnectionMatrix, policy: ConnectionUpdatePolicy) -> None:
+    def incremental_update(self, src: ConnectionMatrix) -> None:
         """
         Update with src connections, add new connections if any, don't remove anything.
         """
@@ -192,7 +183,7 @@ class ConnectionMatrix:
             dst_row = self._connections.get(from_agent_id, {})  # get or create dst_row
             for to_agent_id, update_conn in src._connections[from_agent_id].items():
                 cached_conn = dst_row.get(to_agent_id)
-                dst_row[to_agent_id] = policy.update(cached_conn, update_conn)
+                dst_row[to_agent_id] = self._update(cached_conn, update_conn)
             self._connections[from_agent_id] = dst_row
         self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_lowest_highest_timestamp()
 
@@ -226,6 +217,36 @@ class ConnectionMatrix:
                     highest = health.timestamp
 
         return lowest, highest
+
+    @staticmethod
+    def _update(cached_conn: Optional[MeshColumn], update_conn: MeshColumn) -> MeshColumn:
+        """Update cache if update is newer or just as fresh but has more timeseries data"""
+
+        # 1. no such connection in cache yet - replace with whatever comes
+        if not cached_conn:
+            return update_conn
+
+        # 2. connection in cache but has no timeseries data - replace
+        cached_latest = cached_conn.latest_measurement
+        if not cached_latest:
+            return update_conn
+
+        # 3. connection in cache, has timeseries, but update brings no timeseries data - keep cache
+        update_latest = update_conn.latest_measurement
+        if not update_latest:
+            return cached_conn
+
+        # 4. cached connection is older than update connection
+        if cached_latest.timestamp < update_latest.timestamp:
+            return update_conn
+
+        # 5. cached and update are equally fresh but update brings more data
+        same_timestamp = cached_latest.timestamp == update_latest.timestamp
+        more_timeseries_data = len(update_conn.health) > len(cached_conn.health)
+        if same_timestamp and more_timeseries_data:
+            return update_conn
+
+        return cached_conn
 
 
 class MeshResults:
@@ -269,14 +290,14 @@ class MeshResults:
                 agent.alias = r.agent.alias
                 self.agents.insert(agent)
 
-    def incremental_update(self, src: MeshResults, policy: ConnectionUpdatePolicy) -> None:
+    def incremental_update(self, src: MeshResults) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
         if not self.same_agents(src):
             raise Exception("Can't do incremental update - mesh test configuration mismatch")
 
         self.tasks.incremental_update(src.tasks)
-        self.connection_matrix.incremental_update(src.connection_matrix, policy)
+        self.connection_matrix.incremental_update(src.connection_matrix)
 
     def same_agents(self, src: MeshResults) -> bool:
         return self.agents.equals(src.agents)

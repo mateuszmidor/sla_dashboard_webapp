@@ -1,7 +1,6 @@
 import logging
 
 from domain.cache.cached_mesh_results import CachedMeshResults
-from domain.cache.connection_update_policy_replace import ConnectionUpdatePolicyReplace
 from domain.cache.mesh_update_policy import MeshUpdatePolicy
 from domain.cache.mesh_update_policy_all import MeshUpdatePolicyAllConnections
 from domain.cache.mesh_update_policy_single import MeshUpdatePolicySingleConnection
@@ -26,15 +25,13 @@ class CachingRepoRequestDriven:
         self,
         source_repo: Repo,
         monitored_test_id: TestID,
-        max_data_age_seconds,
         data_request_interval_seconds: int,
         data_history_seconds: int,
     ) -> None:
         self._source_repo = source_repo
         self._test_id = monitored_test_id
-        self._max_data_age_seconds = max_data_age_seconds
         self._full_history_seconds = data_history_seconds
-        self._cached_mesh = CachedMeshResults(ConnectionUpdatePolicyReplace())
+        self._cached_mesh = CachedMeshResults()
         self._rate_limiter = RateLimiter(data_request_interval_seconds)
 
         test_update_period = source_repo.get_mesh_config(monitored_test_id).update_period_seconds
@@ -49,7 +46,6 @@ class CachingRepoRequestDriven:
             self._source_repo,
             self._test_id,
             self._min_history_seconds,
-            self._max_data_age_seconds,
         )
         return self._get_or_update(updater)
 
@@ -63,7 +59,6 @@ class CachingRepoRequestDriven:
             self._test_id,
             self._min_history_seconds,
             self._full_history_seconds,
-            self._max_data_age_seconds,
             from_agent,
             to_agent,
         )
@@ -76,10 +71,6 @@ class CachingRepoRequestDriven:
             logger.debug(
                 "Minimum update interval %ds not satisfied. Returning cached data", self._rate_limiter.interval_seconds
             )
-            return cached_mesh
-
-        if not policy.need_update(cached_mesh):
-            logger.debug("Cache fresh enough. Returning cached data")
             return cached_mesh
 
         policy_name = type(policy).__name__

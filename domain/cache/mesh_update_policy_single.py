@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta, timezone
 
 from domain.model.mesh_results import MeshResults
 from domain.repo import Repo
@@ -20,7 +19,6 @@ class MeshUpdatePolicySingleConnection:
         test_id: TestID,
         min_history_seconds: int,
         full_history_seconds: int,
-        max_data_age_seconds: int,
         from_agent,
         to_agent: AgentID,
     ) -> None:
@@ -28,26 +26,8 @@ class MeshUpdatePolicySingleConnection:
         self._test_id = test_id
         self._full_history_seconds = full_history_seconds
         self._min_history_seconds = min_history_seconds
-        self._max_data_age_seconds = max_data_age_seconds
         self._from_agent = from_agent
         self._to_agent = to_agent
-
-    def need_update(self, mesh: MeshResults) -> bool:
-        conn = mesh.connection(self._from_agent, self._to_agent)
-        if not conn.health:
-            return True
-        newest_timestamp = conn.health[0].timestamp
-        oldest_timestamp = conn.health[-1].timestamp
-
-        # check cached data covers expected timespan
-        cached_data_timespan = newest_timestamp - oldest_timestamp
-        expected_data_timespan = timedelta(seconds=self._full_history_seconds - self._min_history_seconds)
-        if cached_data_timespan < expected_data_timespan:
-            return True
-
-        # check cached data is fresh enough
-        max_age = timedelta(seconds=self._max_data_age_seconds)
-        return datetime.now(timezone.utc) - newest_timestamp > max_age
 
     def get_update(self, mesh: MeshResults) -> MeshResults:
         logger.debug("History: %ds", self._full_history_seconds)

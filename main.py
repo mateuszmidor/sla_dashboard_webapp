@@ -42,7 +42,6 @@ class WebApp:
             self._cached_repo = CachingRepoRequestDriven(
                 repo,
                 config.test_id,
-                config.max_data_age_seconds,
                 config.data_request_interval_seconds,
                 config.data_history_length_seconds,
             )

@@ -2,14 +2,12 @@ import threading
 from copy import deepcopy
 
 from domain.model import MeshResults
-from domain.model.mesh_results import ConnectionUpdatePolicy
 
 
 class CachedMeshResults:
-    def __init__(self, update_policy: ConnectionUpdatePolicy) -> None:
+    def __init__(self) -> None:
         self._mesh = MeshResults()
         self._lock = threading.Lock()
-        self._connection_update_policy = update_policy
 
     def can_incremental_update(self, src: MeshResults) -> bool:
         with self._lock:
@@ -17,7 +15,7 @@ class CachedMeshResults:
 
     def incremental_update(self, src: MeshResults) -> None:
         with self._lock:
-            self._mesh.incremental_update(src, self._connection_update_policy)
+            self._mesh.incremental_update(src)
 
     def full_update(self, src: MeshResults) -> None:
         with self._lock:

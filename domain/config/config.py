@@ -15,11 +15,6 @@ class Config(Protocol):
         pass
 
     @property
-    def max_data_age_seconds(self) -> int:
-        """Maximum age of the data in the matrix before cache update should be triggered"""
-        pass
-
-    @property
     def data_request_interval_seconds(self) -> int:
         """Minimum interval between asking the server for data. This is to save request quota."""
         pass
