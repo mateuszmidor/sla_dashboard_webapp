@@ -16,7 +16,7 @@ jobs:
         run: pip3 install -r stub_api_server/requirements.txt
 
       - name: Run local apiserver
-        run: RESPONSE_FILE_PATH="stub_api_server/mesh_5x5.json" FLASK_ENV=development FLASK_APP=stub_api_server flask run --port=9050 &
+        run: RESPONSE_FILE_PATH="stub_api_server/mesh_5x5.json" FLASK_ENV=development FLASK_APP=stub_api_server flask run --host=0.0.0.0 --port=9050 &
 
       - name: Generate API client
         run: ./generate_client.sh
@@ -29,12 +29,13 @@ jobs:
           docker run \
             --name sla_dashboard \
             --rm \
-            -d \
-            -e KTAPI_URL="127.0.0.1:9050" \
+            --add-host host.docker.internal:host-gateway \
+            -e KTAPI_URL="host.docker.internal:9050" \
             -e KTAPI_AUTH_EMAIL="dummy" \
             -e KTAPI_AUTH_TOKEN="dummy" \
             -v "$(pwd)/data:/app/data" \
-            -p 127.0.0.1:8050:8050 \
+            -p 8050:8050 \
+            -d \
             sla_dashboard:latest
 
       - name: Warm-up time
