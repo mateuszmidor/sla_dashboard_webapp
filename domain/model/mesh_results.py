@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 from domain.geo import Coordinates
 from domain.metric import Metric, MetricType, MetricValue

@@ -65,25 +65,23 @@ class CachingRepoRequestDriven:
         return self._get_or_update(updater)
 
     def _get_or_update(self, policy: MeshUpdatePolicy) -> MeshResults:
-        cached_mesh = self._cached_mesh.get_copy()
+        """Condition: returned MeshResults is only read and never modified"""
 
         if not self._rate_limiter.check_and_update():
-            logger.debug(
-                "Minimum update interval %ds not satisfied. Returning cached data", self._rate_limiter.interval_seconds
-            )
-            return cached_mesh
+            logger.debug("Returning cached data (minimum update interval: %ds)", self._rate_limiter.interval_seconds)
+            return self._cached_mesh.get_read_only()
 
         policy_name = type(policy).__name__
         try:
             logger.debug("%s start...", policy_name)
-            fresh_mesh = policy.get_update(cached_mesh)
+            fresh_mesh = policy.get_update(self._cached_mesh.get_read_only())
             self._update_cache_with(fresh_mesh)
             num_fresh_items = fresh_mesh.connection_matrix.num_connections_with_data()
             logger.debug("%s finished with %d fresh items", policy_name, num_fresh_items)
         except Exception as err:
             logger.exception("%s error", policy_name)
 
-        return self._cached_mesh.get_copy()
+        return self._cached_mesh.get_read_only()
 
     def _update_cache_with(self, mesh: MeshResults) -> None:
         if self._cached_mesh.can_incremental_update(mesh):
