@@ -240,10 +240,17 @@ class ConnectionMatrix:
         if cached_latest.timestamp < update_latest.timestamp:
             return update_conn
 
-        # 5. cached and update are equally fresh but update brings more data
-        same_timestamp = cached_latest.timestamp == update_latest.timestamp
-        more_timeseries_data = len(update_conn.health) > len(cached_conn.health)
-        if same_timestamp and more_timeseries_data:
+        # 5. cached connection is newer than update
+        if cached_latest.timestamp > update_latest.timestamp:
+            logger.debug(
+                "Cached connection is newer than update connection: %s vs %s",
+                cached_latest.timestamp,
+                update_latest.timestamp,
+            )
+            return cached_conn
+
+        # 6. cached and update are equally fresh but update brings more data
+        if len(update_conn.health) > len(cached_conn.health):
             return update_conn
 
         return cached_conn

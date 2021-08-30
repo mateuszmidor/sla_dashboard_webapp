@@ -50,8 +50,8 @@ jobs:
       - name: Test webapp - Matrix
         run: curl --fail --include 127.0.0.1:8050/matrix
 
-      - name: Test webapp - Chart
-        run: curl --fail --include 127.0.0.1:8050/chart?from=646&to=733
+      - name: Test webapp - Time Series
+        run: curl --fail --include 127.0.0.1:8050/time-series?from=646&to=733
 
       - name: Stop webapp
         run: docker stop sla_dashboard

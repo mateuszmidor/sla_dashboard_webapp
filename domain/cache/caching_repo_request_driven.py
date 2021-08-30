@@ -1,9 +1,8 @@
 import logging
+import threading
+from copy import deepcopy
+from typing import Callable
 
-from domain.cache.cached_mesh_results import CachedMeshResults
-from domain.cache.mesh_update_policy import MeshUpdatePolicy
-from domain.cache.mesh_update_policy_all import MeshUpdatePolicyAllConnections
-from domain.cache.mesh_update_policy_single import MeshUpdatePolicySingleConnection
 from domain.model.mesh_results import MeshResults
 from domain.rate_limiter import RateLimiter
 from domain.repo import Repo
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CachingRepoRequestDriven:
     """
-    CachingRepoRequestDriven allows for automatic, thread-safe cached mesh updates:
+    Get and cache mesh test results:
     - get_mesh_results_all_connections() allows to get and cache test results for all connections but without timeseries data
     - get_mesh_results_single_connection() allows to get and cache test results for single connection but with timeseries data
     """
@@ -25,68 +24,97 @@ class CachingRepoRequestDriven:
         self,
         source_repo: Repo,
         monitored_test_id: TestID,
-        data_request_interval_seconds: int,
-        data_history_seconds: int,
+        data_request_interval_periods: int,
+        data_history_length_periods: int,
     ) -> None:
+        test_update_period_seconds = source_repo.get_mesh_config(monitored_test_id).update_period_seconds
+
         self._source_repo = source_repo
         self._test_id = monitored_test_id
-        self._full_history_seconds = data_history_seconds
-        self._cached_mesh = CachedMeshResults()
-        self._rate_limiter = RateLimiter(data_request_interval_seconds)
+        self._full_history_seconds = data_history_length_periods * test_update_period_seconds
+        self._rate_limiter = RateLimiter(data_request_interval_periods * test_update_period_seconds)
+        self._mesh_cache = MeshResults()
+        self._mesh_lock = threading.Lock()
 
-        test_update_period = source_repo.get_mesh_config(monitored_test_id).update_period_seconds
-        self._min_history_seconds = test_update_period * self.NUM_TEST_UPDATE_PERIODS_FOR_MIN_HISTORY_SECONDS
+        self._min_history_seconds = test_update_period_seconds * self.NUM_TEST_UPDATE_PERIODS_FOR_MIN_HISTORY_SECONDS
 
     def get_mesh_results_all_connections(self) -> MeshResults:
         """
         Get results for all connections but with minimum history data
         """
 
-        updater = MeshUpdatePolicyAllConnections(
-            self._source_repo,
-            self._test_id,
-            self._min_history_seconds,
-        )
-        return self._get_or_update(updater)
+        getter = self._get_all_connections()
+        return self._get_or_update(getter)
 
     def get_mesh_results_single_connection(self, from_agent, to_agent: AgentID) -> MeshResults:
         """
         Get results for single connection but with full history data
         """
 
-        updater = MeshUpdatePolicySingleConnection(
-            self._source_repo,
-            self._test_id,
-            self._min_history_seconds,
-            self._full_history_seconds,
-            from_agent,
-            to_agent,
-        )
-        return self._get_or_update(updater)
+        getter = self._get_single_connection(from_agent, to_agent)
+        return self._get_or_update(getter)
 
-    def _get_or_update(self, policy: MeshUpdatePolicy) -> MeshResults:
+    def _get_or_update(self, get_mesh_update) -> MeshResults:
         """Condition: returned MeshResults is only read and never modified"""
 
         if not self._rate_limiter.check_and_update():
             logger.debug("Returning cached data (minimum update interval: %ds)", self._rate_limiter.interval_seconds)
-            return self._cached_mesh.get_read_only()
+            return self._get_mesh()
 
-        policy_name = type(policy).__name__
         try:
-            logger.debug("%s start...", policy_name)
-            fresh_mesh = policy.get_update(self._cached_mesh.get_read_only())
+            logger.debug("Mesh cache update start...")
+            fresh_mesh = get_mesh_update()
             self._update_cache_with(fresh_mesh)
             num_fresh_items = fresh_mesh.connection_matrix.num_connections_with_data()
-            logger.debug("%s finished with %d fresh items", policy_name, num_fresh_items)
-        except Exception as err:
-            logger.exception("%s error", policy_name)
+            logger.debug("Mesh cache update finished with %d fresh items", num_fresh_items)
+        except Exception:
+            logger.exception("Mesh cache update error")
 
-        return self._cached_mesh.get_read_only()
+        return self._get_mesh()
+
+    def _get_all_connections(self) -> Callable[[], MeshResults]:
+        def getter() -> MeshResults:
+            logger.debug("History: %ds", self._min_history_seconds)
+            return self._source_repo.get_mesh_test_results(
+                test_id=self._test_id, history_length_seconds=self._min_history_seconds
+            )
+
+        return getter
+
+    def _get_single_connection(self, from_agent, to_agent: AgentID) -> Callable[[], MeshResults]:
+        def getter() -> MeshResults:
+            logger.debug("History: %ds", self._full_history_seconds)
+            agent_ids = [from_agent]
+            task_id = self._get_mesh().agent_id_to_task_id(to_agent)
+            if task_id:
+                task_ids = [task_id]
+            else:
+                logger.debug("TaskID for AgentID '%s' not found; requesting entire mesh row", to_agent)
+                task_ids = []
+            return self._source_repo.get_mesh_test_results(
+                test_id=self._test_id,
+                history_length_seconds=self._full_history_seconds,
+                agent_ids=agent_ids,
+                task_ids=task_ids,
+            )
+
+        return getter
 
     def _update_cache_with(self, mesh: MeshResults) -> None:
-        if self._cached_mesh.can_incremental_update(mesh):
+        with self._mesh_lock:
+            current_mesh = self._mesh_cache
+
+        if current_mesh.same_agents(mesh):
             logger.debug("Incremental cache update")
-            self._cached_mesh.incremental_update(mesh)
+            new_mesh = deepcopy(current_mesh)
+            new_mesh.incremental_update(mesh)
         else:
             logger.debug("New mesh test configuration detected. Full cache update")
-            self._cached_mesh.full_update(mesh)
+            new_mesh = mesh
+
+        with self._mesh_lock:
+            self._mesh_cache = new_mesh
+
+    def _get_mesh(self) -> MeshResults:
+        with self._mesh_lock:
+            return self._mesh_cache

@@ -7,7 +7,7 @@ from domain.types import AgentID
 
 MAIN = "/"
 MATRIX = "/matrix"
-CHART = "/chart"
+TIME_SERIES = "/time-series"
 
 logger = logging.getLogger("routing")
 
@@ -25,14 +25,14 @@ def decode_matrix_path(path: str) -> MetricType:
         return MetricType.LATENCY
 
 
-def encode_chart_path(from_agent, to_agent: AgentID) -> str:
-    return f"{CHART}?from={from_agent}&to={to_agent}"
+def encode_time_series_path(from_agent, to_agent: AgentID) -> str:
+    return f"{TIME_SERIES}?from={from_agent}&to={to_agent}"
 
 
-def decode_chart_path(path: str) -> Tuple[AgentID, AgentID]:
+def decode_time_series_path(path: str) -> Tuple[AgentID, AgentID]:
     params = urlparse.parse_qs(urlparse.urlparse(path).query)
     try:
         return params["from"][0], params["to"][0]
     except (IndexError, KeyError):
-        logger.error(f"Invalid chart path: {path}")
+        logger.error(f"Invalid time series path: {path}")
         return AgentID(), AgentID()

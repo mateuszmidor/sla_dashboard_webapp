@@ -44,11 +44,16 @@ class SyntheticsRepo:
     def get_mesh_test_results(
         self,
         test_id: TestID,
-        agent_ids: List[AgentID],
-        task_ids: List[TaskID],
         history_length_seconds: int,
-        timeseries: bool,
+        timeseries: bool = True,
+        agent_ids: Optional[List[AgentID]] = None,
+        task_ids: Optional[List[TaskID]] = None,
     ) -> MeshResults:
+        if not agent_ids:
+            agent_ids = []
+        if not task_ids:
+            task_ids = []
+
         try:
             rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, history_length_seconds, timeseries)
             return MeshResults(rows=rows, tasks=tasks, agents=self._get_agents(test_id))
