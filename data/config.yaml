@@ -5,7 +5,7 @@ test_id: 3541
 # For example: at most once every 1 test update period
 data_request_interval_periods: 1
 
-# time window to fetch the test results for
+# number of test update periods into the past to fetch the results for
 data_history_length_periods: 60
 
 # timeout for fetching synthetics tests results

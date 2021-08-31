@@ -28,7 +28,6 @@ class CachingRepoRequestDriven:
         data_history_length_periods: int,
     ) -> None:
         test_update_period_seconds = source_repo.get_mesh_config(monitored_test_id).update_period_seconds
-
         self._source_repo = source_repo
         self._test_id = monitored_test_id
         self._full_history_seconds = data_history_length_periods * test_update_period_seconds
@@ -43,23 +42,27 @@ class CachingRepoRequestDriven:
         Get results for all connections but with minimum history data
         """
 
+        if not self._rate_limiter.check_and_update():
+            logger.debug("Returning cached data (minimum update interval: %ds)", self._rate_limiter.interval_seconds)
+            return self._get_mesh()
+
         getter = self._get_all_connections()
-        return self._get_or_update(getter)
+        return self._update(getter)
 
     def get_mesh_results_single_connection(self, from_agent, to_agent: AgentID) -> MeshResults:
         """
         Get results for single connection but with full history data
         """
 
-        getter = self._get_single_connection(from_agent, to_agent)
-        return self._get_or_update(getter)
-
-    def _get_or_update(self, get_mesh_update) -> MeshResults:
-        """Condition: returned MeshResults is only read and never modified"""
-
-        if not self._rate_limiter.check_and_update():
+        if not self._rate_limiter.check_and_update(from_agent, to_agent):
             logger.debug("Returning cached data (minimum update interval: %ds)", self._rate_limiter.interval_seconds)
             return self._get_mesh()
+
+        getter = self._get_single_connection(from_agent, to_agent)
+        return self._update(getter)
+
+    def _update(self, get_mesh_update) -> MeshResults:
+        """Condition: returned MeshResults is only read and never modified"""
 
         try:
             logger.debug("Mesh cache update start...")
