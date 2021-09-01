@@ -25,6 +25,11 @@ class Config(Protocol):
         pass
 
     @property
+    def data_min_periods(self) -> int:
+        """Number of test update periods into the past to get most recent measurement"""
+        pass
+
+    @property
     def latency(self) -> Thresholds:
         """Latency thresholds, in milliseconds"""
         pass

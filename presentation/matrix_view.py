@@ -50,12 +50,12 @@ class MatrixView:
         self._agents = Agents()
         self._color_scale = self._make_color_scale()
 
-    def make_layout(self, mesh: MeshResults, metric: MetricType) -> html.Div:
+    def make_layout(self, mesh: MeshResults, data_history_seconds: int, metric: MetricType) -> html.Div:
         title = "SLA Dashboard"
         if mesh.connection_matrix.num_connections_with_data() > 0:
             content = self.make_matrix_content(mesh, metric)
         else:
-            content = self.make_no_data_content()
+            content = self.make_no_data_content(data_history_seconds)
 
         return html.Div(
             children=[
@@ -139,8 +139,8 @@ class MatrixView:
             ),
         ]
 
-    def make_no_data_content(self) -> List:
-        no_data = f"No test results available for the last {int(self._config.data_history_length_periods)} test periods"
+    def make_no_data_content(self, data_history_seconds: int) -> List:
+        no_data = f"No test results available for the last {int(data_history_seconds)} seconds"
         return [html.H1(no_data), html.Br(), html.Br()]
 
     def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:

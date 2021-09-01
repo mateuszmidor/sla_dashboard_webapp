@@ -8,6 +8,9 @@ data_request_interval_periods: 1
 # number of test update periods into the past to fetch the results for
 data_history_length_periods: 60
 
+# number of test update periods into the past to get most recent measurement
+data_min_periods: 2
+
 # timeout for fetching synthetics tests results
 # numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both
 timeout: [30.0, 30.0]

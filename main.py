@@ -44,6 +44,7 @@ class WebApp:
                 config.test_id,
                 config.data_request_interval_periods,
                 config.data_history_length_periods,
+                config.data_min_periods,
             )
 
             # routing
@@ -110,7 +111,8 @@ class WebApp:
     def _make_matrix_layout(self, path: str) -> html.Div:
         metric = routing.decode_matrix_path(path)
         results = self._cached_repo.get_mesh_results_all_connections()
-        return self._matrix_view.make_layout(results, metric)
+        data_history_seconds = self._cached_repo.min_history_seconds
+        return self._matrix_view.make_layout(results, data_history_seconds, metric)
 
     def _make_time_series_layout(self, path: str) -> html.Div:
         from_agent, to_agent = routing.decode_time_series_path(path)

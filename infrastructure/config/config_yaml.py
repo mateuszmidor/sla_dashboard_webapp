@@ -25,6 +25,10 @@ class ConfigYAML:
         return self._data_history_length_periods
 
     @property
+    def data_min_periods(self) -> int:
+        return self._data_min_periods
+
+    @property
     def latency(self) -> Thresholds:
         return self._latency
 
@@ -60,6 +64,7 @@ class ConfigYAML:
             self._test_id = TestID(config["test_id"])
             self._data_request_interval_periods = int(config["data_request_interval_periods"])
             self._data_history_length_periods = int(config["data_history_length_periods"])
+            self._data_min_periods = int(config["data_min_periods"])
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
