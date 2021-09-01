@@ -226,21 +226,26 @@ class ConnectionMatrix:
         if not cached_conn:
             return update_conn
 
-        # 2. connection in cache but has no timeseries data - replace
+        # 2. connection in cache but has no timeseries data at all - replace
         cached_latest = cached_conn.latest_measurement
         if not cached_latest:
             return update_conn
 
-        # 3. connection in cache, has timeseries, but update brings no timeseries data - keep cache
+        # 3. connection in cache, has timeseries data, and update brings no timeseries data - keep cache
         update_latest = update_conn.latest_measurement
         if not update_latest:
             return cached_conn
 
         # 4. cached connection is older than update connection
         if cached_latest.timestamp < update_latest.timestamp:
-            return update_conn
+            # accumulate historical timeseries data
+            update_oldest_timestamp = update_conn.health[-1].timestamp
+            cached_items_to_keep = [h for h in cached_conn.health if h.timestamp < update_oldest_timestamp]
+            combined = update_conn
+            combined.health += cached_items_to_keep
+            return combined
 
-        # 5. cached connection is newer than update
+        # 5. cached connection is newer than update. Should never happen
         if cached_latest.timestamp > update_latest.timestamp:
             logger.debug(
                 "Cached connection is newer than update connection: %s vs %s",
