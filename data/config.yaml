@@ -1,20 +1,27 @@
+# For default values of optional parameters, see: domain/config/defaults.py
+
 # ID of the test to display the data matrix for. Assigned by Kentik
 test_id: 3541
 
+# [Optional]
 # minimum interval between asking the server for data. This is to save request quota.
 # For example: at most once every 1 test update period
 data_request_interval_periods: 1
 
+# [Optional]
 # number of test update periods into the past to fetch the results for
 data_history_length_periods: 60
 
+# [Optional]
 # number of test update periods into the past to get most recent measurement
 data_min_periods: 2
 
+# [Optional]
 # timeout for fetching synthetics tests results
-# numbers are specifying (connection, read) timeouts in seconds. Defaults are  30 secs for both
+# numbers are specifying (connection, read) timeouts in seconds
 timeout: [30.0, 30.0]
 
+# [Optional]
 # sets the logging level. Possible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
 logging_level: INFO
 

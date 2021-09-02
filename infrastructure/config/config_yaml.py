@@ -3,7 +3,7 @@ from typing import Tuple
 
 import yaml
 
-from domain.config import Matrix
+from domain.config import Matrix, defaults
 from domain.geo import DistanceUnit
 from domain.types import TestID
 from infrastructure.config.thresholds import Thresholds
@@ -62,14 +62,18 @@ class ConfigYAML:
                 config = yaml.load(file, yaml.SafeLoader)
 
             self._test_id = TestID(config["test_id"])
-            self._data_request_interval_periods = int(config["data_request_interval_periods"])
-            self._data_history_length_periods = int(config["data_history_length_periods"])
-            self._data_min_periods = int(config["data_min_periods"])
+            self._data_request_interval_periods = int(
+                config.get("data_request_interval_periods", defaults.data_request_interval_periods)
+            )
+            self._data_history_length_periods = int(
+                config.get("data_history_length_periods", defaults.data_history_length_periods)
+            )
+            self._data_min_periods = int(config.get("data_min_periods", defaults.data_min_periods))
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
-            self._timeout = tuple(config["timeout"])
-            self._logging_level = self._parse_logging_level(config)
+            self._timeout = tuple(config.get("timeout", defaults.timeout_seconds))
+            self._logging_level = self._parse_logging_level(config.get("logging_level", defaults.logging_level))
             self._matrix = Matrix(
                 config["matrix"]["cell_color_healthy"],
                 config["matrix"]["cell_color_warning"],
@@ -80,19 +84,11 @@ class ConfigYAML:
         except Exception as err:
             raise Exception("Configuration error") from err
 
-    def _parse_logging_level(self, config) -> int:
-        try:
-            if config["logging_level"] == "FATAL" or config["logging_level"] == "CRITICAL":
-                return logging.CRITICAL
-            if config["logging_level"] == "ERROR":
-                return logging.ERROR
-            if config["logging_level"] == "WARN" or config["logging_level"] == "WARNING":
-                return logging.WARNING
-            if config["logging_level"] == "INFO":
-                return logging.INFO
-            if config["logging_level"] == "DEBUG":
-                return logging.DEBUG
-            else:
-                raise ValueError(f"{config['logging_level']} is not defined")
-        except KeyError:
-            return logging.INFO
+    def _parse_logging_level(self, level_str: str) -> int:
+        return {
+            "CRITICAL": logging.CRITICAL,
+            "ERROR": logging.ERROR,
+            "WARNING": logging.WARNING,
+            "INFO": logging.INFO,
+            "DEBUG": logging.DEBUG,
+        }.get(level_str, logging.DEBUG)
