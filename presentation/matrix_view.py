@@ -270,7 +270,6 @@ class MatrixView:
             for m in MetricType:
                 cell_hover_text.append(f"{m.value}: {self.format_health(m, health, True)}")
             cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
-            cell_hover_text.append(f"Num measurements: {len(conn.health)}")
         else:
             # no data available for this connection
             cell_hover_text.append("NO DATA")
