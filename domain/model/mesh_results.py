@@ -123,12 +123,13 @@ class HealthItem:
         raise Exception(f"MetricType not supported: {metric_type}")
 
 
-@dataclass
 class MeshColumn:
     """Represents connection "to" endpoint"""
 
-    agent_id: AgentID = AgentID()
-    health: List[HealthItem] = field(default_factory=list)  # sorted by timestamp from newest to oldest
+    def __init__(self, agent_id: AgentID = AgentID(), health: Optional[List[HealthItem]] = None) -> None:
+        # sort by timestamp from newest to oldest
+        self.health = sorted(health, key=lambda item: item.timestamp, reverse=True) if health else []
+        self.agent_id = agent_id
 
     @property
     def latest_measurement(self) -> Optional[HealthItem]:
@@ -172,7 +173,7 @@ class ConnectionMatrix:
             for col in row.columns:
                 connections[row.agent_id][col.agent_id] = col
         self._connections = connections
-        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_lowest_highest_timestamp()
+        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_timestamp_range()
 
     def incremental_update(self, src: ConnectionMatrix) -> None:
         """
@@ -185,7 +186,7 @@ class ConnectionMatrix:
                 cached_conn = dst_row.get(to_agent_id)
                 dst_row[to_agent_id] = self._update(cached_conn, update_conn)
             self._connections[from_agent_id] = dst_row
-        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_lowest_highest_timestamp()
+        self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_timestamp_range()
 
     def num_connections_with_data(self) -> int:
         count = 0
@@ -202,7 +203,7 @@ class ConnectionMatrix:
             return MeshColumn()
         return self._connections[from_agent][to_agent]
 
-    def _get_lowest_highest_timestamp(self) -> Tuple[Optional[datetime], Optional[datetime]]:
+    def _get_timestamp_range(self) -> Tuple[Optional[datetime], Optional[datetime]]:
         lowest: Optional[datetime] = None
         highest: Optional[datetime] = None
 

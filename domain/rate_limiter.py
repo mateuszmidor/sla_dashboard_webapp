@@ -1,14 +1,14 @@
 import threading
 import time
 from collections import defaultdict
-from typing import Dict
+from typing import DefaultDict
 
 
 class RateLimiter:
     def __init__(self, interval_seconds: int) -> None:
         self._lock = threading.Lock()
         self._interval_seconds = interval_seconds
-        self._last_update: Dict[str, int] = defaultdict(int)
+        self._last_update: DefaultDict[str, int] = defaultdict(int)
 
     def check_and_update(self, key: str = "") -> bool:
         now = int(time.monotonic())
