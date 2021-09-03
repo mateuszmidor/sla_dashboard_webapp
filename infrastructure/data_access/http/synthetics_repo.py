@@ -39,7 +39,11 @@ class SyntheticsRepo:
         test_resp = self._api_client.synthetics_admin_service.test_get(test_id)
         update_period_seconds = test_resp.test.settings.ping.period
         logger.debug("Update period for TestID %s is %ds", test_id, update_period_seconds)
-        return MeshConfig(update_period_seconds)
+
+        agents_resp = self._api_client.synthetics_admin_service.agents_list()
+        agents = make_internal_agents(agents_resp.agents, test_resp.test.settings.agent_ids)
+
+        return MeshConfig(agents=agents, update_period_seconds=update_period_seconds)
 
     def get_mesh_test_results(
         self,
@@ -56,7 +60,7 @@ class SyntheticsRepo:
 
         try:
             rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, history_length_seconds, timeseries)
-            return MeshResults(rows=rows, tasks=tasks, agents=self._get_agents(test_id))
+            return MeshResults(rows=rows, tasks=tasks)
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test ID: {test_id}") from err
 
@@ -85,11 +89,6 @@ class SyntheticsRepo:
         # The response.health list contains one entry for each unique test ID passed in the 'ids' list in the request.
         # We always request results for only one test, so using the first and only item is safe.
         return transform_to_internal_mesh_rows(response.health[0]), transform_to_internal_tasks(response.health[0])
-
-    def _get_agents(self, test_id) -> Agents:
-        test_resp = self._api_client.synthetics_admin_service.test_get(test_id)
-        agents_resp = self._api_client.synthetics_admin_service.agents_list()
-        return make_internal_agents(agents_resp.agents, test_resp.test.settings.agent_ids)
 
 
 def transform_to_internal_mesh_rows(data: V202101beta1TestHealth) -> List[MeshRow]:
