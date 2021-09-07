@@ -11,6 +11,7 @@ from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
 from domain.metric import MetricType, MetricValue
 from domain.model import MeshResults
+from domain.model.mesh_config import MeshConfig
 from domain.model.mesh_results import Agent, Agents, HealthItem
 from domain.types import AgentID, Threshold
 
@@ -50,10 +51,12 @@ class MatrixView:
         self._agents = Agents()
         self._color_scale = self._make_color_scale()
 
-    def make_layout(self, mesh: MeshResults, data_history_seconds: int, metric: MetricType) -> html.Div:
+    def make_layout(
+        self, results: MeshResults, config: MeshConfig, data_history_seconds: int, metric: MetricType
+    ) -> html.Div:
         title = "SLA Dashboard"
-        if mesh.connection_matrix.num_connections_with_data() > 0:
-            content = self.make_matrix_content(mesh, metric)
+        if results.connection_matrix.num_connections_with_data() > 0:
+            content = self.make_matrix_content(results, config, metric)
         else:
             content = self.make_no_data_content(data_history_seconds)
 
@@ -64,11 +67,11 @@ class MatrixView:
             ]
         )
 
-    def make_matrix_content(self, mesh: MeshResults, metric: MetricType) -> List:
-        self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestamp_low_iso = mesh.utc_timestamp_oldest.isoformat() if mesh.utc_timestamp_oldest else None
-        timestamp_high_iso = mesh.utc_timestamp_newest.isoformat() if mesh.utc_timestamp_newest else None
-        fig = self.make_figure(mesh, metric)
+    def make_matrix_content(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> List:
+        self._agents = config.agents  # remember agents used to make the layout for further processing
+        timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
+        timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
+        fig = self.make_figure(results, config, metric)
 
         return [
             html.H2(
@@ -143,9 +146,9 @@ class MatrixView:
         no_data = f"No test results available for the last {int(data_history_seconds)} seconds"
         return [html.H1(no_data), html.Br(), html.Br()]
 
-    def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:
-        data = self.make_figure_data(mesh, metric)
-        annotations = self.make_figure_annotations(mesh, metric)
+    def make_figure(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> Dict:
+        data = self.make_figure_data(results, config, metric)
+        annotations = self.make_figure_annotations(results, config, metric)
         layout = dict(
             margin=dict(l=200, b=0, t=100, r=0),
             modebar={"orientation": "v"},
@@ -158,15 +161,15 @@ class MatrixView:
         )
         return {"data": [data], "layout": layout}
 
-    def make_figure_data(self, mesh: MeshResults, metric: MetricType) -> Dict:
-        x_labels = [agent_label(agent) for agent in mesh.agents.all()]
+    def make_figure_data(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> Dict:
+        x_labels = [agent_label(agent) for agent in config.agents.all()]
         y_labels = list(reversed(x_labels))
-        sla_levels = self.make_sla_levels(mesh, metric)
+        sla_levels = self.make_sla_levels(results, config, metric)
         return dict(
             x=x_labels,
             y=y_labels,
             z=sla_levels,
-            text=self.make_matrix_hover_text(mesh),
+            text=self.make_matrix_hover_text(results, config),
             type="heatmap",
             hoverinfo="text",
             opacity=1,
@@ -176,19 +179,21 @@ class MatrixView:
             colorscale=self._color_scale,
         )
 
-    def make_sla_levels(self, mesh: MeshResults, metric_type: MetricType) -> List[SLALevelColumn]:
+    def make_sla_levels(
+        self, results: MeshResults, config: MeshConfig, metric_type: MetricType
+    ) -> List[SLALevelColumn]:
         thresholds = self.get_thresholds(metric_type)
         sla_levels: List[SLALevelColumn] = []
 
-        for from_agent in mesh.agents.all(reverse=True):
+        for from_agent in config.agents.all(reverse=True):
             sla_levels_col: SLALevelColumn = []
-            for i, to_agent in enumerate(mesh.agents.all()):
+            for i, to_agent in enumerate(config.agents.all()):
                 if from_agent == to_agent:
                     sla_level = SLALevel(i % 2)
                 else:
                     warning = thresholds.warning(from_agent.id, to_agent.id)
                     critical = thresholds.critical(from_agent.id, to_agent.id)
-                    health = mesh.connection(from_agent.id, to_agent.id).latest_measurement
+                    health = results.connection(from_agent.id, to_agent.id).latest_measurement
                     if health:
                         metric = health.get_metric(metric_type)
                         sla_level = self.get_sla_level(metric.value, warning, critical)
@@ -207,14 +212,14 @@ class MatrixView:
         return self._config.packet_loss
 
     @classmethod
-    def make_figure_annotations(cls, mesh: MeshResults, metric: MetricType) -> List[Dict]:
+    def make_figure_annotations(cls, results: MeshResults, config: MeshConfig, metric: MetricType) -> List[Dict]:
         annotations: List[Dict] = []
-        for from_agent in mesh.agents.all(reverse=True):
-            for to_agent in mesh.agents.all():
+        for from_agent in config.agents.all(reverse=True):
+            for to_agent in config.agents.all():
                 if from_agent == to_agent:
                     text = ""
                 else:
-                    health = mesh.connection(from_agent.id, to_agent.id).latest_measurement
+                    health = results.connection(from_agent.id, to_agent.id).latest_measurement
                     text = cls.format_health(metric, health, False, "")
                 annotations.append(
                     dict(
@@ -241,13 +246,13 @@ class MatrixView:
 
         return "{:.2f}{}".format(metric.value, metric.unit if include_unit else "")
 
-    def make_matrix_hover_text(self, mesh: MeshResults) -> List[List[str]]:
+    def make_matrix_hover_text(self, results: MeshResults, config: MeshConfig) -> List[List[str]]:
         # make hover text for each cell in the matrix
         matrix_hover_text: List[List[str]] = []
-        for from_agent in mesh.agents.all(reverse=True):
+        for from_agent in config.agents.all(reverse=True):
             column_hover_text: List[str] = []
-            for to_agent in mesh.agents.all():
-                column_hover_text.append(self.make_cell_hover_text(from_agent, to_agent, mesh))
+            for to_agent in config.agents.all():
+                column_hover_text.append(self.make_cell_hover_text(from_agent, to_agent, results))
             matrix_hover_text.append(column_hover_text)
 
         return matrix_hover_text
