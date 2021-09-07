@@ -15,13 +15,18 @@ class Config(Protocol):
         pass
 
     @property
-    def data_update_period_seconds(self) -> int:
-        """Minimal time period between test results cache updates"""
+    def data_request_interval_periods(self) -> int:
+        """Minimum interval between asking the server for data. In test update periods. This is to save request quota."""
         pass
 
     @property
-    def data_update_lookback_seconds(self) -> int:
-        """Time window to fetch the test results for"""
+    def data_history_length_periods(self) -> int:
+        """Number of test update periods into the past to fetch the results for"""
+        pass
+
+    @property
+    def data_min_periods(self) -> int:
+        """Number of test update periods into the past to get most recent measurement"""
         pass
 
     @property

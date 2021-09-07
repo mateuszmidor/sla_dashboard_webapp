@@ -12,14 +12,14 @@ from dash.dependencies import Input, Output
 
 import routing
 
-from domain.cached_repo_request_driven import CachedRepoRequestDriven
+from domain.cache.caching_repo_request_driven import CachingRepoRequestDriven
 from domain.metric import MetricType
 from infrastructure.config import ConfigYAML
 from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
-from presentation.chart_view import ChartView
 from presentation.http_error_view import HTTPErrorView
 from presentation.index_view import IndexView
 from presentation.matrix_view import MatrixView
+from presentation.time_series_view import TimeSeriesView
 
 FORMAT = "[%(asctime)-15s] [%(process)d] [%(levelname)s]  %(message)s"
 logger = logging.getLogger(__name__)
@@ -39,20 +39,24 @@ class WebApp:
 
             # data access
             repo = SyntheticsRepo(email, token, api_server_url, config.timeout)
-            self._cached_repo = CachedRepoRequestDriven(
-                repo, config.test_id, config.data_update_period_seconds, config.data_update_lookback_seconds
+            self._cached_repo = CachingRepoRequestDriven(
+                repo,
+                config.test_id,
+                config.data_request_interval_periods,
+                config.data_history_length_periods,
+                config.data_min_periods,
             )
 
             # routing
             self._routes = {
                 routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(MetricType.LATENCY)),
                 routing.MATRIX: self._make_matrix_layout,
-                routing.CHART: self._make_chart_layout,
+                routing.TIME_SERIES: self._make_time_series_layout,
             }
 
             # views
             self._matrix_view = MatrixView(config)
-            self._chart_view = ChartView(config)
+            self._time_series_view = TimeSeriesView(config)
 
             # web framework configuration
             app = dash.Dash(
@@ -82,17 +86,17 @@ class WebApp:
             def update_matrix(metric_name: str):
                 metric = MetricType(metric_name)
                 path = quote(routing.encode_matrix_path(metric))
-                return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
+                return dcc.Location(id="MATRIX", pathname=path, refresh=True)
 
             # matrix view - handle cell click
             @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
-            def open_chart(click_data: Optional[Dict[str, Any]]):
+            def open_time_series(click_data: Optional[Dict[str, Any]]):
                 from_agent, to_agent = self._matrix_view.get_agents_from_click(click_data)
                 if from_agent is None or to_agent is None or from_agent == to_agent:
                     return None
 
-                path = quote(routing.encode_chart_path(from_agent, to_agent))
-                return dcc.Location(id=IndexView.URL, pathname=path, refresh=True)
+                path = quote(routing.encode_time_series_path(from_agent, to_agent))
+                return dcc.Location(id="TIME_SERIES", pathname=path, refresh=True)
 
         except Exception:
             logger.exception("WebApp initialization failure")
@@ -106,13 +110,14 @@ class WebApp:
 
     def _make_matrix_layout(self, path: str) -> html.Div:
         metric = routing.decode_matrix_path(path)
-        results = self._cached_repo.get_mesh_test_results()
-        return self._matrix_view.make_layout(results, metric)
+        results = self._cached_repo.get_mesh_results_all_connections()
+        data_history_seconds = self._cached_repo.min_history_seconds
+        return self._matrix_view.make_layout(results, data_history_seconds, metric)
 
-    def _make_chart_layout(self, path: str) -> html.Div:
-        from_agent, to_agent = routing.decode_chart_path(path)
-        results = self._cached_repo.get_mesh_test_results()
-        return self._chart_view.make_layout(from_agent, to_agent, results)
+    def _make_time_series_layout(self, path: str) -> html.Div:
+        from_agent, to_agent = routing.decode_time_series_path(path)
+        results = self._cached_repo.get_mesh_results_single_connection(from_agent, to_agent)
+        return self._time_series_view.make_layout(from_agent, to_agent, results)
 
     @property
     def callback(self):

@@ -3,9 +3,9 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from domain.metric import MetricValue
-from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshResults, MeshRow
+from domain.model import Agent, Agents, HealthItem, MeshColumn, MeshConfig, MeshResults, MeshRow, Task, Tasks
 from domain.model.mesh_results import Coordinates
-from domain.types import AgentID, TestID
+from domain.types import AgentID, TaskID, TestID
 
 # the below "disable=E0611" is needed as we don't commit the generated code into git repo and thus CI linter complains
 # pylint: disable=E0611
@@ -35,20 +35,44 @@ class SyntheticsRepo:
             self._api_client = KentikAPI(email=email, token=token)
         self._timeout = timeout
 
-    def get_mesh_test_results(self, test_id: TestID, results_lookback_seconds: int) -> MeshResults:
+    def get_mesh_config(self, test_id: TestID) -> MeshConfig:
+        test_resp = self._api_client.synthetics_admin_service.test_get(test_id)
+        update_period_seconds = test_resp.test.settings.ping.period
+        logger.debug("Update period for TestID %s is %ds", test_id, update_period_seconds)
+        return MeshConfig(update_period_seconds)
+
+    def get_mesh_test_results(
+        self,
+        test_id: TestID,
+        history_length_seconds: int,
+        timeseries: bool = True,
+        agent_ids: Optional[List[AgentID]] = None,
+        task_ids: Optional[List[TaskID]] = None,
+    ) -> MeshResults:
+        if not agent_ids:
+            agent_ids = []
+        if not task_ids:
+            task_ids = []
+
         try:
-            return MeshResults(
-                utc_last_updated=datetime.now(timezone.utc),
-                rows=self._get_mesh_test_rows(test_id, results_lookback_seconds),
-                agents=self._get_agents(test_id),
-            )
+            rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, history_length_seconds, timeseries)
+            return MeshResults(rows=rows, tasks=tasks, agents=self._get_agents(test_id))
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test ID: {test_id}") from err
 
-    def _get_mesh_test_rows(self, test_id: TestID, results_lookback_seconds: int) -> List[MeshRow]:
+    def _get_rows_tasks(
+        self,
+        test_id: TestID,
+        agent_ids: List[AgentID],
+        task_ids: List[TaskID],
+        history_length_seconds: int,
+        augment: bool,
+    ) -> Tuple[List[MeshRow], Tasks]:
         end = datetime.now(timezone.utc)
-        start = end - timedelta(seconds=results_lookback_seconds)
-        request = V202101beta1GetHealthForTestsRequest(ids=[test_id], start_time=start, end_time=end, augment=True)
+        start = end - timedelta(seconds=history_length_seconds)
+        request = V202101beta1GetHealthForTestsRequest(
+            ids=[test_id], agent_ids=agent_ids, task_ids=task_ids, start_time=start, end_time=end, augment=augment
+        )
 
         response = self._api_client.synthetics_data_service.get_health_for_tests(
             request, _request_timeout=self._timeout
@@ -57,10 +81,10 @@ class SyntheticsRepo:
         # The response.health list can be empty if no measurements were recorded in the requested time period,
         # for example, right after mesh test is started, or when it is paused
         if len(response.health) == 0:
-            return []
+            return [], Tasks()
         # The response.health list contains one entry for each unique test ID passed in the 'ids' list in the request.
         # We always request results for only one test, so using the first and only item is safe.
-        return transform_to_internal_mesh_rows(response.health[0])
+        return transform_to_internal_mesh_rows(response.health[0]), transform_to_internal_tasks(response.health[0])
 
     def _get_agents(self, test_id) -> Agents:
         test_resp = self._api_client.synthetics_admin_service.test_get(test_id)
@@ -100,6 +124,13 @@ def transform_to_internal_health_items(input_health: List[V202101beta1MeshMetric
         )
         health.append(item)
     return health
+
+
+def transform_to_internal_tasks(data: V202101beta1TestHealth) -> Tasks:
+    tasks = Tasks()
+    for task in data.tasks:
+        tasks.insert(Task(id=task.task.id, target_ip=task.task.ping.target, period_seconds=task.task.ping.period))
+    return tasks
 
 
 def scale_us_to_ms(val: str) -> MetricValue:

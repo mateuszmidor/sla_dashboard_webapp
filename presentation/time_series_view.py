@@ -11,7 +11,7 @@ from domain.model import MeshResults
 from domain.types import AgentID
 
 
-class ChartView:
+class TimeSeriesView:
     def __init__(self, config: Config) -> None:
         self._config = config
 
@@ -20,7 +20,7 @@ class ChartView:
         conn = mesh.connection(from_agent, to_agent)
 
         if conn.has_data():
-            content = self.make_charts_content(from_agent, to_agent, mesh)
+            content = self.make_time_series_content(from_agent, to_agent, mesh)
         else:
             content = self.make_no_data_content()
 
@@ -35,7 +35,7 @@ class ChartView:
     def make_no_data_content() -> List:
         return [html.H1("NO DATA"), html.Br(), html.Br()]
 
-    def make_charts_content(self, from_agent: AgentID, to_agent: AgentID, mesh: MeshResults) -> List:
+    def make_time_series_content(self, from_agent: AgentID, to_agent: AgentID, mesh: MeshResults) -> List:
         fig_latency = self.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
         fig_jitter = self.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
         fig_packetloss = self.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))

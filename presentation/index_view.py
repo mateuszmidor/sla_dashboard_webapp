@@ -15,7 +15,7 @@ class IndexView:
         return html.Div(
             [
                 # doesn't render anything, represents the URL bar
-                dcc.Location(id=IndexView.URL, refresh=True),
+                dcc.Location(id=IndexView.URL, refresh=False),
                 # doesn't render anything, enables redirections
                 html.Div(id=IndexView.MATRIX_REDIRECT),
                 html.Div(id=IndexView.METRIC_REDIRECT),

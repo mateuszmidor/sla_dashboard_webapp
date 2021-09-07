@@ -50,12 +50,12 @@ class MatrixView:
         self._agents = Agents()
         self._color_scale = self._make_color_scale()
 
-    def make_layout(self, mesh: MeshResults, metric: MetricType) -> html.Div:
+    def make_layout(self, mesh: MeshResults, data_history_seconds: int, metric: MetricType) -> html.Div:
         title = "SLA Dashboard"
-        if mesh.connection_matrix.num_connections_with_health_data() > 0:
+        if mesh.connection_matrix.num_connections_with_data() > 0:
             content = self.make_matrix_content(mesh, metric)
         else:
-            content = self.make_no_data_content()
+            content = self.make_no_data_content(data_history_seconds)
 
         return html.Div(
             children=[
@@ -66,14 +66,14 @@ class MatrixView:
 
     def make_matrix_content(self, mesh: MeshResults, metric: MetricType) -> List:
         self._agents = mesh.agents  # remember agents used to make the layout for further processing
-        timestamp_low_iso = mesh.utc_timestamp_low.isoformat() if mesh.utc_timestamp_low else None
-        timestamp_high_iso = mesh.utc_timestamp_high.isoformat() if mesh.utc_timestamp_high else None
+        timestamp_low_iso = mesh.utc_timestamp_oldest.isoformat() if mesh.utc_timestamp_oldest else None
+        timestamp_high_iso = mesh.utc_timestamp_newest.isoformat() if mesh.utc_timestamp_newest else None
         fig = self.make_figure(mesh, metric)
 
         return [
             html.H2(
                 children=[
-                    html.Span("Data timestamp range: "),
+                    html.Span("Time range: "),
                     html.Span(
                         "<test_results_timestamp_low>",
                         className="header-timestamp",
@@ -139,8 +139,8 @@ class MatrixView:
             ),
         ]
 
-    def make_no_data_content(self) -> List:
-        no_data = f"No test results available for the last {int(self._config.data_update_lookback_seconds/60)} minutes"
+    def make_no_data_content(self, data_history_seconds: int) -> List:
+        no_data = f"No test results available for the last {int(data_history_seconds)} seconds"
         return [html.H1(no_data), html.Br(), html.Br()]
 
     def make_figure(self, mesh: MeshResults, metric: MetricType) -> Dict:

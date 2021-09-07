@@ -17,12 +17,16 @@ class ConfigYAML:
         return self._test_id
 
     @property
-    def data_update_period_seconds(self) -> int:
-        return self._data_update_seconds
+    def data_request_interval_periods(self) -> int:
+        return self._data_request_interval_periods
 
     @property
-    def data_update_lookback_seconds(self) -> int:
-        return self._data_update_lookback_seconds
+    def data_history_length_periods(self) -> int:
+        return self._data_history_length_periods
+
+    @property
+    def data_min_periods(self) -> int:
+        return self._data_min_periods
 
     @property
     def latency(self) -> Thresholds:
@@ -58,8 +62,9 @@ class ConfigYAML:
                 config = yaml.load(file, yaml.SafeLoader)
 
             self._test_id = TestID(config["test_id"])
-            self._data_update_seconds = int(config["data_update_period_seconds"])
-            self._data_update_lookback_seconds = int(config["data_update_lookback_seconds"])
+            self._data_request_interval_periods = int(config["data_request_interval_periods"])
+            self._data_history_length_periods = int(config["data_history_length_periods"])
+            self._data_min_periods = int(config["data_min_periods"])
             self._latency = Thresholds(config["thresholds"]["latency"])
             self._jitter = Thresholds(config["thresholds"]["jitter"])
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
