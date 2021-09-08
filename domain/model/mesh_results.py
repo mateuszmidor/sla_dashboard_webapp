@@ -3,68 +3,14 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from domain.geo import Coordinates
 from domain.metric import Metric, MetricType, MetricValue
+from domain.model.agents import Agent, Agents
 from domain.types import IP, AgentID, TaskID
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class Agent:
-    id: AgentID = AgentID()
-    ip: IP = IP()
-    name: str = ""
-    alias: str = ""
-    coords: Coordinates = Coordinates()
-
-
-class Agents:
-    def __init__(self) -> None:
-        self._agents: Dict[AgentID, Agent] = {}
-        self._agents_by_name: Dict[str, Agent] = {}
-
-    def equals(self, other: Agents) -> bool:
-        return sorted(self._agents.keys()) == sorted(other._agents.keys())
-
-    def get_by_id(self, agent_id: AgentID) -> Agent:
-        return self._agents.get(agent_id, Agent())
-
-    def get_by_name(self, name: str) -> Agent:
-        return self._agents_by_name.get(name, Agent())
-
-    def insert(self, agent: Agent) -> None:
-        self._agents[agent.id] = agent
-        existing = self._agents_by_name.get(agent.name)
-        if existing:
-            logger.warning("Duplicate agent name '%s' (ids: %s %s)", agent.name, existing.id, agent.id)
-            _dedup_name = "{agent.name} [{agent.id}]"
-            del self._agents_by_name[existing.name]
-            existing.name = _dedup_name.format(agent=existing)
-            self._agents_by_name[existing.name] = existing
-            agent.name = _dedup_name.format(agent=agent)
-        self._agents_by_name[agent.name] = agent
-        logger.debug("adding agent: id: %s name: %s alias: %s", agent.id, agent.name, agent.alias)
-
-    def remove(self, agent: Agent):
-        try:
-            del self._agents[agent.id]
-        except KeyError:
-            logger.warning("Agent id: %s name: %s was not in dict by id", agent.id, agent.name)
-        try:
-            del self._agents_by_name[agent.name]
-        except KeyError:
-            logger.warning("Agent id: %s name: %s was not in dict by name", agent.id, agent.name)
-
-    def all(self, reverse: bool = False) -> Generator[Agent, None, None]:
-        for n in sorted(self._agents_by_name.keys(), key=lambda x: x.lower(), reverse=reverse):
-            yield self._agents_by_name[n]
-
-    @property
-    def count(self) -> int:
-        return len(self._agents)
 
 
 @dataclass
@@ -272,52 +218,20 @@ class MeshResults:
         self,
         rows: Optional[List[MeshRow]] = None,
         tasks: Tasks = Tasks(),
-        agents: Agents = Agents(),
     ) -> None:
         self.tasks = tasks
-        self.agents = agents
-        self.connection_matrix = ConnectionMatrix(rows if rows else [])
-        # temporary fix working around inconsistent agent names returned by the API
-        # 'mesh' rows in augmented test health response currently contain the most usable agent names
-        # so update agents using this data while preserving other attributes retrieved with 'AgentsList'
-        if rows:
-            self._update_agents(rows)
-
-    def _update_agents(self, rows: List[MeshRow]) -> None:
-        """
-        Update agent names and aliases based on row data while preserving other existing agent attributes
-        NOTE: This is an ugly hack that should be removed as soon as Kentik API becomes little bit more consistent
-        """
+        rows = rows or []
+        agents = Agents()
         for r in rows:
-            agent = self.agents.get_by_id(r.agent.id)
-            if agent.id == AgentID():
-                agent = r.agent
-                logging.warning("Agent %s (name: %s) was not in cache", agent.id, agent.name)
-                self.agents.insert(agent)
-            else:
-                # We need to preserve other attributes retrieved from AgentsList, so we cannot simply replace the
-                # existing agent. However, we need to delete it from the cache and re-insert it in order to
-                # keep dictionary by name in sync
-                self.agents.remove(agent)
-                agent.name = r.agent.name
-                agent.alias = r.agent.alias
-                self.agents.insert(agent)
+            agents.insert(r.agent)
+        self.participating_agents = agents
+        self.connection_matrix = ConnectionMatrix(rows)
 
     def incremental_update(self, src: MeshResults) -> None:
         """Update with src data, add new pieces of data if any, don't remove anything"""
 
-        if not self.same_agents(src):
-            raise Exception("Can't do incremental update - mesh test configuration mismatch")
-
         self.tasks.incremental_update(src.tasks)
         self.connection_matrix.incremental_update(src.connection_matrix)
-
-    def same_agents(self, src: MeshResults) -> bool:
-        return self.agents.equals(src.agents)
-
-    def data_complete(self) -> bool:
-        total_num_connections = self.agents.count * (self.agents.count - 1)
-        return self.connection_matrix.num_connections_with_data() == total_num_connections
 
     def filter(self, from_agent, to_agent: AgentID, metric_type: MetricType) -> List[Tuple[datetime, MetricValue]]:
         items = self.connection(from_agent, to_agent).health
@@ -325,11 +239,6 @@ class MeshResults:
 
     def connection(self, from_agent, to_agent: AgentID) -> MeshColumn:
         return self.connection_matrix.connection(from_agent, to_agent)
-
-    def agent_id_to_task_id(self, agent_id: AgentID) -> Optional[TaskID]:
-        agent_ip = self.agents.get_by_id(agent_id).ip
-        task = self.tasks.get_by_ip(agent_ip)
-        return task.id if task else None
 
     @property
     def utc_timestamp_oldest(self) -> Optional[datetime]:

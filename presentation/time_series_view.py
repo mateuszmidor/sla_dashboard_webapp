@@ -6,7 +6,7 @@ from dash import dcc, html
 from domain.config import Config
 from domain.geo import calc_distance
 from domain.metric import MetricType
-from domain.model import MeshResults
+from domain.model import MeshConfig, MeshResults
 from domain.types import AgentID
 
 
@@ -14,12 +14,12 @@ class TimeSeriesView:
     def __init__(self, config: Config) -> None:
         self._config = config
 
-    def make_layout(self, from_agent: AgentID, to_agent: AgentID, mesh: MeshResults) -> html.Div:
-        title = self.make_title(from_agent, to_agent, mesh)
-        conn = mesh.connection(from_agent, to_agent)
+    def make_layout(self, from_agent: AgentID, to_agent: AgentID, results: MeshResults, config: MeshConfig) -> html.Div:
+        title = self.make_title(from_agent, to_agent, config)
+        conn = results.connection(from_agent, to_agent)
 
         if conn.has_data():
-            content = self.make_time_series_content(from_agent, to_agent, mesh)
+            content = self.make_time_series_content(from_agent, to_agent, results)
         else:
             content = self.make_no_data_content()
 
@@ -48,9 +48,9 @@ class TimeSeriesView:
             dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
         ]
 
-    def make_title(self, from_agent_id: AgentID, to_agent_id: AgentID, mesh: MeshResults) -> str:
-        from_agent = mesh.agents.get_by_id(from_agent_id)
-        to_agent = mesh.agents.get_by_id(to_agent_id)
+    def make_title(self, from_agent_id: AgentID, to_agent_id: AgentID, config: MeshConfig) -> str:
+        from_agent = config.agents.get_by_id(from_agent_id)
+        to_agent = config.agents.get_by_id(to_agent_id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
         return (
