@@ -1,12 +1,15 @@
 import logging
 import math
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import dash_core_components as dcc
 import dash_html_components as html
+from dash_dangerously_set_inner_html import DangerouslySetInnerHTML
+from jinja2 import Environment, FileSystemLoader
 
-from domain.config import Config, MatrixCellColor
+from domain.config import Config
 from domain.config.thresholds import Thresholds
 from domain.geo import calc_distance
 from domain.metric import MetricType, MetricValue
@@ -15,27 +18,31 @@ from domain.model.mesh_config import MeshConfig
 from domain.model.mesh_results import Agent, Agents, HealthItem
 from domain.types import AgentID, Threshold
 
-# Connections are displayed as a matrix using dcc.Graph component.
-# The Graph is configured as a heatmap.
-# In heatmap, each cell is assigned a floating-point type value.
-# The heatmap itself is assigned a color scale that maps range [0.0 - 1.0] to colors.
-# The heatmap dynamically "stretches" it's color scale range to cover all cells values.
-# We make sure to always have values in range [0.0 - 1.0] in our matrix,
-# so that no range stretching occurs and coloring works as expected.
+
+class CellTag(str, Enum):
+    """This type is input to matrix_view.j2"""
+
+    HEALTHY = "td-healthy"
+    WARNING = "td-warning"
+    CRITICAL = "td-critical"
+    NODATA = "td-nodata"
+    NONE = ""
 
 
-# SLALevel maps connection state to a value in connection matrix, in range [0.0 - 1.0]
-class SLALevel(float, Enum):
-    _MIN = 0.0
-    HEALTHY = 0.2
-    WARNING = 0.4
-    CRITICAL = 0.6
-    NODATA = 0.8
-    _MAX = 1.0
+@dataclass
+class MatrixCell:
+    """This type is input to matrix_view.j2"""
+
+    text: str = ""
+    tooltip: str = ""
+    tag: str = CellTag.NONE.value
 
 
-# SLALevelColumn represents SLALevel single column in connection matrix
-SLALevelColumn = List[Optional[SLALevel]]
+@dataclass
+class MatrixData:
+    """This type is input to matrix_view.j2"""
+
+    rows: List[List[MatrixCell]]
 
 
 def agent_label(agent: Agent) -> str:
@@ -49,7 +56,9 @@ class MatrixView:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._agents = Agents()
-        self._color_scale = self._make_color_scale()
+        file_loader = FileSystemLoader("data/templates")
+        env = Environment(loader=file_loader)
+        self._template = env.get_template("matrix_view.j2")
 
     def make_layout(
         self, results: MeshResults, config: MeshConfig, data_history_seconds: int, metric: MetricType
@@ -71,8 +80,7 @@ class MatrixView:
         self._agents = config.agents  # remember agents used to make the layout for further processing
         timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
         timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
-        fig = self.make_figure(results, config, metric)
-
+        matrix_html = self._make_matrix_html(results, config, metric)
         return [
             html.H2(
                 children=[
@@ -108,10 +116,7 @@ class MatrixView:
             ),
             html.Div(
                 children=[
-                    html.Div(
-                        dcc.Graph(id=self.MATRIX, figure=fig, responsive=True),
-                        className="chart__default",
-                    ),
+                    html.Div([DangerouslySetInnerHTML(matrix_html)]),  # render actual matrix here
                     html.Div(
                         children=[
                             html.Label("Healthy", className="chart_legend__label chart_legend__label_healthy"),
@@ -138,7 +143,6 @@ class MatrixView:
                         className="chart_legend",
                     ),
                 ],
-                className="chart_container",
             ),
         ]
 
@@ -146,63 +150,39 @@ class MatrixView:
         no_data = f"No test results available for the last {int(data_history_seconds)} seconds"
         return [html.H1(no_data), html.Br(), html.Br()]
 
-    def make_figure(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> Dict:
-        data = self.make_figure_data(results, config, metric)
-        annotations = self.make_figure_annotations(results, config, metric)
-        layout = dict(
-            margin=dict(l=200, b=0, t=100, r=0),
-            modebar={"orientation": "v"},
-            annotations=annotations,
-            xaxis=dict(side="top", ticks="", scaleanchor="y"),
-            yaxis=dict(side="left", ticks=""),
-            hovermode="closest",
-            showlegend=False,
-            autosize=True,
-        )
-        return {"data": [data], "layout": layout}
+    def _make_matrix_html(self, results: MeshResults, config: MeshConfig, metric_type: MetricType) -> str:
+        matrix_rows = self._make_matrix_rows(results, config, metric_type)
+        data = MatrixData(rows=matrix_rows)
+        return self._template.render(data=data, config=self._config.matrix)
 
-    def make_figure_data(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> Dict:
-        x_labels = [agent_label(agent) for agent in config.agents.all()]
-        y_labels = list(reversed(x_labels))
-        sla_levels = self.make_sla_levels(results, config, metric)
-        return dict(
-            x=x_labels,
-            y=y_labels,
-            z=sla_levels,
-            text=self.make_matrix_hover_text(results, config),
-            type="heatmap",
-            hoverinfo="text",
-            opacity=1,
-            name="",
-            showscale=False,
-            autosize=True,
-            colorscale=self._color_scale,
-        )
-
-    def make_sla_levels(
+    def _make_matrix_rows(
         self, results: MeshResults, config: MeshConfig, metric_type: MetricType
-    ) -> List[SLALevelColumn]:
-        thresholds = self.get_thresholds(metric_type)
-        sla_levels: List[SLALevelColumn] = []
+    ) -> List[List[MatrixCell]]:
+        rows: List[List[MatrixCell]] = []
 
-        for from_agent in config.agents.all(reverse=True):
-            sla_levels_col: SLALevelColumn = []
-            for i, to_agent in enumerate(config.agents.all()):
+        header = [MatrixCell()] + [MatrixCell(text=agent_label(a)) for a in config.agents.all()]
+        rows.append(header)
+
+        thresholds = self.get_thresholds(metric_type)
+        for from_agent in config.agents.all():
+            row: List[MatrixCell] = [MatrixCell(text=agent_label(from_agent))]
+            for to_agent in config.agents.all():
                 if from_agent == to_agent:
-                    sla_level = SLALevel(i % 2)
+                    row.append(MatrixCell())  # matrix diagonal
                 else:
                     warning = thresholds.warning(from_agent.id, to_agent.id)
                     critical = thresholds.critical(from_agent.id, to_agent.id)
                     health = results.connection(from_agent.id, to_agent.id).latest_measurement
+                    tooltip = self.make_tooltip_text(from_agent, to_agent, results)
                     if health:
                         metric = health.get_metric(metric_type)
-                        sla_level = self.get_sla_level(metric.value, warning, critical)
+                        tag = self.get_cell_tag(metric.value, warning, critical)
+                        text = self.format_health(metric_type, health)
+                        row.append(MatrixCell(text=text, tooltip=tooltip, tag=tag.value))
                     else:
-                        sla_level = SLALevel.NODATA
-                sla_levels_col.append(sla_level)
-            sla_levels.append(sla_levels_col)
-
-        return sla_levels
+                        row.append(MatrixCell(text="-", tooltip=tooltip, tag=CellTag.NODATA.value))
+            rows.append(row)
+        return rows
 
     def get_thresholds(self, metric: MetricType) -> Thresholds:
         if metric == MetricType.LATENCY:
@@ -210,28 +190,6 @@ class MatrixView:
         if metric == MetricType.JITTER:
             return self._config.jitter
         return self._config.packet_loss
-
-    @classmethod
-    def make_figure_annotations(cls, results: MeshResults, config: MeshConfig, metric: MetricType) -> List[Dict]:
-        annotations: List[Dict] = []
-        for from_agent in config.agents.all(reverse=True):
-            for to_agent in config.agents.all():
-                if from_agent == to_agent:
-                    text = ""
-                else:
-                    health = results.connection(from_agent.id, to_agent.id).latest_measurement
-                    text = cls.format_health(metric, health, False, "")
-                annotations.append(
-                    dict(
-                        showarrow=False,
-                        text=text,
-                        xref="x",
-                        yref="y",
-                        x=agent_label(to_agent),
-                        y=agent_label(from_agent),
-                    )
-                )
-        return annotations
 
     @staticmethod
     def format_health(
@@ -246,25 +204,14 @@ class MatrixView:
 
         return "{:.2f}{}".format(metric.value, metric.unit if include_unit else "")
 
-    def make_matrix_hover_text(self, results: MeshResults, config: MeshConfig) -> List[List[str]]:
-        # make hover text for each cell in the matrix
-        matrix_hover_text: List[List[str]] = []
-        for from_agent in config.agents.all(reverse=True):
-            column_hover_text: List[str] = []
-            for to_agent in config.agents.all():
-                column_hover_text.append(self.make_cell_hover_text(from_agent, to_agent, results))
-            matrix_hover_text.append(column_hover_text)
-
-        return matrix_hover_text
-
-    def make_cell_hover_text(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> str:
+    def make_tooltip_text(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> str:
         if from_agent == to_agent:
             return ""
         conn = mesh.connection(from_agent.id, to_agent.id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        cell_hover_text: List[str] = [
+        tooltip_lines: List[str] = [
             f"From: {from_agent.name}, {from_agent.alias} [{from_agent.id}]",
             f"To: {to_agent.name}, {to_agent.alias} [{to_agent.id}]",
             f"Distance: {distance:.0f} {distance_unit.value}",
@@ -273,40 +220,24 @@ class MatrixView:
         health = conn.latest_measurement
         if health:
             for m in MetricType:
-                cell_hover_text.append(f"{m.value}: {self.format_health(m, health, True)}")
-            cell_hover_text.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
+                tooltip_lines.append(f"{m.value}: {self.format_health(m, health, True)}")
+            tooltip_lines.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
+            tooltip_lines.append(f"Num measurements: {len(conn.health)}")
         else:
             # no data available for this connection
-            cell_hover_text.append("NO DATA")
+            tooltip_lines.append("NO DATA")
 
-        return "<br>".join(cell_hover_text)
+        return "<br>".join(tooltip_lines)
 
     @staticmethod
-    def get_sla_level(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> SLALevel:
+    def get_cell_tag(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> CellTag:
         if math.isnan(val):
-            return SLALevel.NODATA
+            return CellTag.NODATA
         if val < warning_threshold:
-            return SLALevel.HEALTHY
+            return CellTag.HEALTHY
         if val < critical_threshold:
-            return SLALevel.WARNING
-        return SLALevel.CRITICAL
-
-    # noinspection PyProtectedMember
-    def _make_color_scale(self) -> List[Tuple[SLALevel, MatrixCellColor]]:
-        healthy = self._config.matrix.cell_color_healthy
-        warning = self._config.matrix.cell_color_warning
-        critical = self._config.matrix.cell_color_critical
-        no_data = self._config.matrix.cell_color_nodata
-        diagonal = "rgba(0, 0, 0, 0.0)"  # diagonal is transparent
-
-        return [
-            (SLALevel._MIN, diagonal),
-            (SLALevel.HEALTHY, healthy),
-            (SLALevel.WARNING, warning),
-            (SLALevel.CRITICAL, critical),
-            (SLALevel.NODATA, no_data),
-            (SLALevel._MAX, diagonal),
-        ]
+            return CellTag.WARNING
+        return CellTag.CRITICAL
 
     def get_agents_from_click(
         self, click_data: Optional[Dict[str, Any]]

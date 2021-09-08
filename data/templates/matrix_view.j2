@@ -1,0 +1,66 @@
+<style>
+    .td-diagonal {
+        background-color:  white
+    }
+    .td-healthy {
+        background-color: {{ config.cell_color_healthy }};
+    }
+    .td-warning {
+        background-color: {{ config.cell_color_warning }};
+    }
+    .td-critical {
+        background-color: {{ config.cell_color_critical }};
+    }
+    .td-nodata {
+        background-color: {{ config.cell_color_nodata }};
+    }
+    .td-vertical {
+        writing-mode: vertical-lr;
+    }
+    .td-agent {
+        font-weight: bold;
+        background-color: powderblue;
+        text-align: left;
+    }
+    table, th, td {
+        border:1px solid black;
+        border-collapse: collapse;
+    }
+    .center {
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+
+<table class="center">
+    <tbody>
+        {% for row in data.rows %}
+        {% set n_row = loop.index %}
+        <tr>
+            {% for cell in row %}
+            {% set n_col = loop.index %}
+                {% if n_row == n_col %}
+                <td class="td-diagonal"></td>
+                {% elif n_row == 1 %}
+                <td class="td-agent td-vertical">
+                {% elif n_col == 1 %}
+                <td class="td-agent">
+                {% else %}
+                <td class="{{ cell.tag }}">
+                {% endif %}
+                    {% if cell.tooltip == "" %}
+                    <div>
+                    {{ cell.text }}
+                    </div>
+                    {% else %}
+                    <div class="tooltip">
+                    {{ cell.text }}
+                    <span class="tooltiptext">{{ cell.tooltip }}</span>
+                    </div>
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
