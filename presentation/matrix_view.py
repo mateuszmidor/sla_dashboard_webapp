@@ -1,13 +1,15 @@
-import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
+from urllib.parse import quote
 
 import dash_core_components as dcc
 import dash_html_components as html
 from dash_dangerously_set_inner_html import DangerouslySetInnerHTML
 from jinja2 import Environment, FileSystemLoader
+
+import routing
 
 from domain.config import Config
 from domain.config.thresholds import Thresholds
@@ -15,8 +17,8 @@ from domain.geo import calc_distance
 from domain.metric import MetricType, MetricValue
 from domain.model import MeshResults
 from domain.model.mesh_config import MeshConfig
-from domain.model.mesh_results import Agent, Agents, HealthItem
-from domain.types import AgentID, Threshold
+from domain.model.mesh_results import Agent, HealthItem
+from domain.types import Threshold
 
 
 class CellTag(str, Enum):
@@ -36,6 +38,7 @@ class MatrixCell:
     text: str = ""
     tooltip: str = ""
     tag: str = CellTag.NONE.value
+    href: str = ""
 
 
 @dataclass
@@ -50,12 +53,10 @@ def agent_label(agent: Agent) -> str:
 
 
 class MatrixView:
-    MATRIX = "matrix"
     METRIC_SELECTOR = "metric-selector"
 
     def __init__(self, config: Config) -> None:
         self._config = config
-        self._agents = Agents()
         file_loader = FileSystemLoader("data/templates")
         env = Environment(loader=file_loader)
         self._template = env.get_template("matrix_view.j2")
@@ -77,7 +78,6 @@ class MatrixView:
         )
 
     def make_matrix_content(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> List:
-        self._agents = config.agents  # remember agents used to make the layout for further processing
         timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
         timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
         matrix_html = self._make_matrix_html(results, config, metric)
@@ -174,13 +174,14 @@ class MatrixView:
                     critical = thresholds.critical(from_agent.id, to_agent.id)
                     health = results.connection(from_agent.id, to_agent.id).latest_measurement
                     tooltip = self.make_tooltip_text(from_agent, to_agent, results)
+                    href = quote(routing.encode_time_series_path(from_agent.id, to_agent.id))
                     if health:
                         metric = health.get_metric(metric_type)
                         tag = self.get_cell_tag(metric.value, warning, critical)
                         text = self.format_health(metric_type, health)
-                        row.append(MatrixCell(text=text, tooltip=tooltip, tag=tag.value))
+                        row.append(MatrixCell(text=text, tooltip=tooltip, tag=tag.value, href=href))
                     else:
-                        row.append(MatrixCell(text="-", tooltip=tooltip, tag=CellTag.NODATA.value))
+                        row.append(MatrixCell(text="-", tooltip=tooltip, tag=CellTag.NODATA.value, href=href))
             rows.append(row)
         return rows
 
@@ -202,7 +203,12 @@ class MatrixView:
         if math.isnan(metric.value):
             return nan
 
-        return "{:.2f}{}".format(metric.value, metric.unit if include_unit else "")
+        if metric_type == MetricType.JITTER:
+            format_str = "{:.2f}{}"
+        else:
+            format_str = "{:.0f}{}"
+
+        return format_str.format(metric.value, metric.unit if include_unit else "")
 
     def make_tooltip_text(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> str:
         if from_agent == to_agent:
@@ -238,20 +244,3 @@ class MatrixView:
         if val < critical_threshold:
             return CellTag.WARNING
         return CellTag.CRITICAL
-
-    def get_agents_from_click(
-        self, click_data: Optional[Dict[str, Any]]
-    ) -> Tuple[Optional[AgentID], Optional[AgentID]]:
-        if click_data is None:
-            return None, None
-
-        to_agent = self._agents.get_by_name(click_data["points"][0]["x"])
-        from_agent = self._agents.get_by_name(click_data["points"][0]["y"])
-        logging.debug(
-            "click: x: %s y: %s from: %s to: %s",
-            click_data["points"][0]["x"],
-            click_data["points"][0]["y"],
-            from_agent.id,
-            to_agent.id,
-        )
-        return from_agent.id, to_agent.id
