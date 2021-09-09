@@ -27,3 +27,7 @@ or
 ```bash
 RESPONSE_FILE_PATH="stub_api_server/mesh_20x20.json" FLASK_ENV=development FLASK_APP=stub_api_server flask run --host=0.0.0.0 --port=9050
 ```
+or
+```bash
+RESPONSE_FILE_PATH="stub_api_server/mesh_60x60.json" FLASK_ENV=development FLASK_APP=stub_api_server flask run --host=0.0.0.0 --port=9050
+```
