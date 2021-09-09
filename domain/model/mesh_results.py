@@ -137,11 +137,12 @@ class ConnectionMatrix:
     def drop_samples_older_than(self, threshold: datetime) -> None:
         for row in self._connections.values():
             for conn in row.values():
-                for i, item in enumerate(conn.health):
-                    if item.timestamp < threshold:
-                        logger.debug("Dropping %d samples outside requested time window", len(conn.health) - i)
-                        conn.health = conn.health[:i]
-                        break
+                n = 0
+                while conn.health and conn.health[-1].timestamp < threshold:
+                    conn.health.pop()
+                    n += 1
+                if n > 0:
+                    logger.debug("Dropped %d samples older than %s", n, threshold.isoformat())
         self.connection_timestamp_oldest, self.connection_timestamp_newest = self._get_timestamp_range()
 
     def num_connections_with_data(self) -> int:
