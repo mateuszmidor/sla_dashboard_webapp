@@ -1,6 +1,7 @@
 import logging
 import threading
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional, Tuple
 
 from domain.model.mesh_config import MeshConfig
@@ -132,6 +133,7 @@ class CachingRepoRequestDriven:
             logger.debug("Incremental cache update")
             new_results = deepcopy(current_results)
             new_results.incremental_update(results)
+            self._drop_samples_outside_timewindow(new_results)
             new_config = current_config
         else:
             logger.debug("New mesh test configuration detected. Full cache update")
@@ -150,3 +152,7 @@ class CachingRepoRequestDriven:
     def _get_config(self) -> MeshConfig:
         with self._mesh_lock:
             return self._mesh_config
+
+    def _drop_samples_outside_timewindow(self, results: MeshResults) -> None:
+        threshold = datetime.now(timezone.utc) - timedelta(seconds=self._full_history_seconds)
+        results.connection_matrix.drop_samples_older_than(threshold)
