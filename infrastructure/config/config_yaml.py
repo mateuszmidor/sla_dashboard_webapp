@@ -85,10 +85,15 @@ class ConfigYAML:
             raise Exception("Configuration error") from err
 
     def _parse_logging_level(self, level_str: str) -> int:
-        return {
-            "CRITICAL": logging.CRITICAL,
-            "ERROR": logging.ERROR,
-            "WARNING": logging.WARNING,
-            "INFO": logging.INFO,
-            "DEBUG": logging.DEBUG,
-        }.get(level_str, logging.DEBUG)
+        try:
+            return {
+                "CRITICAL": logging.CRITICAL,
+                "FATAL": logging.CRITICAL,
+                "ERROR": logging.ERROR,
+                "WARNING": logging.WARNING,
+                "WARN": logging.WARNING,
+                "INFO": logging.INFO,
+                "DEBUG": logging.DEBUG,
+            }[level_str.upper()]
+        except KeyError:
+            raise ValueError(f"unknown loggging level '{level_str}'")

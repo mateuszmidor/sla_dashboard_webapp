@@ -17,8 +17,7 @@ data_history_length_periods: 60
 data_min_periods: 2
 
 # [Optional]
-# timeout for fetching synthetics tests results
-# numbers are specifying (connection, read) timeouts in seconds
+# (connection, read) timeouts in seconds
 timeout: [30.0, 30.0]
 
 # [Optional]
