@@ -1,13 +1,12 @@
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional, Tuple
+from typing import Tuple
 from urllib.parse import quote, unquote
 
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
 import flask
+from dash import dcc, html
 from dash.dependencies import Input, Output
 
 import routing
