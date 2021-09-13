@@ -50,6 +50,16 @@ class Config(Protocol):
         pass
 
     @property
+    def logging_level(self) -> int:
+        """Logging verbosity"""
+        pass
+
+    @property
+    def agent_label(self) -> str:
+        """Agent label format string. Available fields: [name, alias, id, ip]"""
+        pass
+
+    @property
     def distance_unit(self) -> DistanceUnit:
         """Unit for distance between agents"""
         pass

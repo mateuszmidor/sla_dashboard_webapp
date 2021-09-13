@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional, Tuple
+from typing import Tuple
 from urllib.parse import quote, unquote
 
 import dash
@@ -86,16 +86,6 @@ class WebApp:
                 metric = MetricType(metric_name)
                 path = quote(routing.encode_matrix_path(metric))
                 return dcc.Location(id="MATRIX", pathname=path, refresh=True)
-
-            # matrix view - handle cell click
-            @app.callback(Output(IndexView.MATRIX_REDIRECT, "children"), Input(MatrixView.MATRIX, "clickData"))
-            def open_time_series(click_data: Optional[Dict[str, Any]]):
-                from_agent, to_agent = self._matrix_view.get_agents_from_click(click_data)
-                if from_agent is None or to_agent is None or from_agent == to_agent:
-                    return None
-
-                path = quote(routing.encode_time_series_path(from_agent, to_agent))
-                return dcc.Location(id="TIME_SERIES", pathname=path, refresh=True)
 
         except Exception:
             logger.exception("WebApp initialization failure")

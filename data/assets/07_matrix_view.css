@@ -1,0 +1,41 @@
+.a-data {
+  text-decoration: none;
+  color: inherit;
+}
+
+.td-data {
+  font-size: medium;
+}
+
+.td-diagonal {
+    background-color:  white
+}
+
+.td-agent {
+  font-weight: bold;
+  background-color: powderblue;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.vertical {
+writing-mode: vertical-lr;
+min-width: 18px;
+}
+
+.connection-matrix {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.scrollbox {
+  overflow-x: auto;
+  overflow-y: auto;
+  width:100%;
+  height:70vh;
+}
+
+table, th, td {
+  border:1px solid black;
+  border-collapse: collapse;
+}

@@ -12,3 +12,6 @@ Threshold = float
 
 IP = str
 """ IP v4/6 address """
+
+MatrixCellColor = str
+""" format: "rgb(255,0,0)" for red color """

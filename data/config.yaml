@@ -24,6 +24,10 @@ timeout: [30.0, 30.0]
 # sets the logging level. Possible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
 logging_level: INFO
 
+# [Optional]
+# agent label format string. Available fields: [name, alias, id, ip]
+agent_label: "{name} ({alias})"
+
 # matrix look
 matrix:
   cell_color_healthy: "rgb(0,255,0)"      # green

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-MatrixCellColor = str  # format: "rgb(255,0,0)" for red color
+from domain.types import MatrixCellColor
 
 
 @dataclass(frozen=True)
