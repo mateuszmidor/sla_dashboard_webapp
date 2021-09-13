@@ -1,5 +1,5 @@
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Union
 from urllib.parse import quote
@@ -19,41 +19,20 @@ from domain.model.mesh_results import Agent, HealthItem
 from domain.types import MatrixCellColor, Threshold
 
 
-class CellTag(Enum):
-    HEALTHY = 1
-    WARNING = 2
-    CRITICAL = 3
-    NODATA = 4
-
-
 @dataclass
 class MatrixCell:
     text: str = ""
     href: str = ""
-    tooltip: str = ""
-    tag: CellTag = CellTag.NODATA
+    color: MatrixCellColor = "rgb(0, 0, 0)"
+    tooltip: List[str] = field(default_factory=list)
 
 
-def agent_label(agent: Agent) -> str:
-    return agent.alias
-
-
-def dash_multiline(text: str) -> List[Union[str, html.Br]]:
+def dash_multiline(lines: List[str]) -> List[Union[str, html.Br]]:
     result: List[Union[str, html.Br]] = []
-    for line in text.split("\n"):
+    for line in lines:
         result.append(line)
         result.append(html.Br())
     return result
-
-
-def cell_tag(val: MetricValue, warning_threshold: Threshold, critical_threshold: Threshold) -> CellTag:
-    if math.isnan(val):
-        return CellTag.NODATA
-    if val < warning_threshold:
-        return CellTag.HEALTHY
-    if val < critical_threshold:
-        return CellTag.WARNING
-    return CellTag.CRITICAL
 
 
 def format_health(metric_type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
@@ -180,12 +159,11 @@ class MatrixView:
                 else:
                     className = "td-data"
 
-                if cell.tooltip != "" and cell.href != "":
+                if cell.tooltip and cell.href:
                     html_a = html.A(className="a-data", children=cell.text, href=cell.href)
                     html_span = html.Span(className="tooltiptext", children=dash_multiline(cell.tooltip))
                     html_div = html.Div(className="tooltip", children=[html_a, html_span])
-                    cell_color = self._tag_to_color(cell.tag)
-                    html_td = html.Td(className=className, style={"background-color": cell_color}, children=html_div)
+                    html_td = html.Td(className=className, style={"background-color": cell.color}, children=html_div)
                 else:
                     html_td = html.Td(className=className, children=cell.text)
 
@@ -198,12 +176,12 @@ class MatrixView:
     ) -> List[List[MatrixCell]]:
         rows: List[List[MatrixCell]] = []
 
-        header = [MatrixCell()] + [MatrixCell(text=agent_label(a)) for a in config.agents.all()]
+        header = [MatrixCell()] + [MatrixCell(text=self._agent_label(a)) for a in config.agents.all()]
         rows.append(header)
 
         thresholds = self._get_thresholds(metric_type)
         for from_agent in config.agents.all():
-            row: List[MatrixCell] = [MatrixCell(text=agent_label(from_agent))]
+            row: List[MatrixCell] = [MatrixCell(text=self._agent_label(from_agent))]
             for to_agent in config.agents.all():
                 if from_agent == to_agent:
                     row.append(MatrixCell())  # matrix diagonal
@@ -211,27 +189,28 @@ class MatrixView:
                     warning = thresholds.warning(from_agent.id, to_agent.id)
                     critical = thresholds.critical(from_agent.id, to_agent.id)
                     health = results.connection(from_agent.id, to_agent.id).latest_measurement
-                    tooltip = self._make_tooltip_text(from_agent, to_agent, results)
+                    tooltip = self._make_tooltip(from_agent, to_agent, results)
                     href = quote(routing.encode_time_series_path(from_agent.id, to_agent.id))
                     if health:
                         metric = health.get_metric(metric_type)
-                        tag = cell_tag(metric.value, warning, critical)
+                        color = self._cell_color(metric.value, warning, critical)
                         text = format_health(metric_type, health)
-                        row.append(MatrixCell(text=text, tooltip=tooltip, tag=tag, href=href))
+                        row.append(MatrixCell(text=text, tooltip=tooltip, color=color, href=href))
                     else:
-                        row.append(MatrixCell(text="-", tooltip=tooltip, tag=CellTag.NODATA, href=href))
+                        color_nodata = self._config.matrix.cell_color_nodata
+                        row.append(MatrixCell(text="-", tooltip=tooltip, color=color_nodata, href=href))
             rows.append(row)
         return rows
 
-    def _tag_to_color(self, tag: CellTag) -> MatrixCellColor:
+    def _cell_color(self, val: MetricValue, warning: Threshold, critical: Threshold) -> MatrixCellColor:
         config = self._config.matrix
-        # KeyError here means programming error
-        return {
-            CellTag.HEALTHY: config.cell_color_healthy,
-            CellTag.WARNING: config.cell_color_warning,
-            CellTag.CRITICAL: config.cell_color_critical,
-            CellTag.NODATA: config.cell_color_nodata,
-        }[tag]
+        if math.isnan(val):
+            return config.cell_color_nodata
+        if val >= critical:
+            return config.cell_color_critical
+        if val >= warning:
+            return config.cell_color_warning
+        return config.cell_color_healthy
 
     def _get_thresholds(self, metric: MetricType) -> Thresholds:
         if metric == MetricType.LATENCY:
@@ -240,9 +219,9 @@ class MatrixView:
             return self._config.jitter
         return self._config.packet_loss
 
-    def _make_tooltip_text(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> str:
+    def _make_tooltip(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[str]:
         if from_agent == to_agent:
-            return ""
+            return []
         conn = mesh.connection(from_agent.id, to_agent.id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
@@ -257,9 +236,12 @@ class MatrixView:
         if health:
             for m in MetricType:
                 tooltip_lines.append(f"{m.value}: {format_health(m, health, True)}")
-            tooltip_lines.append(f"Time stamp: {health.timestamp.strftime('%x %X %Z')}")
+            tooltip_lines.append(f"Timestamp: {health.timestamp.strftime('%x %X %Z')}")
         else:
             # no data available for this connection
             tooltip_lines.append("NO DATA")
 
-        return "\n".join(tooltip_lines)
+        return tooltip_lines
+
+    def _agent_label(self, agent: Agent) -> str:
+        return self._config.agent_label.format(name=agent.name, alias=agent.alias, id=agent.id, ip=agent.ip)

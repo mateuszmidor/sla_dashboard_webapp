@@ -49,6 +49,10 @@ class ConfigYAML:
         return self._logging_level
 
     @property
+    def agent_label(self) -> str:
+        return self._agent_label
+
+    @property
     def matrix(self) -> Matrix:
         return self._matrix
 
@@ -74,6 +78,7 @@ class ConfigYAML:
             self._packet_loss = Thresholds(config["thresholds"]["packet_loss"])
             self._timeout = tuple(config.get("timeout", defaults.timeout_seconds))
             self._logging_level = self._parse_logging_level(config.get("logging_level", defaults.logging_level))
+            self._agent_label = config.get("agent_label", defaults.agent_label)
             self._matrix = Matrix(
                 config["matrix"]["cell_color_healthy"],
                 config["matrix"]["cell_color_warning"],
