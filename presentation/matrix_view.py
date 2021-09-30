@@ -19,19 +19,25 @@ from domain.types import MatrixCellColor, Threshold
 
 
 @dataclass
+class ToolTip:
+    key: str
+    value: str
+
+
+@dataclass
 class MatrixCell:
     text: str = ""
     href: str = ""
     color: MatrixCellColor = "rgb(0, 0, 0)"
-    tooltip: List[str] = field(default_factory=list)
+    tooltip: List[ToolTip] = field(default_factory=list)
 
 
-def dash_multiline(lines: List[str]) -> List[Union[str, html.Br]]:
-    result: List[Union[str, html.Br]] = []
-    for line in lines:
-        result.append(line)
-        result.append(html.Br())
-    return result
+def tabular_tooltip(items: List[ToolTip]) -> html.Table:
+    def td(s: str) -> html.Td:
+        return html.Td(className="td-tooltip", children=s)
+
+    rows = [html.Tr([td(item.key), td(item.value)]) for item in items]
+    return html.Table(children=html.Tbody(rows))
 
 
 def format_health(metric_type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
@@ -160,7 +166,7 @@ class MatrixView:
 
                 if cell.tooltip and cell.href:
                     html_a = html.A(className="a-data", children=cell.text, href=cell.href)
-                    html_span = html.Span(className="tooltiptext", children=dash_multiline(cell.tooltip))
+                    html_span = html.Span(className="tooltiptext", children=tabular_tooltip(cell.tooltip))
                     html_div = html.Div(className="tooltip", children=[html_a, html_span])
                     html_td = html.Td(className=className, style={"background-color": cell.color}, children=html_div)
                 else:
@@ -218,27 +224,27 @@ class MatrixView:
             return self._config.jitter
         return self._config.packet_loss
 
-    def _make_tooltip(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[str]:
+    def _make_tooltip(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[ToolTip]:
         if from_agent == to_agent:
             return []
         conn = mesh.connection(from_agent.id, to_agent.id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        tooltip_lines: List[str] = [
-            f"From: {from_agent.name}, {from_agent.alias} [{from_agent.id}]",
-            f"To: {to_agent.name}, {to_agent.alias} [{to_agent.id}]",
-            f"Distance: {distance:.0f} {distance_unit.value}",
+        tooltip_lines: List[ToolTip] = [
+            ToolTip("From", f"{from_agent.name}, {from_agent.alias} [{from_agent.id}]"),
+            ToolTip("To", f" {to_agent.name}, {to_agent.alias} [{to_agent.id}]"),
+            ToolTip("Distance", f"{distance:.0f} {distance_unit.value}"),
         ]
 
         health = conn.latest_measurement
         if health:
             for m in MetricType:
-                tooltip_lines.append(f"{m.value}: {format_health(m, health, True)}")
-            tooltip_lines.append(f"Timestamp: {health.timestamp.strftime('%x %X %Z')}")
+                tooltip_lines.append(ToolTip(m.value, f"{format_health(m, health, True)}"))
+            tooltip_lines.append(ToolTip("Timestamp", f"{health.timestamp.strftime('%x %X %Z')}"))
         else:
             # no data available for this connection
-            tooltip_lines.append("NO DATA")
+            pass
 
         return tooltip_lines
 
