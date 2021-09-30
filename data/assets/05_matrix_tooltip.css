@@ -4,6 +4,8 @@
 .tooltip {
     position: relative;
     display: inline-block;
+    width: 100%;  /* fill entire table cell */
+    height: 100%; /* fill entire table cell */
 }
 
 /* Tooltip text */
