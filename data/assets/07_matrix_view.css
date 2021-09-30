@@ -19,8 +19,10 @@
 }
 
 .vertical {
-writing-mode: vertical-lr;
-min-width: 18px;
+  -ms-writing-mode: tb-rl;
+  -webkit-writing-mode: vertical-rl;
+  writing-mode: vertical-rl;
+  min-width: 18px;
 }
 
 .connection-matrix {
