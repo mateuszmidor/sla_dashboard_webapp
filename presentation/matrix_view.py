@@ -5,6 +5,7 @@ from typing import List, Optional, Union
 from urllib.parse import quote
 
 from dash import dcc, html
+from dash.html.Table import Table
 
 import routing
 
@@ -80,38 +81,57 @@ class MatrixView:
         matrix_table = self._make_matrix_table(results, config, metric)
 
         return [
-            html.H2(
-                children=[
-                    html.Span("Time range: "),
-                    html.Span(
-                        "<test_results_timestamp_low>",
-                        className="header-timestamp",
-                        id="timestamp-low",
-                        title=timestamp_low_iso,
-                    ),
-                    html.Span(" - ", className="header-timestamp"),
-                    html.Span(
-                        "<test_results_timestamp_high>",
-                        className="header-timestamp",
-                        id="timestamp-high",
-                        title=timestamp_high_iso,
-                    ),
-                ],
-                className="header__subTitle",
+            html.Table(
+                className="table-selector-timerange",
+                children=html.Tbody(
+                    children=[
+                        html.Tr(
+                            [
+                                html.Td(
+                                    html.Div(
+                                        children=[
+                                            html.Label("Select primary metric:", className="select_label"),
+                                            dcc.Dropdown(
+                                                id=self.METRIC_SELECTOR,
+                                                options=[
+                                                    {"label": f"{m.value} [{m.unit}]", "value": m.value}
+                                                    for m in MetricType
+                                                ],
+                                                value=metric.value,
+                                                clearable=False,
+                                                className="dropdowns",
+                                            ),
+                                        ],
+                                        className="select_container",
+                                    )
+                                ),
+                                html.Td(
+                                    html.H2(
+                                        children=[
+                                            html.Span("Time range: "),
+                                            html.Span(
+                                                "<test_results_timestamp_low>",
+                                                className="header-timestamp",
+                                                id="timestamp-low",
+                                                title=timestamp_low_iso,
+                                            ),
+                                            html.Span(" - ", className="header-timestamp"),
+                                            html.Span(
+                                                "<test_results_timestamp_high>",
+                                                className="header-timestamp",
+                                                id="timestamp-high",
+                                                title=timestamp_high_iso,
+                                            ),
+                                        ],
+                                        className="header__subTitle",
+                                    )
+                                ),
+                            ]
+                        )
+                    ],
+                ),
             ),
-            html.Div(
-                children=[
-                    html.Label("Select primary metric:", className="select_label"),
-                    dcc.Dropdown(
-                        id=self.METRIC_SELECTOR,
-                        options=[{"label": f"{m.value} [{m.unit}]", "value": m.value} for m in MetricType],
-                        value=metric.value,
-                        clearable=False,
-                        className="dropdowns",
-                    ),
-                ],
-                className="select_container",
-            ),
+            html.Br(),
             html.Div(
                 children=[
                     html.Div(className="scrollbox", children=matrix_table),
