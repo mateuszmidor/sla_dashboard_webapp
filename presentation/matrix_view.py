@@ -1,7 +1,6 @@
 import math
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional
 from urllib.parse import quote
 
 from dash import dcc, html
@@ -79,7 +78,6 @@ class MatrixView:
         timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
         timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
         matrix_table = self._make_matrix_table(results, config, metric)
-
         return [
             html.Table(
                 className="table-selector-timerange",
@@ -136,31 +134,6 @@ class MatrixView:
                 children=[
                     html.Div(className="scrollbox", children=matrix_table),
                     html.Br(),
-                    html.Div(
-                        children=[
-                            html.Label("Healthy", className="chart_legend__label chart_legend__label_healthy"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_healthy},
-                            ),
-                            html.Label("Warning", className="chart_legend__label chart_legend__label_warning"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_warning},
-                            ),
-                            html.Label("Critical", className="chart_legend__label chart_legend__label_critical"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_critical},
-                            ),
-                            html.Label("No data", className="chart_legend__label chart_legend__label_nodata"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_nodata},
-                            ),
-                        ],
-                        className="chart_legend",
-                    ),
                 ],
             ),
         ]
@@ -196,7 +169,8 @@ class MatrixView:
                     )
                 else:
                     # header/diagonal cell
-                    cell = html.Td(className=className, children=cell.text)
+                    children = self._make_legend() if n_col == 0 and n_row == 0 else cell.text
+                    cell = html.Td(className=className, children=children)
 
                 html_row.append(cell)
             html_rows.append(html.Tr(className="tr-connection-matrix", children=html_row))
@@ -276,3 +250,30 @@ class MatrixView:
 
     def _agent_label(self, agent: Agent) -> str:
         return self._config.agent_label.format(name=agent.name, alias=agent.alias, id=agent.id, ip=agent.ip)
+
+    def _make_legend(self) -> html.Div:
+        return html.Div(
+            children=[
+                html.Label("Healthy", className="chart_legend__label chart_legend__label_healthy"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_healthy},
+                ),
+                html.Label("Warning", className="chart_legend__label chart_legend__label_warning"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_warning},
+                ),
+                html.Label("Critical", className="chart_legend__label chart_legend__label_critical"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_critical},
+                ),
+                html.Label("No data", className="chart_legend__label chart_legend__label_nodata"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_nodata},
+                ),
+            ],
+            className="chart_legend",
+        )
