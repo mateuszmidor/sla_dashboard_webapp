@@ -22,7 +22,6 @@
     /* Position the tooltip text */
     position: absolute;
     z-index: 1;
-    bottom: 125%;
     left: 50%;
     margin-left: -150px;
 
@@ -34,8 +33,9 @@
 /* Tooltip arrow */
 .tooltip .tooltiptext::after {
     content: "";
+    transform: rotate(180deg);
     position: absolute;
-    top: 100%;
+    top: -9px;
     left: 50%;
     margin-left: -5px;
     border-width: 5px;
