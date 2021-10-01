@@ -8,26 +8,30 @@
 }
 
 .td-diagonal {
-    background-color:  white
+  background-color:  white
 }
 
-.td-agent {
+.td-from-agent {
   font-weight: bold;
   background-color: powderblue;
   text-align: left;
-  white-space: nowrap;
 }
 
-.vertical {
-  -ms-writing-mode: tb-rl;
-  -webkit-writing-mode: vertical-rl;
-  writing-mode: vertical-rl;
+.td-to-agent {
+  font-weight: bold;
+  background-color: powderblue;
+  text-align: left;
   min-width: 18px;
+}
+
+.tr-connection-matrix {
+  height: 100%;
 }
 
 .connection-matrix {
   margin-left: auto;
   margin-right: auto;
+  height: 1px; /* this is to make cell height calculation actually work */
 }
 
 .scrollbox {

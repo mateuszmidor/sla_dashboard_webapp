@@ -158,9 +158,9 @@ class MatrixView:
                 if n_row == n_col:
                     className = "td-diagonal"
                 elif n_row == 0:
-                    className = "td-agent vertical"
+                    className = "td-to-agent"
                 elif n_col == 0:
-                    className = "td-agent"
+                    className = "td-from-agent"
                 else:
                     className = "td-data"
 
@@ -173,7 +173,7 @@ class MatrixView:
                     html_td = html.Td(className=className, children=cell.text)
 
                 html_row.append(html_td)
-            html_rows.append(html.Tr(html_row))
+            html_rows.append(html.Tr(className="tr-connection-matrix", children=html_row))
         return html.Table(className="connection-matrix", children=html.Tbody(html_rows))
 
     def _make_matrix_rows(
