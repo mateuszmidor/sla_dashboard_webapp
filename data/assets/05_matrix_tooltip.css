@@ -4,8 +4,13 @@
 .tooltip {
     position: relative;
     display: inline-block;
+    width: 100%;  /* fill entire table cell */
+    height: 100%; /* fill entire table cell */
 }
 
+.td-tooltip {
+    padding: 2px
+}
 /* Tooltip text */
 .tooltip .tooltiptext {
     visibility: hidden;
@@ -13,12 +18,10 @@
     background-color: #555;
     color: #fff;
     text-align: left;
-    padding: 5px 0;
 
     /* Position the tooltip text */
     position: absolute;
     z-index: 1;
-    bottom: 125%;
     left: 50%;
     margin-left: -150px;
 
@@ -30,8 +33,9 @@
 /* Tooltip arrow */
 .tooltip .tooltiptext::after {
     content: "";
+    transform: rotate(180deg);
     position: absolute;
-    top: 100%;
+    top: -9px;
     left: 50%;
     margin-left: -5px;
     border-width: 5px;

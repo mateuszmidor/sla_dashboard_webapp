@@ -1,10 +1,10 @@
 import math
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional
 from urllib.parse import quote
 
 from dash import dcc, html
+from dash.html.Table import Table
 
 import routing
 
@@ -19,19 +19,25 @@ from domain.types import MatrixCellColor, Threshold
 
 
 @dataclass
+class ToolTip:
+    key: str
+    value: str
+
+
+@dataclass
 class MatrixCell:
     text: str = ""
     href: str = ""
     color: MatrixCellColor = "rgb(0, 0, 0)"
-    tooltip: List[str] = field(default_factory=list)
+    tooltip: List[ToolTip] = field(default_factory=list)
 
 
-def dash_multiline(lines: List[str]) -> List[Union[str, html.Br]]:
-    result: List[Union[str, html.Br]] = []
-    for line in lines:
-        result.append(line)
-        result.append(html.Br())
-    return result
+def tabular_tooltip(items: List[ToolTip]) -> html.Table:
+    def td(s: str) -> html.Td:
+        return html.Td(className="td-tooltip", children=s)
+
+    rows = [html.Tr([td(item.key), td(item.value)]) for item in items]
+    return html.Table(children=html.Tbody(rows))
 
 
 def format_health(metric_type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
@@ -72,69 +78,61 @@ class MatrixView:
         timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
         timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
         matrix_table = self._make_matrix_table(results, config, metric)
-
         return [
-            html.H2(
-                children=[
-                    html.Span("Time range: "),
-                    html.Span(
-                        "<test_results_timestamp_low>",
-                        className="header-timestamp",
-                        id="timestamp-low",
-                        title=timestamp_low_iso,
-                    ),
-                    html.Span(" - ", className="header-timestamp"),
-                    html.Span(
-                        "<test_results_timestamp_high>",
-                        className="header-timestamp",
-                        id="timestamp-high",
-                        title=timestamp_high_iso,
-                    ),
-                ],
-                className="header__subTitle",
+            html.Table(
+                className="table-selector-timerange",
+                children=html.Tbody(
+                    children=[
+                        html.Tr(
+                            [
+                                html.Td(
+                                    html.Div(
+                                        children=[
+                                            html.Label("Select primary metric:", className="select_label"),
+                                            dcc.Dropdown(
+                                                id=self.METRIC_SELECTOR,
+                                                options=[
+                                                    {"label": f"{m.value} [{m.unit}]", "value": m.value}
+                                                    for m in MetricType
+                                                ],
+                                                value=metric.value,
+                                                clearable=False,
+                                                className="dropdowns",
+                                            ),
+                                        ],
+                                        className="select_container",
+                                    )
+                                ),
+                                html.Td(
+                                    html.H2(
+                                        children=[
+                                            html.Span("Time range: "),
+                                            html.Span(
+                                                "<test_results_timestamp_low>",
+                                                className="header-timestamp",
+                                                id="timestamp-low",
+                                                title=timestamp_low_iso,
+                                            ),
+                                            html.Span(" - ", className="header-timestamp"),
+                                            html.Span(
+                                                "<test_results_timestamp_high>",
+                                                className="header-timestamp",
+                                                id="timestamp-high",
+                                                title=timestamp_high_iso,
+                                            ),
+                                        ],
+                                        className="header__subTitle",
+                                    )
+                                ),
+                            ]
+                        )
+                    ],
+                ),
             ),
-            html.Div(
-                children=[
-                    html.Label("Select primary metric:", className="select_label"),
-                    dcc.Dropdown(
-                        id=self.METRIC_SELECTOR,
-                        options=[{"label": f"{m.value} [{m.unit}]", "value": m.value} for m in MetricType],
-                        value=metric.value,
-                        clearable=False,
-                        className="dropdowns",
-                    ),
-                ],
-                className="select_container",
-            ),
+            html.Br(),
             html.Div(
                 children=[
                     html.Div(className="scrollbox", children=matrix_table),
-                    html.Br(),
-                    html.Div(
-                        children=[
-                            html.Label("Healthy", className="chart_legend__label chart_legend__label_healthy"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_healthy},
-                            ),
-                            html.Label("Warning", className="chart_legend__label chart_legend__label_warning"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_warning},
-                            ),
-                            html.Label("Critical", className="chart_legend__label chart_legend__label_critical"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_critical},
-                            ),
-                            html.Label("No data", className="chart_legend__label chart_legend__label_nodata"),
-                            html.Div(
-                                className="chart_legend__cell",
-                                style={"background": self._config.matrix.cell_color_nodata},
-                            ),
-                        ],
-                        className="chart_legend",
-                    ),
                 ],
             ),
         ]
@@ -152,22 +150,29 @@ class MatrixView:
                 if n_row == n_col:
                     className = "td-diagonal"
                 elif n_row == 0:
-                    className = "td-agent vertical"
+                    className = "td-to-agent"
                 elif n_col == 0:
-                    className = "td-agent"
+                    className = "td-from-agent"
                 else:
                     className = "td-data"
 
                 if cell.tooltip and cell.href:
-                    html_a = html.A(className="a-data", children=cell.text, href=cell.href)
-                    html_span = html.Span(className="tooltiptext", children=dash_multiline(cell.tooltip))
-                    html_div = html.Div(className="tooltip", children=[html_a, html_span])
-                    html_td = html.Td(className=className, style={"background-color": cell.color}, children=html_div)
+                    # data cell
+                    cell_text = cell.text if self._config.show_measurement_values else html.Br()
+                    cell_clickable_area = html.Div(className="div-data", children=cell_text)
+                    cell_a = html.A(className="a-data", children=cell_clickable_area, href=cell.href)
+                    tooltip_text = html.Span(className="tooltiptext", children=tabular_tooltip(cell.tooltip))
+                    cell_contents_with_tooltip = html.Div(className="tooltip", children=[cell_a, tooltip_text])
+                    cell = html.Td(
+                        className=className, style={"background-color": cell.color}, children=cell_contents_with_tooltip
+                    )
                 else:
-                    html_td = html.Td(className=className, children=cell.text)
+                    # header/diagonal cell
+                    children = self._make_legend() if n_col == 0 and n_row == 0 else cell.text
+                    cell = html.Td(className=className, children=children)
 
-                html_row.append(html_td)
-            html_rows.append(html.Tr(html_row))
+                html_row.append(cell)
+            html_rows.append(html.Tr(className="tr-connection-matrix", children=html_row))
         return html.Table(className="connection-matrix", children=html.Tbody(html_rows))
 
     def _make_matrix_rows(
@@ -218,29 +223,56 @@ class MatrixView:
             return self._config.jitter
         return self._config.packet_loss
 
-    def _make_tooltip(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[str]:
+    def _make_tooltip(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[ToolTip]:
         if from_agent == to_agent:
             return []
         conn = mesh.connection(from_agent.id, to_agent.id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        tooltip_lines: List[str] = [
-            f"From: {from_agent.name}, {from_agent.alias} [{from_agent.id}]",
-            f"To: {to_agent.name}, {to_agent.alias} [{to_agent.id}]",
-            f"Distance: {distance:.0f} {distance_unit.value}",
+        tooltip_lines: List[ToolTip] = [
+            ToolTip("From", f"{from_agent.name}, {from_agent.alias} [{from_agent.id}]"),
+            ToolTip("To", f" {to_agent.name}, {to_agent.alias} [{to_agent.id}]"),
+            ToolTip("Distance", f"{distance:.0f} {distance_unit.value}"),
         ]
 
         health = conn.latest_measurement
         if health:
             for m in MetricType:
-                tooltip_lines.append(f"{m.value}: {format_health(m, health, True)}")
-            tooltip_lines.append(f"Timestamp: {health.timestamp.strftime('%x %X %Z')}")
+                tooltip_lines.append(ToolTip(m.value, f"{format_health(m, health, True)}"))
+            tooltip_lines.append(ToolTip("Timestamp", f"{health.timestamp.strftime('%x %X %Z')}"))
         else:
             # no data available for this connection
-            tooltip_lines.append("NO DATA")
+            pass
 
         return tooltip_lines
 
     def _agent_label(self, agent: Agent) -> str:
         return self._config.agent_label.format(name=agent.name, alias=agent.alias, id=agent.id, ip=agent.ip)
+
+    def _make_legend(self) -> html.Div:
+        return html.Div(
+            children=[
+                html.Label("Healthy", className="chart_legend__label chart_legend__label_healthy"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_healthy},
+                ),
+                html.Label("Warning", className="chart_legend__label chart_legend__label_warning"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_warning},
+                ),
+                html.Label("Critical", className="chart_legend__label chart_legend__label_critical"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_critical},
+                ),
+                html.Label("No data", className="chart_legend__label chart_legend__label_nodata"),
+                html.Div(
+                    className="chart_legend__cell",
+                    style={"background": self._config.matrix.cell_color_nodata},
+                ),
+            ],
+            className="chart_legend",
+        )

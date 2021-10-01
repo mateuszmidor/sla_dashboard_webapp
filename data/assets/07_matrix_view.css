@@ -3,29 +3,50 @@
   color: inherit;
 }
 
+.div-data {
+  width: 100%;
+  height: 100%;
+}
+
 .td-data {
   font-size: medium;
+  border:1px solid black;
+  border-collapse: collapse;
 }
 
 .td-diagonal {
-    background-color:  white
+  background-color:  white
+  border:1px solid black;
+  border-collapse: collapse;
 }
 
-.td-agent {
+.td-from-agent {
   font-weight: bold;
   background-color: powderblue;
   text-align: left;
-  white-space: nowrap;
+  border:1px solid black;
+  border-collapse: collapse;
 }
 
-.vertical {
-writing-mode: vertical-lr;
-min-width: 18px;
+.td-to-agent {
+  font-weight: bold;
+  background-color: powderblue;
+  text-align: left;
+  min-width: 18px;
+  border:1px solid black;
+  border-collapse: collapse;
+}
+
+.tr-connection-matrix {
+  height: 100%;
 }
 
 .connection-matrix {
+  border:1px solid black;
+  border-collapse: collapse;
   margin-left: auto;
   margin-right: auto;
+  height: 1px; /* this is to make cell height calculation actually work */
 }
 
 .scrollbox {
@@ -35,7 +56,6 @@ min-width: 18px;
   height:70vh;
 }
 
-table, th, td {
-  border:1px solid black;
-  border-collapse: collapse;
+.table-selector-timerange {
+  width: 100%;
 }

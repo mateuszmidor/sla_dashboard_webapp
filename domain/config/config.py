@@ -63,3 +63,8 @@ class Config(Protocol):
     def distance_unit(self) -> DistanceUnit:
         """Unit for distance between agents"""
         pass
+
+    @property
+    def show_measurement_values(self) -> bool:
+        """Show measurement values in matrix cells"""
+        pass

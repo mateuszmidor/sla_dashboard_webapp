@@ -48,15 +48,18 @@ class TimeSeriesView:
             dcc.Graph(id="timeseries_packetloss_chart", style=style, figure=fig_packetloss),
         ]
 
-    def make_title(self, from_agent_id: AgentID, to_agent_id: AgentID, config: MeshConfig) -> str:
+    def make_title(self, from_agent_id: AgentID, to_agent_id: AgentID, config: MeshConfig) -> List:
         from_agent = config.agents.get_by_id(from_agent_id)
         to_agent = config.agents.get_by_id(to_agent_id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
-        return (
-            f"{from_agent.name}, {from_agent.alias} [{from_agent.id}] -> "
-            f"{to_agent.name}, {to_agent.alias} [{to_agent.id}] ({distance:.0f} {distance_unit.value})"
-        )
+        return [
+            f"From: {from_agent.name}, {from_agent.alias} [{from_agent.id}]",
+            html.Br(),
+            f"To: {to_agent.name}, {to_agent.alias} [{to_agent.id}]",
+            html.Br(),
+            f"Distance: {distance:.0f} {distance_unit.value}",
+        ]
 
     @staticmethod
     def make_figure(
