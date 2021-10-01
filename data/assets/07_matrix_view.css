@@ -3,6 +3,11 @@
   color: inherit;
 }
 
+.div-data {
+  width: 100%;
+  height: 100%;
+}
+
 .td-data {
   font-size: medium;
 }

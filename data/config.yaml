@@ -28,6 +28,10 @@ logging_level: INFO
 # agent label format string. Available fields: [name, alias, id, ip]
 agent_label: "{name} ({alias})"
 
+# [Optional]
+# show measurement values in matrix cells
+show_measurement_values: true
+
 # matrix look
 matrix:
   cell_color_healthy: "rgb(0,255,0)"      # green

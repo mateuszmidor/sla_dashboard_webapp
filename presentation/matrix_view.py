@@ -165,14 +165,20 @@ class MatrixView:
                     className = "td-data"
 
                 if cell.tooltip and cell.href:
-                    html_a = html.A(className="a-data", children=cell.text, href=cell.href)
-                    html_span = html.Span(className="tooltiptext", children=tabular_tooltip(cell.tooltip))
-                    html_div = html.Div(className="tooltip", children=[html_a, html_span])
-                    html_td = html.Td(className=className, style={"background-color": cell.color}, children=html_div)
+                    # data cell
+                    cell_text = cell.text if self._config.show_measurement_values else html.Br()
+                    cell_clickable_area = html.Div(className="div-data", children=cell_text)
+                    cell_a = html.A(className="a-data", children=cell_clickable_area, href=cell.href)
+                    tooltip_text = html.Span(className="tooltiptext", children=tabular_tooltip(cell.tooltip))
+                    cell_contents_with_tooltip = html.Div(className="tooltip", children=[cell_a, tooltip_text])
+                    cell = html.Td(
+                        className=className, style={"background-color": cell.color}, children=cell_contents_with_tooltip
+                    )
                 else:
-                    html_td = html.Td(className=className, children=cell.text)
+                    # header/diagonal cell
+                    cell = html.Td(className=className, children=cell.text)
 
-                html_row.append(html_td)
+                html_row.append(cell)
             html_rows.append(html.Tr(className="tr-connection-matrix", children=html_row))
         return html.Table(className="connection-matrix", children=html.Tbody(html_rows))
 

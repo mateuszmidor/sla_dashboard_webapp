@@ -60,6 +60,10 @@ class ConfigYAML:
     def distance_unit(self) -> DistanceUnit:
         return self._distance_unit
 
+    @property
+    def show_measurement_values(self) -> bool:
+        return self._show_measurement_values
+
     def __init__(self, filename: str) -> None:
         try:
             with open(filename, "r") as file:
@@ -86,6 +90,9 @@ class ConfigYAML:
                 config["matrix"]["cell_color_nodata"],
             )
             self._distance_unit = DistanceUnit(config["distance_unit"])
+            self._show_measurement_values = bool(
+                config.get("show_measurement_values", defaults.show_measurement_values)
+            )
         except Exception as err:
             raise Exception("Configuration error") from err
 
