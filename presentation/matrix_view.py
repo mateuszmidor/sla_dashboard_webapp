@@ -108,14 +108,12 @@ class MatrixView:
                                         children=[
                                             html.Span("Time range: "),
                                             html.Span(
-                                                "<test_results_timestamp_low>",
                                                 className="header-timestamp",
                                                 id="timestamp-low",
                                                 title=timestamp_low_iso,
                                             ),
                                             html.Span(" - ", className="header-timestamp"),
                                             html.Span(
-                                                "<test_results_timestamp_high>",
                                                 className="header-timestamp",
                                                 id="timestamp-high",
                                                 title=timestamp_high_iso,
