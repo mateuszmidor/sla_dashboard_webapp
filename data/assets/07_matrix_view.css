@@ -15,7 +15,7 @@
 }
 
 .td-diagonal {
-  background-color:  white
+  background-color: var(--white-0)
   border:1px solid black;
   border-collapse: collapse;
   vertical-align: middle;
@@ -23,7 +23,7 @@
 
 .td-from-agent {
   font-weight: bold;
-  background-color: powderblue;
+  background-color: var(--gray-1);
   text-align: left;
   border:1px solid black;
   border-collapse: collapse;
@@ -31,7 +31,7 @@
 
 .td-to-agent {
   font-weight: bold;
-  background-color: powderblue;
+  background-color: var(--gray-1);
   text-align: left;
   min-width: 18px;
   border:1px solid black;
