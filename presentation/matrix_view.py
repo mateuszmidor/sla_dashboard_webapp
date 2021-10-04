@@ -88,7 +88,6 @@ class MatrixView:
                                 html.Td(
                                     html.Div(
                                         children=[
-                                            html.Label("Select primary metric:", className="select_label"),
                                             dcc.Dropdown(
                                                 id=self.METRIC_SELECTOR,
                                                 options=[
