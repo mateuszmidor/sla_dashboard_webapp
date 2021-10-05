@@ -6,7 +6,7 @@
   border-color: var(--theme-3);
 }
 .select_container {
-  max-width: 220px;
+  width: 160px;
   text-align: left;
 }
 .select_label{

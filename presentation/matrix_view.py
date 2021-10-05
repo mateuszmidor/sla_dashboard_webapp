@@ -4,6 +4,7 @@ from typing import List, Optional
 from urllib.parse import quote
 
 from dash import dcc, html
+from dash.html.Span import Span
 from dash.html.Table import Table
 
 import routing
@@ -88,7 +89,6 @@ class MatrixView:
                                 html.Td(
                                     html.Div(
                                         children=[
-                                            html.Label("Select primary metric:", className="select_label"),
                                             dcc.Dropdown(
                                                 id=self.METRIC_SELECTOR,
                                                 options=[
@@ -108,14 +108,12 @@ class MatrixView:
                                         children=[
                                             html.Span("Time range: "),
                                             html.Span(
-                                                "<test_results_timestamp_low>",
                                                 className="header-timestamp",
                                                 id="timestamp-low",
                                                 title=timestamp_low_iso,
                                             ),
                                             html.Span(" - ", className="header-timestamp"),
                                             html.Span(
-                                                "<test_results_timestamp_high>",
                                                 className="header-timestamp",
                                                 id="timestamp-high",
                                                 title=timestamp_high_iso,
@@ -258,16 +256,19 @@ class MatrixView:
                     className="chart_legend__cell",
                     style={"background": self._config.matrix.cell_color_healthy},
                 ),
+                html.Span(className="chart_legend__separator"),
                 html.Label("Warning", className="chart_legend__label chart_legend__label_warning"),
                 html.Div(
                     className="chart_legend__cell",
                     style={"background": self._config.matrix.cell_color_warning},
                 ),
+                html.Span(className="chart_legend__separator"),
                 html.Label("Critical", className="chart_legend__label chart_legend__label_critical"),
                 html.Div(
                     className="chart_legend__cell",
                     style={"background": self._config.matrix.cell_color_critical},
                 ),
+                html.Span(className="chart_legend__separator"),
                 html.Label("No data", className="chart_legend__label chart_legend__label_nodata"),
                 html.Div(
                     className="chart_legend__cell",
