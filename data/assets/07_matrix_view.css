@@ -31,9 +31,10 @@
 .td-from-agent {
   font-weight: bold;
   background-color: var(--matrix-agent-bg-color);
-  text-align: left;
   border:1px solid var(--matrix-border-color);
   border-collapse: collapse;
+  text-align: right;
+  padding: 0 4px 0 4px;
 }
 
 .td-to-agent {
@@ -44,6 +45,9 @@
   border-collapse: collapse;
   min-width: var(--matrix-data-width);
   max-width: var(--matrix-data-width);
+  vertical-align: bottom;
+  text-align: center;
+  padding: 0px 4px 4px 4px;
 }
 
 .tr-connection-matrix {
