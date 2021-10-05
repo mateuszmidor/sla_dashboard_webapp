@@ -2,6 +2,7 @@
   --matrix-border-color: lightgray;
   --matrix-agent-bg-color: #eeeeee;
   --matrix-diagonal-bg-color: white;
+  --matrix-data-width: 150px;
 }
 
 .a-data {
@@ -39,9 +40,10 @@
   font-weight: bold;
   background-color: var(--matrix-agent-bg-color);
   text-align: left;
-  min-width: 18px;
   border:1px solid var(--matrix-border-color);
   border-collapse: collapse;
+  min-width: var(--matrix-data-width);
+  max-width: var(--matrix-data-width);
 }
 
 .tr-connection-matrix {
