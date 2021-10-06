@@ -43,13 +43,14 @@ Shell:
 docker run \
     --name sla_dashboard \
     --rm \
+    --add-host host.docker.internal:host-gateway \
     -e KTAPI_AUTH_EMAIL=<kentik account email> \
     -e KTAPI_AUTH_TOKEN=<kentik account token> \
     -v "$(pwd)/data:/app/data" \
     -p 127.0.0.1:8050:8050 \
     sla_dashboard:latest
 ```
-**Note:** running the app as docker container requires `data/` folder with `config.yaml` and `gunicorn.conf.py`
+**Note:** running the app as docker container requires `data/` folder with `config.yaml`, `gunicorn.conf.py` and `assets/`
 
 ## Application configuration and customization
 
@@ -65,7 +66,7 @@ Running multiple instances of WebApp, for example as WSGI server workers, is saf
 
 1. Prepare virtual environment with `virtualenv venv`
 1. Activate virtual environment with `source venv/bin/activate`
-1. Install requirements with `pip install -r requirements.txt`
+1. Install requirements with `pip install -r requirements.txt && pip install -r requirements_dev.txt`
 1. (Optionally) Update the local schema as described [here](##Updating-the-local-schema)
 1. Generate synthetics client with `generate_client.sh`
 
