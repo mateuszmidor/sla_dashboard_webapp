@@ -33,10 +33,14 @@ class MatrixCell:
 
 def tabular_tooltip(items: List[ToolTip]) -> html.Table:
     def td(s: str) -> html.Td:
-        return html.Td(className="td-tooltip", children=s)
+        return html.Td(className="tooltip-table-item", children=s)
 
     rows = [html.Tr([td(item.key), td(item.value)]) for item in items]
     return html.Table(children=html.Tbody(rows))
+
+
+def make_tooltip_window(tooltip: List[ToolTip], href: str) -> html.Span:
+    return html.Span(className="tooltip-window", children=[tabular_tooltip(tooltip)])
 
 
 def format_health(metric_type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
@@ -76,7 +80,7 @@ class MatrixView:
     def make_header_content(self, results: MeshResults, metric: MetricType) -> List:
         timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
         timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
-        title = html.Div(children=html.Span("SLA Dashboard"), className="header_title")
+        title = html.Div(children=html.Span(children="SLA Dashboard"), className="header_title")
 
         if results.connection_matrix.num_connections_with_data() == 0:
             return [title]
@@ -137,31 +141,32 @@ class MatrixView:
             html_row = []
             for n_col, cell in enumerate(row):
                 if n_row == n_col:
-                    className = "td-diagonal"
+                    className = "diagonal-cell"
                 elif n_row == 0:
-                    className = "td-to-agent"
+                    className = "to-agent-cell"
                 elif n_col == 0:
-                    className = "td-from-agent"
+                    className = "from-agent-cell"
                 else:
-                    className = "td-data"
+                    className = "measurement-cell"
 
                 if cell.tooltip and cell.href:
-                    # data cell
+                    # measurement cell
                     cell_text = cell.text if self._config.show_measurement_values else html.Br()
-                    cell_clickable_area = html.Div(className="div-data", children=cell_text)
-                    cell_a = html.A(className="a-data", children=cell_clickable_area, href=cell.href)
-                    tooltip_text = html.Span(className="tooltiptext", children=tabular_tooltip(cell.tooltip))
-                    cell_contents_with_tooltip = html.Div(className="tooltip", children=[cell_a, tooltip_text])
-                    cell = html.Td(
-                        className=className, style={"background-color": cell.color}, children=cell_contents_with_tooltip
-                    )
+                    cell_overlay = html.Div(className="cell-overlay", children=cell_text)
+                    cell_contents = html.A(className="cell-measurement", children=cell_overlay, href=cell.href)
+
+                    tooltip_window = make_tooltip_window(cell.tooltip, cell.href)
+
+                    contents_tooltip = html.Div(className="tooltip-container", children=[cell_contents, tooltip_window])
+                    cell_style = {"background-color": cell.color}
+                    cell = html.Td(className=className, style=cell_style, children=contents_tooltip)
                 else:
                     # header/diagonal cell
                     children = self._make_legend() if n_col == 0 and n_row == 0 else cell.text
                     cell = html.Td(className=className, children=children)
 
                 html_row.append(cell)
-            html_rows.append(html.Tr(className="tr-connection-matrix", children=html_row))
+            html_rows.append(html.Tr(className="connection-matrix-row", children=html_row))
         return html.Table(className="connection-matrix", children=html.Tbody(html_rows))
 
     def _make_matrix_rows(
@@ -182,7 +187,7 @@ class MatrixView:
                     warning = thresholds.warning(from_agent.id, to_agent.id)
                     critical = thresholds.critical(from_agent.id, to_agent.id)
                     health = results.connection(from_agent.id, to_agent.id).latest_measurement
-                    tooltip = self._make_tooltip(from_agent, to_agent, results)
+                    tooltip = self._make_tooltip_items(from_agent, to_agent, results)
                     href = quote(routing.encode_time_series_path(from_agent.id, to_agent.id))
                     if health:
                         metric = health.get_metric(metric_type)
@@ -212,14 +217,14 @@ class MatrixView:
             return self._config.jitter
         return self._config.packet_loss
 
-    def _make_tooltip(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[ToolTip]:
+    def _make_tooltip_items(self, from_agent: Agent, to_agent: Agent, mesh: MeshResults) -> List[ToolTip]:
         if from_agent == to_agent:
             return []
         conn = mesh.connection(from_agent.id, to_agent.id)
         distance_unit = self._config.distance_unit
         distance = calc_distance(from_agent.coords, to_agent.coords, distance_unit)
 
-        tooltip_lines: List[ToolTip] = [
+        items: List[ToolTip] = [
             ToolTip("From", f"{from_agent.name}, {from_agent.alias} [{from_agent.id}]"),
             ToolTip("To", f" {to_agent.name}, {to_agent.alias} [{to_agent.id}]"),
             ToolTip("Distance", f"{distance:.0f} {distance_unit.value}"),
@@ -228,13 +233,13 @@ class MatrixView:
         health = conn.latest_measurement
         if health:
             for m in MetricType:
-                tooltip_lines.append(ToolTip(m.value, f"{format_health(m, health, True)}"))
-            tooltip_lines.append(ToolTip("Timestamp", f"{health.timestamp.strftime('%x %X %Z')}"))
+                items.append(ToolTip(m.value, f"{format_health(m, health, True)}"))
+            items.append(ToolTip("Timestamp", f"{health.timestamp.strftime('%x %X %Z')}"))
         else:
             # no data available for this connection
             pass
 
-        return tooltip_lines
+        return items
 
     def _agent_label(self, agent: Agent) -> str:
         return self._config.agent_label.format(name=agent.name, alias=agent.alias, id=agent.id, ip=agent.ip)

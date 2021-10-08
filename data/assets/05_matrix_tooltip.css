@@ -1,18 +1,20 @@
 /* tooltip css based on: https://www.w3schools.com/howto/howto_css_tooltip.asp */
 
-/* Tooltip container */
-.tooltip {
+/* Element that holds always visible content + mouse-over popup window */
+.tooltip-container {
     position: relative;
     display: inline-block;
     width: 100%;  /* fill entire table cell */
     height: 100%; /* fill entire table cell */
 }
 
-.td-tooltip {
+/* Single item in tooltip window table */
+.tooltip-table-item {
     padding: 2px
 }
-/* Tooltip text */
-.tooltip .tooltiptext {
+
+/* Tooltip pupup window */
+.tooltip-container .tooltip-window {
     visibility: hidden;
     width: 300px;
     background-color: #555;
@@ -31,7 +33,7 @@
 }
 
 /* Tooltip arrow */
-.tooltip .tooltiptext::after {
+.tooltip-container .tooltip-window::after {
     content: "";
     transform: rotate(180deg);
     position: absolute;
@@ -44,7 +46,7 @@
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
+.tooltip-container:hover .tooltip-window {
     visibility: visible;
     opacity: 1;
 } 
