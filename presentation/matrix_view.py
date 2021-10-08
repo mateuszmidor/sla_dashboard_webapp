@@ -94,6 +94,7 @@ class MatrixView:
                             options=[{"label": f"{m.value} [{m.unit}]", "value": m.value} for m in MetricType],
                             value=metric.value,
                             clearable=False,
+                            searchable=False,
                             className="dropdowns",
                         ),
                     ],
