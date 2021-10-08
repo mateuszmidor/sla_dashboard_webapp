@@ -40,7 +40,9 @@ def tabular_tooltip(items: List[ToolTip]) -> html.Table:
 
 
 def make_tooltip_window(tooltip: List[ToolTip], href: str) -> html.Span:
-    return html.Span(className="tooltip-window", children=[tabular_tooltip(tooltip)])
+    tooltip_overlay = html.Div(className="tooltip-overlay")
+    tooltip_a = html.A(children=tooltip_overlay, href=href)
+    return html.Span(className="tooltip-window", children=[tabular_tooltip(tooltip), tooltip_a])
 
 
 def format_health(metric_type: MetricType, health: Optional[HealthItem], include_unit: bool = False, nan="N/A") -> str:
