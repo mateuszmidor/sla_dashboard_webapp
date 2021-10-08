@@ -387,6 +387,8 @@ components:
     v202101beta1Agent:
       type: object
       properties:
+        agentImpl:
+          type: string
         id:
           type: string
           description: id of this agent.
@@ -746,6 +748,20 @@ components:
     v202101beta1HealthSettings:
       type: object
       properties:
+        latency_critical_stddev:
+          type: integer
+        latencyCriticalStddev:
+          type: integer
+        latencyWarningStddev:
+          type: integer
+        jitterCriticalStddev:
+          type: integer
+        jitterWarningStddev:
+          type: integer
+        httpLatencyCriticalStddev:
+          type: integer
+        httpLatencyWarningStddev:
+          type: integer
         latencyCritical:
           type: number
           format: float
@@ -1119,6 +1135,8 @@ components:
     v202101beta1TestSettings:
       type: object
       properties:
+        applicationMesh:
+          type: object
         hostname:
           $ref: "#/components/schemas/v202101beta1HostnameTest"
         ip:
