@@ -127,6 +127,7 @@ class MatrixView:
             html.Div(
                 children=[
                     html.Div(className="scrollbox", children=matrix_table),
+                    html.Br(),
                 ],
             ),
         ]
