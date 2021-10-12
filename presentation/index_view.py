@@ -8,6 +8,7 @@ class IndexView:
     PAGE_CONTENT = "page-content"
     MATRIX_REDIRECT = "matrix-click-redirect"
     METRIC_REDIRECT = "metric-selector-redirect"
+    DISREGARD_AUTO_REFRESH_OUTPUT = "disregard_auto-refresh-output"  # need to store callback output somewhere
 
     @staticmethod
     def make_layout() -> html.Div:
@@ -18,6 +19,7 @@ class IndexView:
                 # doesn't render anything, enables redirections
                 html.Div(id=IndexView.MATRIX_REDIRECT),
                 html.Div(id=IndexView.METRIC_REDIRECT),
+                html.Div(id=IndexView.DISREGARD_AUTO_REFRESH_OUTPUT),
                 # content will be rendered in this element
                 dcc.Loading(
                     id=IndexView.PAGE_CONTENT,
