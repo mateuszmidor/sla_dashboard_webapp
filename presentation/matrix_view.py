@@ -4,6 +4,7 @@ from typing import List, Optional
 from urllib.parse import quote
 
 from dash import dcc, html
+from dash.html.Div import Div
 
 import routing
 
@@ -59,6 +60,7 @@ def format_health(metric_type: MetricType, health: Optional[HealthItem], include
 
 class MatrixView:
     METRIC_SELECTOR = "metric-selector"
+    AUTO_REFRESH_CHECKBOX = "auto-refresh"
 
     def __init__(self, config: Config) -> None:
         self._config = config
@@ -67,6 +69,7 @@ class MatrixView:
         self, results: MeshResults, config: MeshConfig, data_history_seconds: int, metric: MetricType
     ) -> html.Div:
 
+        header = self.make_header_content(results, metric, config.update_period_seconds)
         if results.connection_matrix.num_connections_with_data() > 0:
             content = self.make_matrix_content(results, config, metric)
         else:
@@ -74,12 +77,12 @@ class MatrixView:
 
         return html.Div(
             children=[
-                html.Div(children=self.make_header_content(results, metric), className="main_header"),
+                html.Div(children=header, className="main_header"),
                 html.Div(children=content, className="main_container"),
             ]
         )
 
-    def make_header_content(self, results: MeshResults, metric: MetricType) -> List:
+    def make_header_content(self, results: MeshResults, metric: MetricType, update_period_seconds: int) -> List:
         timestamp_low_iso = results.utc_timestamp_oldest.isoformat() if results.utc_timestamp_oldest else None
         timestamp_high_iso = results.utc_timestamp_newest.isoformat() if results.utc_timestamp_newest else None
         title = html.Div(children=html.Span(children="SLA Dashboard"), className="header_title")
@@ -89,6 +92,7 @@ class MatrixView:
         else:
             return [
                 title,
+                # Metric dropdown
                 html.Div(
                     children=[
                         dcc.Dropdown(
@@ -102,19 +106,38 @@ class MatrixView:
                     ],
                     className="metric_selector",
                 ),
+                # Auto-refresh checkbox
+                html.Div(
+                    title=f"refresh page every {update_period_seconds} seconds",
+                    children=[
+                        dcc.Checklist(
+                            id=self.AUTO_REFRESH_CHECKBOX,
+                            options=[{"label": "auto-refresh", "value": "auto-refresh"}],
+                            value=[],
+                            persistence=True,
+                            persistence_type="session",
+                        ),
+                        html.Span(
+                            id="auto-refresh-interval-seconds",
+                            title=str(update_period_seconds),  # used in client-side JS code
+                        ),
+                    ],
+                    className="auto_refresh",
+                ),
+                # Time range bar
                 html.Div(
                     children=[
                         html.Span("Time range: "),
                         html.Span(
                             className="header-timestamp",
                             id="timestamp-low",
-                            title=timestamp_low_iso,
+                            title=timestamp_low_iso,  # used in client-side JS code
                         ),
                         html.Span(" - ", className="header-timestamp"),
                         html.Span(
                             className="header-timestamp",
                             id="timestamp-high",
-                            title=timestamp_high_iso,
+                            title=timestamp_high_iso,  # used in client-side JS code
                         ),
                     ],
                     className="time_range",

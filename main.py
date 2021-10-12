@@ -7,7 +7,7 @@ from urllib.parse import quote, unquote
 import dash
 import flask
 from dash import dcc, html
-from dash.dependencies import Input, Output
+from dash.dependencies import ClientsideFunction, Input, Output
 
 import routing
 
@@ -87,6 +87,13 @@ class WebApp:
                 path = quote(routing.encode_matrix_path(metric))
                 return dcc.Location(id="MATRIX", pathname=path, refresh=True)
 
+            # auto-refresh checkbox, will call client-side function
+            app.clientside_callback(
+                ClientsideFunction(namespace="clientside", function_name="auto_refresh"),
+                Output(IndexView.DISREGARD_AUTO_REFRESH_OUTPUT, "title"),
+                [Input(MatrixView.AUTO_REFRESH_CHECKBOX, "value")],
+            )
+
         except Exception:
             logger.exception("WebApp initialization failure")
             sys.exit(1)
@@ -109,10 +116,6 @@ class WebApp:
         results = self._cached_repo.get_mesh_results_single_connection(from_agent, to_agent)
         config = self._cached_repo.get_mesh_config()
         return self._time_series_view.make_layout(from_agent, to_agent, results, config)
-
-    @property
-    def callback(self):
-        return self._app.callback
 
 
 def get_auth_email_token() -> Tuple[str, str]:

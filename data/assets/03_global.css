@@ -27,29 +27,36 @@ h3 {
 
 /* Page top horizontal bar */
 .main_header {
+  display: inline-block;
+  width: 100%;
   font-size: var(--font-size-large);
   background: var(--blue-0);
   color: var(--white-0);
-  text-align: center;
-  padding-top: 20px;
-  padding-bottom: 40px;
+  padding: 5px 20px;
 }
 
 .header_title {
-  width: 20%;
   float: left;
-}
-
-/* Text directly below the top bar; timestamp */
-.time_range {
-  width: 60%;
-  float: left;
+  margin-right: 20px;
 }
 
 .metric_selector {
-  font-size: var(--font-size-medium);
-  width: 20%;
   float: left;
+  width: 200px;
+  font-size: var(--font-size-medium);
+}
+
+.auto_refresh {
+  float: left;
+  padding: 0 20px;
+}
+
+.auto_refresh input {
+  margin-right: 5px; /* add space between checkbox and label */
+}
+
+.time_range {
+  text-align: center;
 }
 
 /* Space containing all the elements, as opposed to the unused space on the left and right side */
