@@ -32,10 +32,13 @@ class MatrixCell:
 
 
 def tabular_tooltip(items: List[ToolTip]) -> html.Table:
-    def td(s: str) -> html.Td:
-        return html.Td(className="tooltip-table-item", children=s)
+    def key(s: str) -> html.Td:
+        return html.Td(className="tooltip-table-key", children=s)
 
-    rows = [html.Tr([td(item.key), td(item.value)]) for item in items]
+    def value(s: str) -> html.Td:
+        return html.Td(className="tooltip-table-value", children=s)
+
+    rows = [html.Tr([key(item.key), value(item.value)]) for item in items]
     return html.Table(children=html.Tbody(rows))
 
 
@@ -76,7 +79,7 @@ class MatrixView:
             children=[
                 html.Div(children=self.make_header_content(results, metric), className="main_header"),
                 html.Div(children=content, className="main_container"),
-            ]
+            ],
         )
 
     def make_header_content(self, results: MeshResults, metric: MetricType) -> List:
@@ -123,13 +126,7 @@ class MatrixView:
 
     def make_matrix_content(self, results: MeshResults, config: MeshConfig, metric: MetricType) -> List:
         matrix_table = self._make_matrix_table(results, config, metric)
-        return [
-            html.Div(
-                children=[
-                    html.Div(className="scrollbox", children=matrix_table),
-                ],
-            ),
-        ]
+        return [html.Div(className="scrollbox", children=matrix_table)]
 
     # noinspection PyMethodMayBeStatic
     def make_no_data_content(self, data_history_seconds: int) -> List:

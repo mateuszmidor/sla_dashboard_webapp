@@ -8,15 +8,21 @@
     height: 100%; /* fill entire table cell */
 }
 
-/* Single item in tooltip window table */
-.tooltip-table-item {
-    padding: 2px
+/* Tooltip window table key */
+.tooltip-table-key {
+    padding: 2px;
+    white-space: nowrap;
+}
+
+/* Tooltip window table value */
+.tooltip-table-value {
+    padding: 2px;
 }
 
 /* Tooltip pupup window */
 .tooltip-container .tooltip-window {
     visibility: hidden;
-    width: 300px;
+    width: 350px;
     background-color: #555;
     color: #fff;
     text-align: left;
@@ -24,8 +30,10 @@
     /* Position the tooltip text */
     position: absolute;
     z-index: 1;
-    left: 50%;
-    margin-left: -150px;
+    margin-top: 0;
+    top: 40%; 
+    right: 100%;
+    transform: translateY(-33%);
 
     /* Fade in tooltip */
     opacity: 0;
@@ -35,11 +43,13 @@
 /* Tooltip arrow */
 .tooltip-container .tooltip-window::after {
     content: "";
-    transform: rotate(180deg);
     position: absolute;
-    top: -9px;
-    left: 50%;
-    margin-left: -5px;
+    top: 33%;
+    margin-top: 0%;
+    padding: 0;;
+    transform: rotate(270deg);
+    right: 0%;
+    margin-right: -9px;
     border-width: 5px;
     border-style: solid;
     border-color: #555 transparent transparent transparent;
@@ -59,5 +69,10 @@
     top: 0;
     left: 0;
     opacity: 0.0;
-    z-index: 999;
+    background-color: yellow;
+    z-index: 1;
+}
+
+.tooltip-overlay:hover {
+    opacity: 0.4;
 }
