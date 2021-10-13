@@ -27,28 +27,28 @@ h3 {
 
 /* Page top horizontal bar */
 .main_header {
-  display: inline-block;
-  width: 100%;
   font-size: var(--font-size-large);
   background: var(--blue-0);
   color: var(--white-0);
-  padding: 5px 20px;
+  text-align: center;
+  padding-top: 20px;
+  padding-bottom: 40px;
 }
 
 .header_title {
+  width: 20%;
   float: left;
-  margin-right: 20px;
 }
 
 .metric_selector {
-  float: left;
-  width: 200px;
   font-size: var(--font-size-medium);
+  width: 20%;
+  float: left;
 }
 
 .auto_refresh {
+  width: 15%;
   float: left;
-  padding: 0 20px;
 }
 
 .auto_refresh input {
@@ -56,7 +56,8 @@ h3 {
 }
 
 .time_range {
-  text-align: center;
+  width: 40%;
+  float: left;
 }
 
 /* Space containing all the elements, as opposed to the unused space on the left and right side */
