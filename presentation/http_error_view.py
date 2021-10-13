@@ -8,6 +8,6 @@ class HTTPErrorView:
     def make_layout(cls, http_code: int) -> html.Div:
         return html.Div(
             children=[
-                html.H1(children=cls.ERROR_MESSAGE[http_code], style={"textAlign": "center", "marginBottom": 50}),
+                html.H1(children=cls.ERROR_MESSAGE[http_code], className="http_error_message"),
             ],
         )
