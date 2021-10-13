@@ -33,24 +33,6 @@
   font-weight: normal;
 }
 
-/* Back to matrix view button */
-.button {
-  width: auto;
-  padding: 20px;
-  background: var(--blue-1);
-  display: inline-block;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  transition: background 0.3s linear;
-}
-.button:hover{
-  background: var(--blue-2);
-}
-.button a {
-  color: var(--white-0);
-  text-decoration: none;
-}
-
 /* Data timestamp label (matrix view) */
 .header-timestamp{
   margin-left: 10px;
