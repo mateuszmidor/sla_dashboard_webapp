@@ -27,7 +27,7 @@ class TimeSeriesView:
             children=[
                 html.Div(children=title, className="main_header"),
                 html.Div(children=content, className="main_container"),
-            ]
+            ],
         )
 
     @staticmethod
@@ -38,14 +38,18 @@ class TimeSeriesView:
         fig_latency = self.make_figure(from_agent, to_agent, MetricType.LATENCY, mesh)
         fig_jitter = self.make_figure(from_agent, to_agent, MetricType.JITTER, mesh)
         fig_packetloss = self.make_figure(from_agent, to_agent, MetricType.PACKET_LOSS, mesh, (0, 100))
-        style = {"width": "100%", "height": "20vh", "display": "inline-block", "margin-bottom": "20px"}
         return [
-            html.H3(children=MetricType.PACKET_LOSS.value, className="time_series_title"),
-            dcc.Graph(id="time_series_packet_loss", style=style, figure=fig_packetloss),
-            html.H3(children=MetricType.LATENCY.value, className="time_series_title"),
-            dcc.Graph(id="time_series_latency", style=style, figure=fig_latency),
-            html.H3(children=MetricType.JITTER.value, className="time_series_title"),
-            dcc.Graph(id="time_series_jitter", style=style, figure=fig_jitter),
+            html.Div(
+                children=[
+                    html.H3(children=MetricType.PACKET_LOSS.value, className="time_series_chart_title"),
+                    dcc.Graph(id="time_series_packet_loss", className="time_series_chart", figure=fig_packetloss),
+                    html.H3(children=MetricType.LATENCY.value, className="time_series_chart_title"),
+                    dcc.Graph(id="time_series_latency", className="time_series_chart", figure=fig_latency),
+                    html.H3(children=MetricType.JITTER.value, className="time_series_chart_title"),
+                    dcc.Graph(id="time_series_jitter", className="time_series_chart", figure=fig_jitter),
+                ],
+                className="charts_container",
+            )
         ]
 
     def make_title(self, from_agent_id: AgentID, to_agent_id: AgentID, config: MeshConfig) -> List:
