@@ -26,29 +26,35 @@ h3 {
 }
 
 /* Page top horizontal bar */
-.main_header {
+.main_header { 
+  display: flex;
+  align-items: center; /* vertical align */
   font-size: var(--font-size-large);
   background: var(--blue-0);
   color: var(--white-0);
-  text-align: center;
-  padding-top: 20px;
-  padding-bottom: 40px;
+  padding-left: 20px;
+  padding-top: 5px;
+  padding-right: 20px;
+  padding-bottom: 5px;
+}
+
+.main_header div {
+  margin-left: 5px;
+  margin-right: 5px;
 }
 
 .header_title {
-  width: 20%;
-  float: left;
+  flex: 1;
 }
 
 .metric_selector {
+  flex: 1;
   font-size: var(--font-size-medium);
-  width: 20%;
-  float: left;
+  min-width: 190px; /* ensure the "Packet Loss [%]" fully displays */
 }
 
 .auto_refresh {
-  width: 15%;
-  float: left;
+  flex: 1;
 }
 
 .auto_refresh input {
@@ -56,11 +62,10 @@ h3 {
 }
 
 .time_range {
-  width: 40%;
-  float: left;
+  flex: 4;
 }
 
-/* Space containing all the elements, as opposed to the unused space on the left and right side */
+/* Space containing all the elements */
 .main_container{
   text-align: center;
   background-color: var(--white-0);
