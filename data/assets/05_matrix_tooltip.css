@@ -44,7 +44,7 @@
 .tooltip-container .tooltip-window::after {
     content: "";
     position: absolute;
-    top: 33%;
+    top: 30%;
     margin-top: 0%;
     padding: 0;;
     transform: rotate(270deg);
