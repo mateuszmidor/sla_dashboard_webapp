@@ -67,34 +67,9 @@ class WebApp:
                 update_title="Loading test results...",
                 assets_folder="data/assets",
             )
+            self._install_client_side_event_handlers(app)
             app.layout = IndexView.make_layout()
             self._app = app
-
-            # all views - handle path change
-            @app.callback(Output(IndexView.PAGE_CONTENT, "children"), [Input(IndexView.URL, "pathname")])
-            def display_page(pathname: str):
-                pathname = unquote(pathname)
-                try:
-                    route = routing.extract_route(pathname)
-                    make_layout = self._routes[route]
-                    return make_layout(pathname)
-                except Exception:
-                    logger.exception("Error while rendering page")
-                    return HTTPErrorView.make_layout(500)
-
-            # matrix view - handle metric select
-            @app.callback(Output(IndexView.METRIC_REDIRECT, "children"), [Input(MatrixView.METRIC_SELECTOR, "value")])
-            def update_matrix(metric_name: str):
-                metric = MetricType(metric_name)
-                path = quote(routing.encode_matrix_path(metric))
-                return dcc.Location(id="MATRIX", pathname=path, refresh=True)
-
-            # matrix view - handle auto-refresh checkbox; will call client-side JavaScript function "auto_refresh"
-            app.clientside_callback(
-                ClientsideFunction(namespace="clientside", function_name="auto_refresh"),
-                Output(IndexView.DISREGARD_AUTO_REFRESH_OUTPUT, "title"),
-                [Input(MatrixView.AUTO_REFRESH_CHECKBOX, "value")],
-            )
 
         except Exception:
             logger.exception("WebApp initialization failure")
@@ -127,6 +102,33 @@ class WebApp:
         results = self._cached_repo.get_mesh_results_single_connection(from_agent, to_agent)
         config = self._cached_repo.get_mesh_config()
         return self._time_series_view.make_layout(from_agent, to_agent, results, config)
+
+    def _install_client_side_event_handlers(self, app: dash.Dash) -> None:
+        # all views - handle path change
+        @app.callback(Output(IndexView.PAGE_CONTENT, "children"), [Input(IndexView.URL, "pathname")])
+        def display_page(pathname: str):
+            pathname = unquote(pathname)
+            try:
+                route = routing.extract_route(pathname)
+                make_layout = self._routes[route]
+                return make_layout(pathname)
+            except Exception:
+                logger.exception("Error while rendering page")
+                return HTTPErrorView.make_layout(500)
+
+        # matrix view - handle metric select
+        @app.callback(Output(IndexView.METRIC_REDIRECT, "children"), [Input(MatrixView.METRIC_SELECTOR, "value")])
+        def update_matrix(metric_name: str):
+            metric = MetricType(metric_name)
+            path = quote(routing.encode_matrix_path(metric))
+            return dcc.Location(id="MATRIX", pathname=path, refresh=True)
+
+        # matrix view - handle auto-refresh checkbox; will call client-side JavaScript function "auto_refresh"
+        app.clientside_callback(
+            ClientsideFunction(namespace="clientside", function_name="auto_refresh"),
+            Output(IndexView.DISREGARD_AUTO_REFRESH_OUTPUT, "title"),
+            [Input(MatrixView.AUTO_REFRESH_CHECKBOX, "value")],
+        )
 
 
 def get_auth_email_token() -> Tuple[str, str]:
