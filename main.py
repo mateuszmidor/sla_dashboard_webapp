@@ -10,6 +10,7 @@ from dash import dcc, html
 from dash.dependencies import ClientsideFunction, Input, Output
 
 import routing
+from routing import Route
 
 from domain.cache.caching_repo_request_driven import CachingRepoRequestDriven
 from domain.metric import MetricType
@@ -48,9 +49,10 @@ class WebApp:
 
             # routing
             self._routes = {
-                routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(config.default_metric)),
-                routing.MATRIX: self._make_matrix_layout,
-                routing.TIME_SERIES: self._make_time_series_layout,
+                Route.INDEX: self._redirect_to_default_layout,
+                Route.UNKNOWN: self._make_404_layout,
+                Route.MATRIX: self._make_matrix_layout,
+                Route.TIME_SERIES: self._make_time_series_layout,
             }
 
             # views
@@ -73,8 +75,8 @@ class WebApp:
             def display_page(pathname: str):
                 pathname = unquote(pathname)
                 try:
-                    path_args = pathname.split("?", maxsplit=1)
-                    make_layout = self._routes.get(path_args[0], lambda _: HTTPErrorView.make_layout(404))
+                    route = routing.extract_route(pathname)
+                    make_layout = self._routes[route]
                     return make_layout(pathname)
                 except Exception:
                     logger.exception("Error while rendering page")
@@ -87,7 +89,7 @@ class WebApp:
                 path = quote(routing.encode_matrix_path(metric))
                 return dcc.Location(id="MATRIX", pathname=path, refresh=True)
 
-            # auto-refresh checkbox, will call client-side function
+            # matrix view - handle auto-refresh checkbox; will call client-side JavaScript function "auto_refresh"
             app.clientside_callback(
                 ClientsideFunction(namespace="clientside", function_name="auto_refresh"),
                 Output(IndexView.DISREGARD_AUTO_REFRESH_OUTPUT, "title"),
@@ -103,6 +105,15 @@ class WebApp:
 
     def run_development_server(self) -> None:
         self._app.run_server(debug=True)
+
+    def _redirect_to_default_layout(self, _: str) -> html.Div:
+        # default is the matrix layout with specified metric type
+        metric_type = self._config.default_metric
+        pathname = routing.encode_matrix_path(metric_type)
+        return self._make_matrix_layout(pathname)
+
+    def _make_404_layout(self, _: str) -> html.Div:
+        return HTTPErrorView.make_layout(404)
 
     def _make_matrix_layout(self, path: str) -> html.Div:
         metric = routing.decode_matrix_path(path)
