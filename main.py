@@ -48,7 +48,7 @@ class WebApp:
 
             # routing
             self._routes = {
-                routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(MetricType.LATENCY)),
+                routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(config.default_metric)),
                 routing.MATRIX: self._make_matrix_layout,
                 routing.TIME_SERIES: self._make_time_series_layout,
             }
