@@ -65,7 +65,7 @@ class WebApp:
                 suppress_callback_exceptions=True,
                 title="SLA Dashboard",
                 update_title="Loading test results...",
-                assets_folder="data",
+                assets_folder="data/assets",
             )
             self._install_client_side_event_handlers(app)
             app.layout = IndexView.make_layout()
