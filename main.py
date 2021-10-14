@@ -81,11 +81,11 @@ class WebApp:
     def run_development_server(self) -> None:
         self._app.run_server(debug=True)
 
-    def _redirect_to_default_layout(self, _: str) -> html.Div:
+    def _redirect_to_default_layout(self, _: str) -> dcc.Location:
         # default is the matrix layout with specified metric type
         metric_type = self._config.default_metric
-        pathname = routing.encode_matrix_path(metric_type)
-        return self._make_matrix_layout(pathname)
+        path = quote(routing.encode_matrix_path(metric_type))
+        return dcc.Location(id="REDIRECT", pathname=path, refresh=True)
 
     def _make_404_layout(self, _: str) -> html.Div:
         return HTTPErrorView.make_layout(404)
