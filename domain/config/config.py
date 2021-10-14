@@ -3,6 +3,7 @@ from typing import Protocol
 from domain.config.matrix import Matrix
 from domain.config.thresholds import Thresholds
 from domain.geo import DistanceUnit
+from domain.metric import MetricType
 from domain.types import TestID
 
 
@@ -67,4 +68,9 @@ class Config(Protocol):
     @property
     def show_measurement_values(self) -> bool:
         """Show measurement values in matrix cells"""
+        pass
+
+    @property
+    def default_metric(self) -> MetricType:
+        """MetricType to display when not explicitly specified in matrix view query string"""
         pass
