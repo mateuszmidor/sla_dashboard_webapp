@@ -23,6 +23,15 @@ from infrastructure.data_access.http.api_client import KentikAPI
 logger = logging.getLogger(__name__)
 
 
+def num_tested_connections(rows: List[MeshRow]) -> int:
+    count = 0
+    for row in rows:
+        for col in row.columns:
+            if col.has_data():
+                count += 1
+    return count
+
+
 class SyntheticsRepo:
     """SyntheticsRepo implements domain.Repo protocol"""
 
@@ -60,6 +69,7 @@ class SyntheticsRepo:
 
         try:
             rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, history_length_seconds, timeseries)
+            logger.debug("Received test results for %d connections", num_tested_connections(rows))
             return MeshResults(rows=rows, tasks=tasks)
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test ID: {test_id}") from err
@@ -103,7 +113,7 @@ def transform_to_internal_mesh_rows(data: V202101beta1TestHealth) -> List[MeshRo
 
 
 def transform_to_internal_mesh_columns(input_columns: List[V202101beta1MeshColumn]) -> List[MeshColumn]:
-    columns = []
+    columns: List[MeshColumn] = []
     for input_column in input_columns:
         column = MeshColumn(
             agent_id=AgentID(input_column.id), health=transform_to_internal_health_items(input_column.health)
