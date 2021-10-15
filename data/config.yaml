@@ -32,6 +32,10 @@ agent_label: "{name} ({alias})"
 # show measurement values in matrix cells
 show_measurement_values: true
 
+# [Optional]
+# metric type to display when not explicitly specified in matrix view query string. Possible values are: [Latency, Jitter, Packet loss]
+default_metric: Packet loss
+
 # matrix look
 matrix:
   cell_color_healthy: "rgb(0,255,0)"      # green
