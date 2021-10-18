@@ -1,20 +1,28 @@
 /* tooltip css based on: https://www.w3schools.com/howto/howto_css_tooltip.asp */
 
-/* Tooltip container */
-.tooltip {
+/* Element that holds always visible content + mouse-over popup window */
+.tooltip-container {
     position: relative;
     display: inline-block;
     width: 100%;  /* fill entire table cell */
     height: 100%; /* fill entire table cell */
 }
 
-.td-tooltip {
-    padding: 2px
+/* Tooltip window table key */
+.tooltip-table-key {
+    padding: 2px;
+    white-space: nowrap;
 }
-/* Tooltip text */
-.tooltip .tooltiptext {
+
+/* Tooltip window table value */
+.tooltip-table-value {
+    padding: 2px;
+}
+
+/* Tooltip pupup window */
+.tooltip-container .tooltip-window {
     visibility: hidden;
-    width: 300px;
+    width: 350px;
     background-color: #555;
     color: #fff;
     text-align: left;
@@ -22,8 +30,10 @@
     /* Position the tooltip text */
     position: absolute;
     z-index: 1;
-    left: 50%;
-    margin-left: -150px;
+    margin-top: 0;
+    top: 40%; 
+    right: 100%;
+    transform: translateY(-33%);
 
     /* Fade in tooltip */
     opacity: 0;
@@ -31,20 +41,33 @@
 }
 
 /* Tooltip arrow */
-.tooltip .tooltiptext::after {
+.tooltip-container .tooltip-window::after {
     content: "";
-    transform: rotate(180deg);
     position: absolute;
-    top: -9px;
-    left: 50%;
-    margin-left: -5px;
+    top: 30%;
+    margin-top: 0%;
+    padding: 0;;
+    transform: rotate(270deg);
+    right: 0%;
+    margin-right: -9px;
     border-width: 5px;
     border-style: solid;
     border-color: #555 transparent transparent transparent;
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
+.tooltip-container:hover .tooltip-window {
     visibility: visible;
     opacity: 1;
 } 
+
+/* Tooltip overlay - to make pupup window entire area clickable */
+.tooltip-overlay {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0.0;
+    z-index: 1;
+}

@@ -7,9 +7,10 @@ from urllib.parse import quote, unquote
 import dash
 import flask
 from dash import dcc, html
-from dash.dependencies import Input, Output
+from dash.dependencies import ClientsideFunction, Input, Output
 
 import routing
+from routing import Route
 
 from domain.cache.caching_repo_request_driven import CachingRepoRequestDriven
 from domain.metric import MetricType
@@ -48,9 +49,10 @@ class WebApp:
 
             # routing
             self._routes = {
-                routing.MAIN: lambda _: self._make_matrix_layout(routing.encode_matrix_path(MetricType.LATENCY)),
-                routing.MATRIX: self._make_matrix_layout,
-                routing.TIME_SERIES: self._make_time_series_layout,
+                Route.INDEX: self._redirect_to_default_layout,
+                Route.UNKNOWN: self._make_404_layout,
+                Route.MATRIX: self._make_matrix_layout,
+                Route.TIME_SERIES: self._make_time_series_layout,
             }
 
             # views
@@ -63,29 +65,11 @@ class WebApp:
                 suppress_callback_exceptions=True,
                 title="SLA Dashboard",
                 update_title="Loading test results...",
-                assets_folder="data",
+                assets_folder="data/assets",
             )
+            self._install_client_side_event_handlers(app)
             app.layout = IndexView.make_layout()
             self._app = app
-
-            # all views - handle path change
-            @app.callback(Output(IndexView.PAGE_CONTENT, "children"), [Input(IndexView.URL, "pathname")])
-            def display_page(pathname: str):
-                pathname = unquote(pathname)
-                try:
-                    path_args = pathname.split("?", maxsplit=1)
-                    make_layout = self._routes.get(path_args[0], lambda _: HTTPErrorView.make_layout(404))
-                    return make_layout(pathname)
-                except Exception:
-                    logger.exception("Error while rendering page")
-                    return HTTPErrorView.make_layout(500)
-
-            # matrix view - handle metric select
-            @app.callback(Output(IndexView.METRIC_REDIRECT, "children"), [Input(MatrixView.METRIC_SELECTOR, "value")])
-            def update_matrix(metric_name: str):
-                metric = MetricType(metric_name)
-                path = quote(routing.encode_matrix_path(metric))
-                return dcc.Location(id="MATRIX", pathname=path, refresh=True)
 
         except Exception:
             logger.exception("WebApp initialization failure")
@@ -96,6 +80,15 @@ class WebApp:
 
     def run_development_server(self) -> None:
         self._app.run_server(debug=True)
+
+    def _redirect_to_default_layout(self, _: str) -> dcc.Location:
+        # default is the matrix layout with specified metric type
+        metric_type = self._config.default_metric
+        path = quote(routing.encode_matrix_path(metric_type))
+        return dcc.Location(id="REDIRECT", pathname=path, refresh=True)
+
+    def _make_404_layout(self, _: str) -> html.Div:
+        return HTTPErrorView.make_layout(404)
 
     def _make_matrix_layout(self, path: str) -> html.Div:
         metric = routing.decode_matrix_path(path)
@@ -110,9 +103,32 @@ class WebApp:
         config = self._cached_repo.get_mesh_config()
         return self._time_series_view.make_layout(from_agent, to_agent, results, config)
 
-    @property
-    def callback(self):
-        return self._app.callback
+    def _install_client_side_event_handlers(self, app: dash.Dash) -> None:
+        # all views - handle path change
+        @app.callback(Output(IndexView.PAGE_CONTENT, "children"), [Input(IndexView.URL, "pathname")])
+        def display_page(pathname: str):
+            pathname = unquote(pathname)
+            try:
+                route = routing.extract_route(pathname)
+                make_layout = self._routes[route]
+                return make_layout(pathname)
+            except Exception:
+                logger.exception("Error while rendering page")
+                return HTTPErrorView.make_layout(500)
+
+        # matrix view - handle metric select
+        @app.callback(Output(IndexView.METRIC_REDIRECT, "children"), [Input(MatrixView.METRIC_SELECTOR, "value")])
+        def update_matrix(metric_name: str):
+            metric = MetricType(metric_name)
+            path = quote(routing.encode_matrix_path(metric))
+            return dcc.Location(id="MATRIX", pathname=path, refresh=True)
+
+        # matrix view - handle auto-refresh checkbox; will call client-side JavaScript function "auto_refresh"
+        app.clientside_callback(
+            ClientsideFunction(namespace="clientside", function_name="auto_refresh"),
+            Output(IndexView.DISREGARD_AUTO_REFRESH_OUTPUT, "title"),
+            [Input(MatrixView.AUTO_REFRESH_CHECKBOX, "value")],
+        )
 
 
 def get_auth_email_token() -> Tuple[str, str]:
