@@ -4,7 +4,7 @@ info:
   version: 202101beta1
   contact:
     name: Kentik API Engineering
-    url: https://github.com/kentik/api
+    url: 'https://github.com/kentik/api'
 tags:
   - name: SyntheticsDataService
   - name: SyntheticsAdminService
@@ -15,39 +15,40 @@ paths:
       description: Returns a list of agents.
       operationId: AgentsList
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1ListAgentsResponse"
+                $ref: '#/components/schemas/v202101beta1ListAgentsResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       tags:
         - SyntheticsAdminService
-  "/synthetics/v202101beta1/agents/{agent.id}":
+  '/synthetics/v202101beta1/agents/{agent.id}':
     patch:
       summary: Patch an agent.
-      description: Partially Updates the attributes of agent specified with id and
+      description: >-
+        Partially Updates the attributes of agent specified with id and
         update_mask fields.
       operationId: AgentPatch
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1PatchAgentResponse"
+                $ref: '#/components/schemas/v202101beta1PatchAgentResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: agent.id
           description: id of this agent.
@@ -59,7 +60,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v202101beta1PatchAgentRequest"
+              $ref: '#/components/schemas/v202101beta1PatchAgentRequest'
         required: true
       tags:
         - SyntheticsAdminService
@@ -68,18 +69,18 @@ paths:
       description: Returns information about the agent specified with id.
       operationId: AgentGet
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1GetAgentResponse"
+                $ref: '#/components/schemas/v202101beta1GetAgentResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: agent.id
           in: path
@@ -93,18 +94,18 @@ paths:
       description: Deletes the agent specified with id.
       operationId: AgentDelete
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1DeleteAgentResponse"
+                $ref: '#/components/schemas/v202101beta1DeleteAgentResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: agent.id
           in: path
@@ -116,27 +117,28 @@ paths:
   /synthetics/v202101beta1/health/tests:
     post:
       summary: Get health status for synthetics test.
-      description: Get synthetics health test for login user. Also returns mesh data on
+      description: >-
+        Get synthetics health test for login user. Also returns mesh data on
         request.
       operationId: GetHealthForTests
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1GetHealthForTestsResponse"
+                $ref: '#/components/schemas/v202101beta1GetHealthForTestsResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v202101beta1GetHealthForTestsRequest"
+              $ref: '#/components/schemas/v202101beta1GetHealthForTestsRequest'
         required: true
       tags:
         - SyntheticsDataService
@@ -146,18 +148,18 @@ paths:
       description: Returns a list of syntehtics tests.
       operationId: TestsList
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1ListTestsResponse"
+                $ref: '#/components/schemas/v202101beta1ListTestsResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: preset
           in: query
@@ -171,44 +173,44 @@ paths:
       description: Create synthetics test from request. Returns created test.
       operationId: TestCreate
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1CreateTestResponse"
+                $ref: '#/components/schemas/v202101beta1CreateTestResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v202101beta1CreateTestRequest"
+              $ref: '#/components/schemas/v202101beta1CreateTestRequest'
         required: true
       tags:
         - SyntheticsAdminService
-  "/synthetics/v202101beta1/tests/{id}":
+  '/synthetics/v202101beta1/tests/{id}':
     get:
       summary: Get information about Synthetics Test.
       description: Returns information about synthetics test specified with test ID.
       operationId: TestGet
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1GetTestResponse"
+                $ref: '#/components/schemas/v202101beta1GetTestResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: id
           in: path
@@ -222,18 +224,18 @@ paths:
       description: Deletes the synthetics test specified with id.
       operationId: TestDelete
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1DeleteTestResponse"
+                $ref: '#/components/schemas/v202101beta1DeleteTestResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: id
           in: path
@@ -244,22 +246,23 @@ paths:
         - SyntheticsAdminService
     patch:
       summary: Patch a Synthetics Test.
-      description: Partially Updates the attributes of synthetics test specified with id
+      description: >-
+        Partially Updates the attributes of synthetics test specified with id
         and update_mask fields.
       operationId: TestPatch
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1PatchTestResponse"
+                $ref: '#/components/schemas/v202101beta1PatchTestResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: id
           in: path
@@ -270,28 +273,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v202101beta1PatchTestRequest"
+              $ref: '#/components/schemas/v202101beta1PatchTestRequest'
         required: true
       tags:
         - SyntheticsAdminService
-  "/synthetics/v202101beta1/tests/{id}/results/trace":
+  '/synthetics/v202101beta1/tests/{id}/results/trace':
     post:
       summary: Get trace route data.
       description: Get trace route data for the specific test id.
       operationId: GetTraceForTest
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1GetTraceForTestResponse"
+                $ref: '#/components/schemas/v202101beta1GetTraceForTestResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: id
           description: Test id
@@ -303,28 +306,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v202101beta1GetTraceForTestRequest"
+              $ref: '#/components/schemas/v202101beta1GetTraceForTestRequest'
         required: true
       tags:
         - SyntheticsDataService
-  "/synthetics/v202101beta1/tests/{id}/status":
+  '/synthetics/v202101beta1/tests/{id}/status':
     put:
       summary: Update a test status.
       description: Update the status of a test.
       operationId: TestStatusUpdate
       responses:
-        "200":
+        '200':
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v202101beta1SetTestStatusResponse"
+                $ref: '#/components/schemas/v202101beta1SetTestStatusResponse'
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/rpcStatus"
+                $ref: '#/components/schemas/rpcStatus'
       parameters:
         - name: id
           in: path
@@ -335,7 +338,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v202101beta1SetTestStatusRequest"
+              $ref: '#/components/schemas/v202101beta1SetTestStatusRequest'
         required: true
       tags:
         - SyntheticsAdminService
@@ -344,7 +347,7 @@ security:
     token: []
 externalDocs:
   description: More about Kentik APIs
-  url: https://docs.kentik.com/api
+  url: 'https://docs.kentik.com/api'
 components:
   securitySchemes:
     email:
@@ -375,7 +378,7 @@ components:
         details:
           type: array
           items:
-            $ref: "#/components/schemas/protobufAny"
+            $ref: '#/components/schemas/protobufAny'
     v202101beta1ASN:
       type: object
       properties:
@@ -387,15 +390,13 @@ components:
     v202101beta1Agent:
       type: object
       properties:
-        agentImpl:
-          type: string
         id:
           type: string
           description: id of this agent.
         name:
           type: string
         status:
-          $ref: "#/components/schemas/v202101beta1AgentStatus"
+          $ref: '#/components/schemas/v202101beta1AgentStatus'
         alias:
           type: string
         type:
@@ -414,7 +415,7 @@ components:
           type: string
           format: date-time
         family:
-          $ref: "#/components/schemas/v202101beta1IPFamily"
+          $ref: '#/components/schemas/v202101beta1IPFamily'
         asn:
           type: integer
           format: int64
@@ -438,17 +439,19 @@ components:
           type: string
         cloudVpc:
           type: string
+        agentImpl:
+          $ref: '#/components/schemas/v202101beta1ImplementType'
     v202101beta1AgentHealth:
       type: object
       properties:
         agent:
-          $ref: "#/components/schemas/v202101beta1Agent"
+          $ref: '#/components/schemas/v202101beta1Agent'
         health:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1HealthMoment"
+            $ref: '#/components/schemas/v202101beta1HealthMoment'
         overallHealth:
-          $ref: "#/components/schemas/v202101beta1Health"
+          $ref: '#/components/schemas/v202101beta1Health'
     v202101beta1AgentStatus:
       type: string
       enum:
@@ -472,6 +475,8 @@ components:
       properties:
         target:
           type: string
+    v202101beta1ApplicationMeshTest:
+      type: object
     v202101beta1City:
       type: object
       properties:
@@ -496,17 +501,30 @@ components:
       type: object
       properties:
         test:
-          $ref: "#/components/schemas/v202101beta1Test"
+          $ref: '#/components/schemas/v202101beta1Test'
     v202101beta1CreateTestResponse:
       type: object
       properties:
         test:
-          $ref: "#/components/schemas/v202101beta1Test"
+          $ref: '#/components/schemas/v202101beta1Test'
     v202101beta1DNS:
       type: object
       properties:
         name:
           type: string
+    v202101beta1DNSRecord:
+      type: string
+      enum:
+        - DNS_RECORD_UNSPECIFIED
+        - DNS_RECORD_A
+        - DNS_RECORD_AAAA
+        - DNS_RECORD_CNAME
+        - DNS_RECORD_DNAME
+        - DNS_RECORD_NS
+        - DNS_RECORD_MX
+        - DNS_RECORD_PTR
+        - DNS_RECORD_SOA
+      default: DNS_RECORD_UNSPECIFIED
     v202101beta1DNSTaskDefinition:
       type: object
       properties:
@@ -532,11 +550,22 @@ components:
       type: object
     v202101beta1DeleteTestResponse:
       type: object
+    v202101beta1DnsGridTest:
+      type: object
+      properties:
+        targets:
+          type: array
+          items:
+            type: string
+        type:
+          $ref: '#/components/schemas/v202101beta1DNSRecord'
     v202101beta1DnsTest:
       type: object
       properties:
         target:
           type: string
+        type:
+          $ref: '#/components/schemas/v202101beta1DNSRecord'
     v202101beta1FlowTest:
       type: object
       properties:
@@ -558,16 +587,16 @@ components:
       type: object
       properties:
         country:
-          $ref: "#/components/schemas/v202101beta1Country"
+          $ref: '#/components/schemas/v202101beta1Country'
         region:
-          $ref: "#/components/schemas/v202101beta1Region"
+          $ref: '#/components/schemas/v202101beta1Region'
         city:
-          $ref: "#/components/schemas/v202101beta1City"
+          $ref: '#/components/schemas/v202101beta1City'
     v202101beta1GetAgentResponse:
       type: object
       properties:
         agent:
-          $ref: "#/components/schemas/v202101beta1Agent"
+          $ref: '#/components/schemas/v202101beta1Agent'
     v202101beta1GetHealthForTestsRequest:
       type: object
       properties:
@@ -588,12 +617,13 @@ components:
           type: array
           items:
             type: string
-          title: Optionally, only look at a subset of agents
+          title: 'Optionally, only look at a subset of agents'
         taskIds:
           type: array
           items:
             type: string
-          description: Optionally only look at a subset of tasks -- this lets you limit
+          description: >-
+            Optionally only look at a subset of tasks -- this lets you limit
             targets.
         augment:
           type: boolean
@@ -603,12 +633,12 @@ components:
         health:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1TestHealth"
+            $ref: '#/components/schemas/v202101beta1TestHealth'
     v202101beta1GetTestResponse:
       type: object
       properties:
         test:
-          $ref: "#/components/schemas/v202101beta1Test"
+          $ref: '#/components/schemas/v202101beta1Test'
     v202101beta1GetTraceForTestRequest:
       type: object
       properties:
@@ -627,23 +657,23 @@ components:
           type: array
           items:
             type: string
-          title: Optionally, limit the query to these agent ids
+          title: 'Optionally, limit the query to these agent ids'
         targetIps:
           type: array
           items:
             type: string
-          title: Optionally, limit the query to these destination IP addresses
+          title: 'Optionally, limit the query to these destination IP addresses'
     v202101beta1GetTraceForTestResponse:
       type: object
       properties:
-        ipInfo:
-          type: array
-          items:
-            $ref: "#/components/schemas/v202101beta1IPInfo"
+        lookups:
+          $ref: '#/components/schemas/v202101beta1TracerouteLookup'
         traceRoutes:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1TracerouteResult"
+            $ref: '#/components/schemas/v202101beta1TracerouteResult'
+        traceRoutesInfo:
+          $ref: '#/components/schemas/v202101beta1TracerouteInfo'
     v202101beta1GridTest:
       type: object
       properties:
@@ -670,6 +700,10 @@ components:
           type: string
         ignoreTlsErrors:
           type: boolean
+        cssSelectors:
+          type: object
+          additionalProperties:
+            type: string
     v202101beta1HTTPTaskDefinition:
       type: object
       properties:
@@ -722,7 +756,7 @@ components:
         packetLossHealth:
           type: string
         overallHealth:
-          $ref: "#/components/schemas/v202101beta1Health"
+          $ref: '#/components/schemas/v202101beta1Health'
         avgJitter:
           type: integer
           format: int64
@@ -748,20 +782,6 @@ components:
     v202101beta1HealthSettings:
       type: object
       properties:
-        latency_critical_stddev:
-          type: integer
-        latencyCriticalStddev:
-          type: integer
-        latencyWarningStddev:
-          type: integer
-        jitterCriticalStddev:
-          type: integer
-        jitterWarningStddev:
-          type: integer
-        httpLatencyCriticalStddev:
-          type: integer
-        httpLatencyWarningStddev:
-          type: integer
         latencyCritical:
           type: number
           format: float
@@ -796,11 +816,39 @@ components:
           items:
             type: integer
             format: int64
+        latencyCriticalStddev:
+          type: number
+          format: float
+        latencyWarningStddev:
+          type: number
+          format: float
+        jitterCriticalStddev:
+          type: number
+          format: float
+        jitterWarningStddev:
+          type: number
+          format: float
+        httpLatencyCriticalStddev:
+          type: number
+          format: float
+        httpLatencyWarningStddev:
+          type: number
+          format: float
     v202101beta1HostnameTest:
       type: object
       properties:
         target:
           type: string
+    v202101beta1IDByIP:
+      type: object
+      properties:
+        id:
+          type: string
+          title: ID value of type
+        ip:
+          type: string
+          title: IP address associate with IP
+      title: ID type for the specified IP address
     v202101beta1IPFamily:
       type: string
       enum:
@@ -815,11 +863,30 @@ components:
         ip:
           type: string
         asn:
-          $ref: "#/components/schemas/v202101beta1ASN"
+          $ref: '#/components/schemas/v202101beta1ASN'
         geo:
-          $ref: "#/components/schemas/v202101beta1Geo"
+          $ref: '#/components/schemas/v202101beta1Geo'
         dns:
-          $ref: "#/components/schemas/v202101beta1DNS"
+          $ref: '#/components/schemas/v202101beta1DNS'
+        deviceId:
+          type: string
+        siteId:
+          type: string
+        egress:
+          type: string
+    v202101beta1ImplementType:
+      type: string
+      enum:
+        - IMPLEMENT_TYPE_UNSPECIFIED
+        - IMPLEMENT_TYPE_RUST
+        - IMPLEMENT_TYPE_NODE
+      default: IMPLEMENT_TYPE_UNSPECIFIED
+      description: >-
+        Agent impl type determines global vs private agent to use for specific
+        test types.
+
+          - IMPLEMENT_TYPE_RUST: setup IP test against a NODE global agent will fail.
+          - IMPLEMENT_TYPE_NODE: setup a page load test against a RUST global agent will fail.
     v202101beta1IpTest:
       type: object
       properties:
@@ -850,7 +917,7 @@ components:
         agents:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1Agent"
+            $ref: '#/components/schemas/v202101beta1Agent'
         invalidAgentsCount:
           type: integer
           format: int64
@@ -860,7 +927,7 @@ components:
         tests:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1Test"
+            $ref: '#/components/schemas/v202101beta1Test'
         invalidTestsCount:
           type: integer
           format: int64
@@ -876,11 +943,11 @@ components:
         target:
           type: string
         metrics:
-          $ref: "#/components/schemas/v202101beta1MeshMetrics"
+          $ref: '#/components/schemas/v202101beta1MeshMetrics'
         health:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1MeshMetrics"
+            $ref: '#/components/schemas/v202101beta1MeshMetrics'
     v202101beta1MeshMetric:
       type: object
       properties:
@@ -898,11 +965,11 @@ components:
           type: string
           format: date-time
         latency:
-          $ref: "#/components/schemas/v202101beta1MeshMetric"
+          $ref: '#/components/schemas/v202101beta1MeshMetric'
         packetLoss:
-          $ref: "#/components/schemas/v202101beta1MeshMetric"
+          $ref: '#/components/schemas/v202101beta1MeshMetric'
         jitter:
-          $ref: "#/components/schemas/v202101beta1MeshMetric"
+          $ref: '#/components/schemas/v202101beta1MeshMetric'
     v202101beta1MeshResponse:
       type: object
       properties:
@@ -919,35 +986,37 @@ components:
         columns:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1MeshColumn"
+            $ref: '#/components/schemas/v202101beta1MeshColumn'
     v202101beta1PatchAgentRequest:
       type: object
       properties:
         agent:
-          $ref: "#/components/schemas/v202101beta1Agent"
+          $ref: '#/components/schemas/v202101beta1Agent'
         mask:
           type: string
-          title: CSV values of fields follow the path of Agent object with dot
+          title: >-
+            CSV values of fields follow the path of Agent object with dot
             notation (ie. "agent.alias,export.type")
     v202101beta1PatchAgentResponse:
       type: object
       properties:
         agent:
-          $ref: "#/components/schemas/v202101beta1Agent"
+          $ref: '#/components/schemas/v202101beta1Agent'
     v202101beta1PatchTestRequest:
       type: object
       properties:
         test:
-          $ref: "#/components/schemas/v202101beta1Test"
+          $ref: '#/components/schemas/v202101beta1Test'
         mask:
           type: string
-          title: CSV values of fields follow the path of Test object with dot
+          title: >-
+            CSV values of fields follow the path of Test object with dot
             notation (ie. "test.name,test.settings")
     v202101beta1PatchTestResponse:
       type: object
       properties:
         test:
-          $ref: "#/components/schemas/v202101beta1Test"
+          $ref: '#/components/schemas/v202101beta1Test'
     v202101beta1PingTaskDefinition:
       type: object
       properties:
@@ -976,7 +1045,7 @@ components:
         id:
           type: string
         status:
-          $ref: "#/components/schemas/v202101beta1TestStatus"
+          $ref: '#/components/schemas/v202101beta1TestStatus'
     v202101beta1SetTestStatusResponse:
       type: object
     v202101beta1ShakeTaskDefinition:
@@ -998,6 +1067,22 @@ components:
       properties:
         target:
           type: string
+    v202101beta1Stats:
+      type: object
+      properties:
+        average:
+          type: integer
+          format: int32
+          title: Average statistic
+        max:
+          type: integer
+          format: int32
+          title: Maximum statistic
+        total:
+          type: integer
+          format: int32
+          title: Total statistic
+      title: Statistics for traceroute count
     v202101beta1TagTest:
       type: object
       properties:
@@ -1013,36 +1098,36 @@ components:
         deviceId:
           type: string
         state:
-          $ref: "#/components/schemas/v202101beta1TaskState"
+          $ref: '#/components/schemas/v202101beta1TaskState'
         status:
           type: string
         family:
-          $ref: "#/components/schemas/v202101beta1IPFamily"
+          $ref: '#/components/schemas/v202101beta1IPFamily'
         ping:
-          $ref: "#/components/schemas/v202101beta1PingTaskDefinition"
+          $ref: '#/components/schemas/v202101beta1PingTaskDefinition'
         traceroute:
-          $ref: "#/components/schemas/v202101beta1TraceTaskDefinition"
+          $ref: '#/components/schemas/v202101beta1TraceTaskDefinition'
         http:
-          $ref: "#/components/schemas/v202101beta1HTTPTaskDefinition"
+          $ref: '#/components/schemas/v202101beta1HTTPTaskDefinition'
         knock:
-          $ref: "#/components/schemas/v202101beta1KnockTaskDefinition"
+          $ref: '#/components/schemas/v202101beta1KnockTaskDefinition'
         dns:
-          $ref: "#/components/schemas/v202101beta1DNSTaskDefinition"
+          $ref: '#/components/schemas/v202101beta1DNSTaskDefinition'
         shake:
-          $ref: "#/components/schemas/v202101beta1ShakeTaskDefinition"
+          $ref: '#/components/schemas/v202101beta1ShakeTaskDefinition'
     v202101beta1TaskHealth:
       type: object
       properties:
         task:
-          $ref: "#/components/schemas/v202101beta1Task"
+          $ref: '#/components/schemas/v202101beta1Task'
         agents:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1AgentHealth"
+            $ref: '#/components/schemas/v202101beta1AgentHealth'
         overallHealth:
-          $ref: "#/components/schemas/v202101beta1Health"
+          $ref: '#/components/schemas/v202101beta1Health'
         targetAgent:
-          $ref: "#/components/schemas/v202101beta1Agent"
+          $ref: '#/components/schemas/v202101beta1Agent'
     v202101beta1TaskState:
       type: string
       enum:
@@ -1063,9 +1148,9 @@ components:
         deviceId:
           type: string
         status:
-          $ref: "#/components/schemas/v202101beta1TestStatus"
+          $ref: '#/components/schemas/v202101beta1TestStatus'
         settings:
-          $ref: "#/components/schemas/v202101beta1TestSettings"
+          $ref: '#/components/schemas/v202101beta1TestSettings'
         expiresOn:
           type: string
           format: date-time
@@ -1076,9 +1161,9 @@ components:
           type: string
           format: date-time
         createdBy:
-          $ref: "#/components/schemas/v202101beta1UserInfo"
+          $ref: '#/components/schemas/v202101beta1UserInfo'
         lastUpdatedBy:
-          $ref: "#/components/schemas/v202101beta1UserInfo"
+          $ref: '#/components/schemas/v202101beta1UserInfo'
     v202101beta1TestHealth:
       type: object
       properties:
@@ -1087,21 +1172,21 @@ components:
         tasks:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1TaskHealth"
+            $ref: '#/components/schemas/v202101beta1TaskHealth'
         overallHealth:
-          $ref: "#/components/schemas/v202101beta1Health"
+          $ref: '#/components/schemas/v202101beta1Health'
         healthTs:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1Health"
+            $ref: '#/components/schemas/v202101beta1Health'
         agentTaskConfig:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1AgentTaskConfig"
+            $ref: '#/components/schemas/v202101beta1AgentTaskConfig'
         mesh:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1MeshResponse"
+            $ref: '#/components/schemas/v202101beta1MeshResponse'
     v202101beta1TestMonitoringSettings:
       type: object
       properties:
@@ -1135,30 +1220,30 @@ components:
     v202101beta1TestSettings:
       type: object
       properties:
-        applicationMesh:
-          type: object
         hostname:
-          $ref: "#/components/schemas/v202101beta1HostnameTest"
+          $ref: '#/components/schemas/v202101beta1HostnameTest'
         ip:
-          $ref: "#/components/schemas/v202101beta1IpTest"
+          $ref: '#/components/schemas/v202101beta1IpTest'
         agent:
-          $ref: "#/components/schemas/v202101beta1AgentTest"
+          $ref: '#/components/schemas/v202101beta1AgentTest'
         flow:
-          $ref: "#/components/schemas/v202101beta1FlowTest"
+          $ref: '#/components/schemas/v202101beta1FlowTest'
         site:
-          $ref: "#/components/schemas/v202101beta1SiteTest"
+          $ref: '#/components/schemas/v202101beta1SiteTest'
         tag:
-          $ref: "#/components/schemas/v202101beta1TagTest"
+          $ref: '#/components/schemas/v202101beta1TagTest'
         dns:
-          $ref: "#/components/schemas/v202101beta1DnsTest"
+          $ref: '#/components/schemas/v202101beta1DnsTest'
         url:
-          $ref: "#/components/schemas/v202101beta1UrlTest"
+          $ref: '#/components/schemas/v202101beta1UrlTest'
         networkGrid:
-          $ref: "#/components/schemas/v202101beta1GridTest"
+          $ref: '#/components/schemas/v202101beta1GridTest'
         pageLoad:
-          $ref: "#/components/schemas/v202101beta1UrlTest"
+          $ref: '#/components/schemas/v202101beta1UrlTest'
         dnsGrid:
-          $ref: "#/components/schemas/v202101beta1GridTest"
+          $ref: '#/components/schemas/v202101beta1DnsGridTest'
+        applicationMesh:
+          $ref: '#/components/schemas/v202101beta1ApplicationMeshTest'
         agentIds:
           type: array
           items:
@@ -1180,28 +1265,24 @@ components:
           items:
             type: string
         healthSettings:
-          $ref: "#/components/schemas/v202101beta1HealthSettings"
+          $ref: '#/components/schemas/v202101beta1HealthSettings'
         monitoringSettings:
-          $ref: "#/components/schemas/v202101beta1TestMonitoringSettings"
+          $ref: '#/components/schemas/v202101beta1TestMonitoringSettings'
         ping:
-          $ref: "#/components/schemas/v202101beta1TestPingSettings"
+          $ref: '#/components/schemas/v202101beta1TestPingSettings'
         trace:
-          $ref: "#/components/schemas/v202101beta1TestTraceSettings"
+          $ref: '#/components/schemas/v202101beta1TestTraceSettings'
         port:
           type: integer
           format: int64
         protocol:
           type: string
         family:
-          $ref: "#/components/schemas/v202101beta1IPFamily"
+          $ref: '#/components/schemas/v202101beta1IPFamily'
         servers:
           type: array
           items:
             type: string
-        targetType:
-          type: string
-        targetValue:
-          type: string
         useLocalIp:
           type: boolean
         reciprocal:
@@ -1210,7 +1291,7 @@ components:
           type: integer
           format: int64
         http:
-          $ref: "#/components/schemas/v202101beta1HTTPConfig"
+          $ref: '#/components/schemas/v202101beta1HTTPConfig'
     v202101beta1TestStatus:
       type: string
       enum:
@@ -1245,35 +1326,86 @@ components:
     v202101beta1Trace:
       type: object
       properties:
-        hops:
-          type: array
-          items:
-            $ref: "#/components/schemas/v202101beta1TraceHop"
-        target:
+        agentId:
           type: string
-        ips:
+          title: ID of agent for the trace
+        agentIp:
+          type: string
+          title: IP of agent for the trace
+        targetIp:
+          type: string
+          title: Remote target IP
+        hopCount:
+          type: integer
+          format: int32
+          title: Number of hops for the trace
+        probes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/v202101beta1TraceProbe'
+          title: Probing info
+      title: Trace detail
     v202101beta1TraceHop:
       type: object
       properties:
-        agent:
-          type: boolean
-        agentId:
-          type: string
         ttl:
           type: integer
           format: int32
         ip:
           type: string
-        latencies:
+        timeout:
+          type: boolean
+        latency:
+          type: integer
+          format: int32
+        minExpectedLatency:
+          type: integer
+          format: int32
+        asn:
+          type: integer
+          format: int32
+        site:
+          type: integer
+          format: int32
+        region:
+          type: integer
+          format: int32
+        target:
+          type: boolean
+        traceEnd:
+          type: boolean
+    v202101beta1TraceProbe:
+      type: object
+      properties:
+        asPath:
+          type: array
+          items:
+            type: integer
+            format: int32
+          title: AS path
+        completed:
+          type: boolean
+          title: Completed probe
+        hopCount:
+          type: integer
+          format: int32
+          title: Hop count
+        regionPath:
           type: array
           items:
             type: string
-            format: uint64
-        timeout:
-          type: boolean
+          title: Region path trace
+        sitePath:
+          type: array
+          items:
+            type: integer
+            format: int32
+          title: Site path trace
+        hops:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1TraceHop'
+      title: Probing detail
     v202101beta1TraceTaskDefinition:
       type: object
       properties:
@@ -1288,6 +1420,59 @@ components:
         limit:
           type: integer
           format: int64
+    v202101beta1TracerouteInfo:
+      type: object
+      properties:
+        isTraceRoutesTruncated:
+          type: boolean
+          title: Indicate trace route is trunciated
+        maxAsnPathCount:
+          type: integer
+          format: int32
+          title: Maximum number of asn path
+        maxSitePathCount:
+          type: integer
+          format: int32
+          title: Maximum number of site path
+        maxRegionPathCount:
+          type: integer
+          format: int32
+          title: Maximum number of region path
+      title: Traceroute info
+    v202101beta1TracerouteLookup:
+      type: object
+      properties:
+        agentIdByIp:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1IDByIP'
+          title: Agent ID by IP
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1Agent'
+          title: Agents info
+        asns:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1ASN'
+          title: ASN
+        deviceIdByIp:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1IDByIP'
+          title: Device ID by IP
+        siteIdByIp:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1IDByIP'
+          title: Site ID by IP
+        ips:
+          type: array
+          items:
+            $ref: '#/components/schemas/v202101beta1IPInfo'
+          title: IP Info
+      title: Traceroute lookup info
     v202101beta1TracerouteResult:
       type: object
       properties:
@@ -1297,7 +1482,14 @@ components:
         traces:
           type: array
           items:
-            $ref: "#/components/schemas/v202101beta1Trace"
+            $ref: '#/components/schemas/v202101beta1Trace'
+        hopCount:
+          type: integer
+          format: int32
+        count:
+          $ref: '#/components/schemas/v202101beta1Stats'
+        distance:
+          $ref: '#/components/schemas/v202101beta1Stats'
     v202101beta1UrlTest:
       type: object
       properties:
