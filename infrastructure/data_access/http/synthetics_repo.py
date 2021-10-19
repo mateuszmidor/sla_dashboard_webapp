@@ -94,7 +94,7 @@ class SyntheticsRepo:
             request, _request_timeout=self._timeout
         )
 
-        logger.info("Received test results for %d connections", num_tested_connections(response.health))
+        logger.debug("Received test results for %d connections", num_tested_connections(response.health))
 
         # The response.health list can be empty if no measurements were recorded in the requested time period,
         # for example, right after mesh test is started, or when it is paused
