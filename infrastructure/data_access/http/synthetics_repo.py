@@ -23,11 +23,14 @@ from infrastructure.data_access.http.api_client import KentikAPI
 logger = logging.getLogger(__name__)
 
 
-def num_tested_connections(rows: List[MeshRow]) -> int:
+def num_tested_connections(health: List[V202101beta1TestHealth]) -> int:
+    if len(health) == 0:
+        return 0
+
     count = 0
-    for row in rows:
+    for row in health[0].mesh:
         for col in row.columns:
-            if col.has_data():
+            if len(col.health) > 0:
                 count += 1
     return count
 
@@ -69,7 +72,6 @@ class SyntheticsRepo:
 
         try:
             rows, tasks = self._get_rows_tasks(test_id, agent_ids, task_ids, history_length_seconds, timeseries)
-            logger.debug("Received test results for %d connections", num_tested_connections(rows))
             return MeshResults(rows=rows, tasks=tasks)
         except ApiException as err:
             raise Exception(f"Failed to fetch results for test ID: {test_id}") from err
@@ -92,18 +94,21 @@ class SyntheticsRepo:
             request, _request_timeout=self._timeout
         )
 
+        logger.info("Received test results for %d connections", num_tested_connections(response.health))
+
         # The response.health list can be empty if no measurements were recorded in the requested time period,
         # for example, right after mesh test is started, or when it is paused
         if len(response.health) == 0:
             return [], Tasks()
+
         # The response.health list contains one entry for each unique test ID passed in the 'ids' list in the request.
         # We always request results for only one test, so using the first and only item is safe.
         return transform_to_internal_mesh_rows(response.health[0]), transform_to_internal_tasks(response.health[0])
 
 
-def transform_to_internal_mesh_rows(data: V202101beta1TestHealth) -> List[MeshRow]:
+def transform_to_internal_mesh_rows(health: V202101beta1TestHealth) -> List[MeshRow]:
     rows: List[MeshRow] = []
-    for r in data.mesh:
+    for r in health.mesh:
         row = MeshRow(
             agent=Agent(id=AgentID(r.id), name=r.name, alias=r.alias),
             columns=transform_to_internal_mesh_columns(r.columns),
