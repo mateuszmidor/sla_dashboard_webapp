@@ -1,19 +1,21 @@
 # For default values of optional parameters, see: domain/config/defaults.py
 
-# ID of the test to display the data matrix for. Assigned by Kentik
+# ID of the test to display the results for. Assigned by Kentik
 test_id: 3541
 
 # [Optional]
-# minimum interval between asking the server for data. This is to save request quota.
+# minimum interval between asking the server for new data. This is to save request quota.
 # For example: at most once every 1 test update period
 data_request_interval_periods: 1
 
 # [Optional]
-# number of test update periods into the past to fetch the results for
+# number of test update periods into the past to fetch the results for.
+# Also, specifies how old the data in cache can get before being dropped
 data_history_length_periods: 60
 
 # [Optional]
-# number of test update periods into the past to get most recent measurement
+# number of test update periods into the past to get most recent measurement.
+# Reliable minimum value is 2
 data_min_periods: 2
 
 # [Optional]
@@ -21,11 +23,11 @@ data_min_periods: 2
 timeout: [30.0, 30.0]
 
 # [Optional]
-# sets the logging level. Possible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
+# logging level. Possible values are: [CRITICAL, ERROR, WARNING, INFO, DEBUG]
 logging_level: INFO
 
 # [Optional]
-# agent label format string. Available fields: [name, alias, id, ip]
+# agent label format string (for matrix headers). Available fields: [name, alias, id, ip]
 agent_label: "{name} ({alias})"
 
 # [Optional]
