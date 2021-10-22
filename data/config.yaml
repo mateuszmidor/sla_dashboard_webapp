@@ -9,14 +9,14 @@ test_id: 3541
 data_request_interval_periods: 1
 
 # [Optional]
-# number of test update periods into the past to fetch the results for.
+# number of test update periods into the past to fetch the results for timeseries view.
 # Also, specifies how old the data in cache can get before being dropped
 data_history_length_periods: 60
 
 # [Optional]
-# number of test update periods into the past to get most recent measurement.
-# Reliable minimum value is 2
-data_min_periods: 2
+# number of test update periods into the past to get the most recent measurements for matrix view.
+# Reasonable minimum value is 2, more reliable is 3
+data_min_periods: 3
 
 # [Optional]
 # (connection, read) timeouts in seconds
