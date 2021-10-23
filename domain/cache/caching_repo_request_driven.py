@@ -77,8 +77,8 @@ class CachingRepoRequestDriven:
             logger.debug("Mesh cache update start...")
             fresh_mesh, fresh_config = get_mesh_update()
             self._update_cache_with(fresh_mesh, fresh_config)
-            num_fresh_items = fresh_mesh.connection_matrix.num_connections_with_data()
-            logger.debug("Mesh cache update finished with %d fresh items", num_fresh_items)
+            num_updated_connections = fresh_mesh.connection_matrix.num_connections_with_data()
+            logger.debug("Mesh cache update finished for %d connections", num_updated_connections)
         except Exception:
             logger.exception("Mesh cache update error")
 

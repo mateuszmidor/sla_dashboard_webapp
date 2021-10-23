@@ -1,7 +1,7 @@
 import logging
-import urllib.parse as urlparse
 from enum import Enum
 from typing import Tuple
+from urllib.parse import parse_qs, urlparse
 
 from domain.metric import MetricType
 from domain.types import AgentID
@@ -27,7 +27,7 @@ def extract_route(pathname: str) -> Route:
     route_str = pathname[:route_end_index] if route_end_index != -1 else pathname
     try:
         return Route(route_str)
-    except Exception:
+    except ValueError:
         logger.exception("Unknown route: %s", route_str)
         return Route.UNKNOWN
 
@@ -37,7 +37,7 @@ def encode_matrix_path(metric: MetricType) -> str:
 
 
 def decode_matrix_path(path: str) -> MetricType:
-    params = urlparse.parse_qs(urlparse.urlparse(path).query)
+    params = parse_qs(urlparse(path).query)
     try:
         return MetricType(params["metric"][0])
     except (IndexError, KeyError, ValueError):
@@ -50,7 +50,7 @@ def encode_time_series_path(from_agent, to_agent: AgentID) -> str:
 
 
 def decode_time_series_path(path: str) -> Tuple[AgentID, AgentID]:
-    params = urlparse.parse_qs(urlparse.urlparse(path).query)
+    params = parse_qs(urlparse(path).query)
     try:
         return params["from"][0], params["to"][0]
     except (IndexError, KeyError):
