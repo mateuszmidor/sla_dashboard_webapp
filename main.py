@@ -14,6 +14,7 @@ from routing import Route
 
 from domain.cache.caching_repo_request_driven import CachingRepoRequestDriven
 from domain.metric import MetricType
+from domain.types import AgentID
 from infrastructure.config import ConfigYAML
 from infrastructure.data_access.http.synthetics_repo import SyntheticsRepo
 from presentation.http_error_view import HTTPErrorView
@@ -71,9 +72,31 @@ class WebApp:
             app.layout = IndexView.make_layout()
             self._app = app
 
+            # peformance testing endpoints.
+            # cant test on /matrix and /time-series, asa they only render index page template,
+            # and actual content is loaded by linked scripts, that are not executed by JMeter
+            app.server.add_url_rule(rule="/test/matrix", view_func=self.test_matrix)
+            app.server.add_url_rule(rule="/test/timeseries", view_func=self.test_timeseries)
         except Exception:
             logger.exception("WebApp initialization failure")
             sys.exit(1)
+
+    def test_matrix(self) -> str:
+        path = "/matrix?metric=Latency"
+        metric = routing.decode_matrix_path(path)
+        results = self._cached_repo.get_mesh_results_all_connections()
+        config = self._cached_repo.get_mesh_config()
+        data_history_seconds = self._cached_repo.min_history_seconds
+        _ = self._matrix_view.make_layout(results, config, data_history_seconds, metric)
+        return "num_connections : %d" % results.connection_matrix.num_connections_with_data()
+
+    def test_timeseries(self) -> str:
+        path = "/time-series?from=2659&to=628"
+        from_agent, to_agent = routing.decode_time_series_path(path)
+        results = self._cached_repo.get_mesh_results_single_connection(from_agent, to_agent)
+        config = self._cached_repo.get_mesh_config()
+        _ = self._time_series_view.make_layout(from_agent, to_agent, results, config)
+        return "num_measurements : %d" % len(results.connection(from_agent, to_agent).health)
 
     def get_production_server(self) -> flask.Flask:
         return self._app.server
