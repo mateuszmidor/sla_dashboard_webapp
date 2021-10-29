@@ -3,8 +3,7 @@
 import multiprocessing
 
 wsgi_app = "main:run()"
-workers = 1
-worker_connections = 100
+workers = 1  # only one worker process to maximize mesh results caching profits
 bind = ":8050"
 timeout = 30
 # Worker is changed to prevent worker timeouts
